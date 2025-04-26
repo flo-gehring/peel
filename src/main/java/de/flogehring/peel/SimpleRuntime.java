@@ -41,13 +41,8 @@ public class SimpleRuntime implements Runtime {
 
     private void runStatement(Statement statement) {
          switch (statement) {
-            case Statement.Assignment(var name, var expression) -> {
-
-                variables.put(name, evaluateExpr(expression));
-            }
-
-        };
-
+            case Statement.Assignment(var name, var expression) -> variables.put(name, evaluateExpr(expression));
+        }
     }
 
     private Object evaluateExpr(Expression expression) {
