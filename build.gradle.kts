@@ -1,6 +1,11 @@
 plugins {
     id("java")
 }
+java {
+    toolchain {
+        languageVersion = JavaLanguageVersion.of(22)
+    }
+}
 
 group = "de.flo-gehring"
 version = "1.0-SNAPSHOT"
@@ -14,6 +19,9 @@ dependencies {
     testImplementation("org.junit.jupiter:junit-jupiter")
 }
 
-tasks.test {
+tasks.named<Test>("test") {
     useJUnitPlatform()
+    testLogging {
+        events("passed")
+    }
 }
