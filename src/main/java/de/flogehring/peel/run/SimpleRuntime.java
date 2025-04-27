@@ -2,7 +2,7 @@ package de.flogehring.peel.run;
 
 import de.flogehring.peel.lang.CodeElement;
 import de.flogehring.peel.lang.Expression;
-import de.flogehring.peel.lang.Programm;
+import de.flogehring.peel.lang.Program;
 import de.flogehring.peel.lang.Statement;
 
 import java.util.HashMap;
@@ -29,10 +29,10 @@ public class SimpleRuntime implements Runtime {
     }
 
     @Override
-    public Object run(Programm programm) {
+    public Object run(Program program) {
         Optional<Object> result = Optional.empty();
-        for (int i = 0; i < programm.codeElement().size(); ++i) {
-            CodeElement codeElement = programm.codeElement().get(i);
+        for (int i = 0; i < program.codeElement().size(); ++i) {
+            CodeElement codeElement = program.codeElement().get(i);
             result = switch (codeElement) {
                 case Expression expression -> Optional.of(evaluateExpr(expression));
                 case Statement statement -> {

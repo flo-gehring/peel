@@ -1,7 +1,7 @@
 package de.flogehring.peel.run;
 
 import de.flogehring.peel.lang.CodeElement;
-import de.flogehring.peel.lang.Programm;
+import de.flogehring.peel.lang.Program;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.Assertions;
 
@@ -12,7 +12,7 @@ public class SimpleRuntimeTest {
 
     @Test
     void simpleTest() {
-        Programm p = new Programm(List.of(
+        Program p = new Program(List.of(
                 CodeElement.assign("x", CodeElement.literal(1)),
                 CodeElement.assign("y", CodeElement.literal(1)),
                 CodeElement.expr(CodeElement.var("x"), "+", CodeElement.var("y"))
