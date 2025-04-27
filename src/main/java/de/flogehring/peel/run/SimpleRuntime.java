@@ -5,27 +5,86 @@ import de.flogehring.peel.lang.Expression;
 import de.flogehring.peel.lang.Program;
 import de.flogehring.peel.lang.Statement;
 
+import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.Map;
-import java.util.Objects;
+import java.util.List;
 import java.util.Optional;
-import java.util.function.BiFunction;
+import java.util.stream.Stream;
+
+import static de.flogehring.peel.run.TypeDescriptor.type;
 
 public class SimpleRuntime implements Runtime {
 
-    Map<String, BiFunction<Object, Object, Object>> operators;
-    Map<String, Object> variables;
-
+    private final HashMap<String, Variable> variables;
+    private final HashMap<String, List<Function>> functions;
 
     private SimpleRuntime() {
-        operators = new HashMap<>();
+        functions = new HashMap<>();
         variables = new HashMap<>();
     }
 
+    @Override
+    public void register(Variable v) {
+        variables.put(v.name(), v);
+    }
+
+    @Override
+    public void register(Function f) {
+        functions.merge(f.name(), new ArrayList<>(List.of(f)), (lhs, rhs) -> Stream.concat(
+                lhs.stream(),
+                rhs.stream()
+        ).toList());
+
+    }
+
+
     public static SimpleRuntime simpleLang() {
         SimpleRuntime runtime = new SimpleRuntime();
-        runtime.operators.put("+", (x, y) -> ((Number) x).doubleValue() + ((Number) y).doubleValue());
+        runtime.register(addNumbers());
+        runtime.register(addStrings());
         return runtime;
+    }
+
+    private static Function addStrings() {
+        return new Function() {
+            @Override
+            public String name() {
+                return "+";
+            }
+
+            @Override
+            public List<TypeDescriptor> arguments() {
+                return List.of(type(String.class), type(String.class));
+            }
+
+            @Override
+            public Object run(Object... arguments) {
+                String lhs = (String) arguments[0];
+                String rhs = (String) arguments[1];
+                return lhs + rhs;
+            }
+        };
+    }
+
+    private static Function addNumbers() {
+        return new Function() {
+            @Override
+            public String name() {
+                return "+";
+            }
+
+            @Override
+            public List<TypeDescriptor> arguments() {
+                return List.of(type(Number.class), type(Number.class));
+            }
+
+            @Override
+            public Object run(Object... arguments) {
+                Number lhs = (Number) arguments[0];
+                Number rhs = (Number) arguments[1];
+                return rhs.doubleValue() + lhs.doubleValue();
+            }
+        };
     }
 
     @Override
@@ -45,23 +104,58 @@ public class SimpleRuntime implements Runtime {
     }
 
     private void runStatement(Statement statement) {
-         switch (statement) {
-            case Statement.Assignment(var name, var expression) -> variables.put(name, evaluateExpr(expression));
+        switch (statement) {
+            case Statement.Assignment(var name, var expression) -> variables.put(name, new Variable() {
+                @Override
+                public String name() {
+                    return name;
+                }
+
+                @Override
+                public Object value() {
+                    return evaluateExpr(expression);
+                }
+            });
         }
     }
 
     private Object evaluateExpr(Expression expression) {
-        return switch (expression){
+        return switch (expression) {
             case Expression.BinaryOperator operator -> evaluateOperator(
                     operator
             );
-            case Expression.Literal(var literal) -> literal ;
-            case Expression.VariableName(var name) -> variables.get(name);
+            case Expression.Literal(var literal) -> literal;
+            case Expression.VariableName(var name) -> variables.get(name).value();
         };
     }
 
     private Object evaluateOperator(Expression.BinaryOperator operator) {
-        BiFunction<Object, Object, Object> biFunction = Objects.requireNonNull(operators.get(operator.operator()), "Could not find Operator " + operator.operator());
-        return biFunction.apply(evaluateExpr(operator.lhs()), evaluateExpr(operator.rhs()));
+        List<Function> matchingName = functions.get(operator.operator());
+        Object lhs = evaluateExpr(operator.lhs());
+        Object rhs = evaluateExpr(operator.rhs());
+        List<Function> list = matchingName.stream().filter(
+                f -> argumentsFit(f.arguments(), List.of(lhs, rhs)
+                )).toList();
+        assert list.size() == 1;
+        return list.getFirst().run(lhs, rhs);
+    }
+
+    private boolean argumentsFit(List<TypeDescriptor> arguments, List<Object> lhs) {
+        boolean result = arguments.size() == lhs.size();
+        if (result) {
+            for (int i = 0; i < arguments.size() && result; ++i) {
+                TypeDescriptor typeDescriptor = arguments.get(i);
+                Object arg = lhs.get(i);
+                result = matches(typeDescriptor, arg);
+            }
+        }
+        return result;
+    }
+
+    private boolean matches(TypeDescriptor typeDescriptor, Object arg) {
+        return switch (typeDescriptor) {
+            case TypeDescriptor.Type(var t) -> t.isAssignableFrom(arg.getClass());
+            case TypeDescriptor.ListOf(var _) -> List.class.isAssignableFrom(arg.getClass());
+        };
     }
 }
