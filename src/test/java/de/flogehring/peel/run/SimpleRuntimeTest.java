@@ -1,5 +1,7 @@
-package de.flogehring.peel;
+package de.flogehring.peel.run;
 
+import de.flogehring.peel.lang.CodeElement;
+import de.flogehring.peel.lang.Programm;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.Assertions;
 

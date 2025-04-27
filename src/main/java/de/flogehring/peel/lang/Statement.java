@@ -1,4 +1,4 @@
-package de.flogehring.peel;
+package de.flogehring.peel.lang;
 
 public sealed interface Statement extends CodeElement {
 

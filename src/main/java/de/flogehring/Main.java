@@ -1,8 +1,8 @@
 package de.flogehring;
 
-import de.flogehring.peel.CodeElement;
-import de.flogehring.peel.Programm;
-import de.flogehring.peel.SimpleRuntime;
+import de.flogehring.peel.lang.CodeElement;
+import de.flogehring.peel.lang.Programm;
+import de.flogehring.peel.run.SimpleRuntime;
 
 import java.util.List;
 

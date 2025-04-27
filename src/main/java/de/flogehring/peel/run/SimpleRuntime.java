@@ -1,4 +1,9 @@
-package de.flogehring.peel;
+package de.flogehring.peel.run;
+
+import de.flogehring.peel.lang.CodeElement;
+import de.flogehring.peel.lang.Expression;
+import de.flogehring.peel.lang.Programm;
+import de.flogehring.peel.lang.Statement;
 
 import java.util.HashMap;
 import java.util.Map;
