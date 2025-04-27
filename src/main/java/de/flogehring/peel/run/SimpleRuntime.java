@@ -18,6 +18,13 @@ public class SimpleRuntime implements Runtime {
     private final HashMap<String, Variable> variables;
     private final HashMap<String, List<Function>> functions;
 
+    public static SimpleRuntime simpleLang() {
+        SimpleRuntime runtime = new SimpleRuntime();
+        runtime.register(addNumbers());
+        runtime.register(addStrings());
+        return runtime;
+    }
+
     private SimpleRuntime() {
         functions = new HashMap<>();
         variables = new HashMap<>();
@@ -34,15 +41,6 @@ public class SimpleRuntime implements Runtime {
                 lhs.stream(),
                 rhs.stream()
         ).toList());
-
-    }
-
-
-    public static SimpleRuntime simpleLang() {
-        SimpleRuntime runtime = new SimpleRuntime();
-        runtime.register(addNumbers());
-        runtime.register(addStrings());
-        return runtime;
     }
 
     private static Function addStrings() {
@@ -100,7 +98,7 @@ public class SimpleRuntime implements Runtime {
                 }
             };
         }
-        return result.orElseThrow(() -> new RuntimeException("Programm did not contain any top level expression to return"));
+        return result.orElseThrow(() -> new PeelException("Program did not contain any top level expression to return"));
     }
 
     private void runStatement(Statement statement) {
@@ -133,11 +131,33 @@ public class SimpleRuntime implements Runtime {
         List<Function> matchingName = functions.get(operator.operator());
         Object lhs = evaluateExpr(operator.lhs());
         Object rhs = evaluateExpr(operator.rhs());
-        List<Function> list = matchingName.stream().filter(
-                f -> argumentsFit(f.arguments(), List.of(lhs, rhs)
-                )).toList();
-        assert list.size() == 1;
-        return list.getFirst().run(lhs, rhs);
+        List<Function> list = matchingName.stream()
+                .filter(f -> argumentsFit(f.arguments(), List.of(lhs, rhs)))
+                .toList();
+        Function f = requireOneFunction(
+                list,
+                getNoFunctionFoundException(operator, lhs, rhs),
+                getMultipleFunctionsFoundException(operator)
+        );
+        return f.run(lhs, rhs);
+    }
+
+    private static NoFunctionFoundException getNoFunctionFoundException(Expression.BinaryOperator operator, Object lhs, Object rhs) {
+        return new NoFunctionFoundException(operator.operator(), lhs, rhs);
+    }
+
+    private MultipleFunctionsFoundException getMultipleFunctionsFoundException(Expression.BinaryOperator operator) {
+        return new MultipleFunctionsFoundException(operator.operator(), functions.size());
+    }
+
+    private Function requireOneFunction(List<Function> list, NoFunctionFoundException e, MultipleFunctionsFoundException multipleFunctionsFoundException) {
+        if (list.isEmpty()) {
+            throw e;
+        } else if (list.size() > 1) {
+            throw multipleFunctionsFoundException;
+        } else {
+            return list.getFirst();
+        }
     }
 
     private boolean argumentsFit(List<TypeDescriptor> arguments, List<Object> lhs) {
