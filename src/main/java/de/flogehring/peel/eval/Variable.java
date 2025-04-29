@@ -4,5 +4,5 @@ public interface Variable {
 
     String name();
 
-    Object value();
+    EvaluatedExpression value();
 }

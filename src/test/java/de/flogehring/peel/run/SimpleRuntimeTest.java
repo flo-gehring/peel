@@ -1,5 +1,6 @@
 package de.flogehring.peel.run;
 
+import de.flogehring.peel.eval.EvaluatedExpression;
 import de.flogehring.peel.eval.Function;
 import de.flogehring.peel.eval.TypeDescriptor;
 import de.flogehring.peel.eval.Variable;
@@ -25,7 +26,7 @@ public class SimpleRuntimeTest {
                 CodeElement.expr(CodeElement.var("x"), "+", CodeElement.var("y"))
         ));
         SimpleRuntime runtime = SimpleRuntime.simpleLang();
-        Assertions.assertEquals(2.0, runtime.run(p));
+        Assertions.assertEquals(2.0, runtime.run(p).value());
     }
 
     @Test
@@ -36,7 +37,7 @@ public class SimpleRuntimeTest {
                 CodeElement.expr(CodeElement.var("x"), "+", CodeElement.var("y"))
         ));
         SimpleRuntime runtime = SimpleRuntime.simpleLang();
-        Assertions.assertEquals("11", runtime.run(p));
+        Assertions.assertEquals("11", runtime.run(p).value());
     }
 
     @Test
@@ -47,7 +48,7 @@ public class SimpleRuntimeTest {
         SimpleRuntime runtime = SimpleRuntime.simpleLang();
         runtime.register(getVariable("x", "1"));
         runtime.register(getVariable("y", "2"));
-        Assertions.assertEquals("12", runtime.run(p));
+        Assertions.assertEquals("12", runtime.run(p).value());
     }
 
     @Test
@@ -65,10 +66,14 @@ public class SimpleRuntimeTest {
             }
 
             @Override
-            public Object run(Object... arguments) {
-                String lhs = (String) arguments[0];
-                int rhs = (Integer) arguments[1];
-                return repeatString(lhs, rhs);
+            public EvaluatedExpression run(EvaluatedExpression... arguments) {
+                EvaluatedExpression argumentLhs = arguments[0];
+                EvaluatedExpression argumentRhs = arguments[1];
+                String lhs = (String) argumentLhs.value();
+                int rhs = (Integer) argumentRhs.value();
+                return new EvaluatedExpression.BinaryOperator(
+                        "*", type(String.class), repeatString(lhs, rhs), argumentLhs, argumentRhs
+                );
             }
 
             private String repeatString(String lhs, int rhs) {
@@ -80,7 +85,7 @@ public class SimpleRuntimeTest {
         ));
         runtime.register(getVariable("x", "Echo!"));
         runtime.register(getVariable("y", 2));
-        assertThat(runtime.run(p)).isEqualTo("Echo!Echo!");
+        assertThat(runtime.run(p).value()).isEqualTo("Echo!Echo!");
     }
 
     @Test
@@ -98,10 +103,14 @@ public class SimpleRuntimeTest {
             }
 
             @Override
-            public Object run(Object... arguments) {
-                Integer lhs = (Integer) arguments[0];
-                Integer rhs = (Integer) arguments[1];
-                return lhs + rhs;
+            public EvaluatedExpression run(EvaluatedExpression... arguments) {
+                EvaluatedExpression argumentLhs = arguments[0];
+                EvaluatedExpression argumentRhs = arguments[1];
+                Integer lhs = (Integer) argumentLhs.value();
+                Integer rhs = (Integer) argumentRhs.value();
+                return new EvaluatedExpression.BinaryOperator(
+                        "+", type(Integer.class), lhs + rhs, argumentLhs, argumentRhs
+                );
             }
         });
         runtime.register(getVariable("y", 2));
@@ -135,8 +144,11 @@ public class SimpleRuntimeTest {
             }
 
             @Override
-            public Object value() {
-                return value;
+            public EvaluatedExpression value() {
+                return new EvaluatedExpression.Literal(
+                        value,
+                        type(value.getClass())
+                );
             }
         };
     }

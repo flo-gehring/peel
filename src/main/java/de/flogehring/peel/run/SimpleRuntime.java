@@ -1,9 +1,7 @@
 package de.flogehring.peel.run;
 
-import de.flogehring.peel.eval.Function;
+import de.flogehring.peel.eval.*;
 import de.flogehring.peel.eval.Runtime;
-import de.flogehring.peel.eval.TypeDescriptor;
-import de.flogehring.peel.eval.Variable;
 import de.flogehring.peel.lang.CodeElement;
 import de.flogehring.peel.lang.Expression;
 import de.flogehring.peel.lang.Program;
@@ -19,7 +17,7 @@ import static de.flogehring.peel.eval.TypeDescriptor.type;
 
 public class SimpleRuntime implements Runtime {
 
-    private final HashMap<String, Variable> variables;
+    private final HashMap<String, EvaluatedExpression> variables;
     private final HashMap<String, List<Function>> functions;
 
     public static SimpleRuntime simpleLang() {
@@ -36,7 +34,10 @@ public class SimpleRuntime implements Runtime {
 
     @Override
     public void register(Variable v) {
-        variables.put(v.name(), v);
+        variables.put(v.name(), new EvaluatedExpression.VariableName(
+                v.name(),
+                v.value()
+        ));
     }
 
     @Override
@@ -60,10 +61,16 @@ public class SimpleRuntime implements Runtime {
             }
 
             @Override
-            public Object run(Object... arguments) {
-                String lhs = (String) arguments[0];
-                String rhs = (String) arguments[1];
-                return lhs + rhs;
+            public EvaluatedExpression run(EvaluatedExpression... arguments) {
+                String lhs = (String) arguments[0].value();
+                String rhs = (String) arguments[1].value();
+                return new EvaluatedExpression.BinaryOperator(
+                        "+",
+                        type(String.class),
+                        lhs + rhs,
+                        arguments[0],
+                        arguments[1]
+                );
             }
         };
     }
@@ -81,17 +88,24 @@ public class SimpleRuntime implements Runtime {
             }
 
             @Override
-            public Object run(Object... arguments) {
-                Number lhs = (Number) arguments[0];
-                Number rhs = (Number) arguments[1];
-                return rhs.doubleValue() + lhs.doubleValue();
+            public EvaluatedExpression run(EvaluatedExpression... arguments) {
+                EvaluatedExpression lhsExpression = arguments[0];
+                EvaluatedExpression rhsExpression = arguments[1];
+                Number lhs = (Number) lhsExpression.value();
+                Number rhs = (Number) rhsExpression.value();
+                return new EvaluatedExpression.BinaryOperator(
+                        "+",
+                        type(Number.class),
+                        lhs.doubleValue() + rhs.doubleValue(),
+                        lhsExpression, rhsExpression
+                );
             }
         };
     }
 
     @Override
-    public Object run(Program program) {
-        Optional<Object> result = Optional.empty();
+    public EvaluatedExpression run(Program program) {
+        Optional<EvaluatedExpression> result = Optional.empty();
         for (int i = 0; i < program.codeElement().size(); ++i) {
             CodeElement codeElement = program.codeElement().get(i);
             result = switch (codeElement) {
@@ -107,34 +121,25 @@ public class SimpleRuntime implements Runtime {
 
     private void runStatement(Statement statement) {
         switch (statement) {
-            case Statement.Assignment(var name, var expression) -> variables.put(name, new Variable() {
-                @Override
-                public String name() {
-                    return name;
-                }
-
-                @Override
-                public Object value() {
-                    return evaluateExpr(expression);
-                }
-            });
+            case Statement.Assignment(var name, var expression) -> variables.put(name, evaluateExpr(expression));
         }
     }
 
-    private Object evaluateExpr(Expression expression) {
+    private EvaluatedExpression evaluateExpr(Expression expression) {
         return switch (expression) {
             case Expression.BinaryOperator operator -> evaluateOperator(
                     operator
             );
-            case Expression.Literal(var literal) -> literal;
-            case Expression.VariableName(var name) -> variables.get(name).value();
+            case Expression.Literal(var typeDescriptor, var literal) ->
+                    new EvaluatedExpression.Literal(literal, typeDescriptor);
+            case Expression.VariableName(var name) -> variables.get(name);
         };
     }
 
-    private Object evaluateOperator(Expression.BinaryOperator operator) {
+    private EvaluatedExpression evaluateOperator(Expression.BinaryOperator operator) {
         List<Function> matchingName = functions.get(operator.operator());
-        Object lhs = evaluateExpr(operator.lhs());
-        Object rhs = evaluateExpr(operator.rhs());
+        EvaluatedExpression lhs = evaluateExpr(operator.lhs());
+        EvaluatedExpression rhs = evaluateExpr(operator.rhs());
         List<Function> list = matchingName.stream()
                 .filter(f -> argumentsFit(f.arguments(), List.of(lhs, rhs)))
                 .toList();
@@ -164,22 +169,28 @@ public class SimpleRuntime implements Runtime {
         }
     }
 
-    private boolean argumentsFit(List<TypeDescriptor> arguments, List<Object> lhs) {
+    private boolean argumentsFit(List<TypeDescriptor> arguments, List<EvaluatedExpression> lhs) {
         boolean result = arguments.size() == lhs.size();
         if (result) {
             for (int i = 0; i < arguments.size() && result; ++i) {
                 TypeDescriptor typeDescriptor = arguments.get(i);
-                Object arg = lhs.get(i);
+                TypeDescriptor arg = lhs.get(i).type();
                 result = matches(typeDescriptor, arg);
             }
         }
         return result;
     }
 
-    private boolean matches(TypeDescriptor typeDescriptor, Object arg) {
+    private boolean matches(TypeDescriptor typeDescriptor, TypeDescriptor arg) {
         return switch (typeDescriptor) {
-            case TypeDescriptor.Type(var t) -> t.isAssignableFrom(arg.getClass());
-            case TypeDescriptor.ListOf(var _) -> List.class.isAssignableFrom(arg.getClass());
+            case TypeDescriptor.Type(var t) -> switch (arg) {
+                case TypeDescriptor.ListOf<?> _ -> false;
+                case TypeDescriptor.Type(var t2) -> t.isAssignableFrom(t2);
+            };
+            case TypeDescriptor.ListOf(var t1) -> switch (arg) {
+                case TypeDescriptor.ListOf(var t2) -> t1.isAssignableFrom(t2);
+                case TypeDescriptor.Type(var t2) -> false;
+            };
         };
     }
 }

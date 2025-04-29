@@ -8,5 +8,5 @@ public interface Function {
 
     List<TypeDescriptor> arguments();
 
-    Object run(Object... arguments);
+    EvaluatedExpression run(EvaluatedExpression... arguments);
 }
