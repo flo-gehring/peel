@@ -1,5 +1,9 @@
 package de.flogehring.peel.run;
 
+import de.flogehring.peel.eval.Function;
+import de.flogehring.peel.eval.Runtime;
+import de.flogehring.peel.eval.TypeDescriptor;
+import de.flogehring.peel.eval.Variable;
 import de.flogehring.peel.lang.CodeElement;
 import de.flogehring.peel.lang.Expression;
 import de.flogehring.peel.lang.Program;
@@ -11,7 +15,7 @@ import java.util.List;
 import java.util.Optional;
 import java.util.stream.Stream;
 
-import static de.flogehring.peel.run.TypeDescriptor.type;
+import static de.flogehring.peel.eval.TypeDescriptor.type;
 
 public class SimpleRuntime implements Runtime {
 

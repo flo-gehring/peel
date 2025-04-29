@@ -1,5 +1,8 @@
 package de.flogehring.peel.run;
 
+import de.flogehring.peel.eval.Function;
+import de.flogehring.peel.eval.TypeDescriptor;
+import de.flogehring.peel.eval.Variable;
 import de.flogehring.peel.lang.CodeElement;
 import de.flogehring.peel.lang.Program;
 import org.junit.jupiter.api.Test;
@@ -10,7 +13,7 @@ import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
 
 import java.util.List;
 
-import static de.flogehring.peel.run.TypeDescriptor.type;
+import static de.flogehring.peel.eval.TypeDescriptor.type;
 
 public class SimpleRuntimeTest {
 

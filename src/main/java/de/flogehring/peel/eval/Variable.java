@@ -1,4 +1,4 @@
-package de.flogehring.peel.run;
+package de.flogehring.peel.eval;
 
 public interface Variable {
 
