@@ -26,7 +26,7 @@ public class SimpleRuntimeTest {
                 CodeElement.expr(CodeElement.var("x"), "+", CodeElement.var("y"))
         ));
         SimpleRuntime runtime = SimpleRuntime.simpleLang();
-        Assertions.assertEquals(2.0, runtime.run(p).value());
+        Assertions.assertEquals(2.0, runtime.run(p).getLastExpression().value());
     }
 
     @Test
@@ -37,7 +37,7 @@ public class SimpleRuntimeTest {
                 CodeElement.expr(CodeElement.var("x"), "+", CodeElement.var("y"))
         ));
         SimpleRuntime runtime = SimpleRuntime.simpleLang();
-        Assertions.assertEquals("11", runtime.run(p).value());
+        Assertions.assertEquals("11", runtime.run(p).getLastExpression().value());
     }
 
     @Test
@@ -48,7 +48,7 @@ public class SimpleRuntimeTest {
         SimpleRuntime runtime = SimpleRuntime.simpleLang();
         runtime.register(getVariable("x", "1"));
         runtime.register(getVariable("y", "2"));
-        Assertions.assertEquals("12", runtime.run(p).value());
+        Assertions.assertEquals("12", runtime.run(p).getLastExpression().value());
     }
 
     @Test
@@ -85,7 +85,7 @@ public class SimpleRuntimeTest {
         ));
         runtime.register(getVariable("x", "Echo!"));
         runtime.register(getVariable("y", 2));
-        assertThat(runtime.run(p).value()).isEqualTo("Echo!Echo!");
+        assertThat(runtime.run(p).getLastExpression().value()).isEqualTo("Echo!Echo!");
     }
 
     @Test

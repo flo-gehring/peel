@@ -8,7 +8,5 @@ public interface Runtime {
 
     void register(Function f);
 
-    // TODO:
-    // Should the result be an EvaluatedExpression or something with more info? Like a "VariableStore"
-    EvaluatedExpression run(Program program);
+    EvaluatedProgram run(Program program);
 }

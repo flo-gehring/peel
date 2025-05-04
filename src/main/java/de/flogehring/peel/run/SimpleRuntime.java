@@ -1,7 +1,7 @@
 package de.flogehring.peel.run;
 
-import de.flogehring.peel.eval.*;
 import de.flogehring.peel.eval.Runtime;
+import de.flogehring.peel.eval.*;
 import de.flogehring.peel.lang.CodeElement;
 import de.flogehring.peel.lang.Expression;
 import de.flogehring.peel.lang.Program;
@@ -10,7 +10,6 @@ import de.flogehring.peel.lang.Statement;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
-import java.util.Optional;
 import java.util.stream.Stream;
 
 import static de.flogehring.peel.eval.TypeDescriptor.type;
@@ -104,25 +103,29 @@ public class SimpleRuntime implements Runtime {
     }
 
     @Override
-    public EvaluatedExpression run(Program program) {
-        Optional<EvaluatedExpression> result = Optional.empty();
+    public EvaluatedProgram run(Program program) {
+        List<EvaluatedCodeElement> evaluatedCodeElements = new ArrayList<>(program.codeElement().size());
         for (int i = 0; i < program.codeElement().size(); ++i) {
             CodeElement codeElement = program.codeElement().get(i);
-            result = switch (codeElement) {
-                case Expression expression -> Optional.of(evaluateExpr(expression));
-                case Statement statement -> {
-                    runStatement(statement);
-                    yield Optional.empty();
-                }
+            EvaluatedCodeElement evaluatedCodeElement = switch (codeElement) {
+                case Expression expression -> evaluateExpr(expression);
+                case Statement statement -> runStatement(statement);
             };
+            evaluatedCodeElements.add(evaluatedCodeElement);
         }
-        return result.orElseThrow(() -> new PeelException("Program did not contain any top level expression to return"));
+        return new EvaluatedProgram(evaluatedCodeElements);
     }
 
-    private void runStatement(Statement statement) {
-        switch (statement) {
-            case Statement.Assignment(var name, var expression) -> variables.put(name, evaluateExpr(expression));
-        }
+    private EvaluatedStatement runStatement(Statement statement) {
+        return switch (statement) {
+            case Statement.Assignment(var name, var expression) -> {
+                EvaluatedExpression value = evaluateExpr(expression);
+                variables.put(name, value);
+                yield new EvaluatedStatement.Assignment(
+                        name, value
+                );
+            }
+        };
     }
 
     private EvaluatedExpression evaluateExpr(Expression expression) {
@@ -189,7 +192,7 @@ public class SimpleRuntime implements Runtime {
             };
             case TypeDescriptor.ListOf(var t1) -> switch (arg) {
                 case TypeDescriptor.ListOf(var t2) -> t1.isAssignableFrom(t2);
-                case TypeDescriptor.Type(var t2) -> false;
+                case TypeDescriptor.Type(var _) -> false;
             };
         };
     }

@@ -1,8 +1,6 @@
 package de.flogehring.peel.eval;
 
-import de.flogehring.peel.lang.Expression;
-
-public sealed interface EvaluatedExpression {
+public sealed interface EvaluatedExpression extends EvaluatedCodeElement {
 
     Object value();
 
