@@ -11,6 +11,5 @@ public sealed interface TypeDescriptor {
     }
 
     record ListOf<T>(Class<T> type) implements TypeDescriptor {
-
     }
 }

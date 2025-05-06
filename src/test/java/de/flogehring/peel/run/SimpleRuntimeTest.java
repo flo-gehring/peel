@@ -4,15 +4,14 @@ import de.flogehring.peel.eval.*;
 import de.flogehring.peel.lang.CodeElement;
 import de.flogehring.peel.lang.Expression;
 import de.flogehring.peel.lang.Program;
-import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.Assertions;
-
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
+import org.junit.jupiter.api.Test;
 
 import java.util.List;
 
 import static de.flogehring.peel.eval.TypeDescriptor.type;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
 
 public class SimpleRuntimeTest {
 

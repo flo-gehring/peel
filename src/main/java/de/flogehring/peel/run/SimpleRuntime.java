@@ -8,12 +8,9 @@ import de.flogehring.peel.lang.Program;
 import de.flogehring.peel.lang.Statement;
 
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.stream.Stream;
-
-import static de.flogehring.peel.eval.TypeDescriptor.type;
 
 public class SimpleRuntime implements Runtime {
 
@@ -50,94 +47,32 @@ public class SimpleRuntime implements Runtime {
     }
 
     private static Function addStrings() {
-        return new Function() {
-            @Override
-            public String name() {
-                return "+";
-            }
 
-            @Override
-            public List<TypeDescriptor> arguments() {
-                return List.of(type(String.class), type(String.class));
-            }
-
-            @Override
-            public EvaluatedExpression run(EvaluatedExpression... arguments) {
-                String lhs = (String) arguments[0].value();
-                String rhs = (String) arguments[1].value();
-                return new EvaluatedExpression.BinaryOperator(
-                        "+",
-                        type(String.class),
-                        lhs + rhs,
-                        arguments[0],
-                        arguments[1]
-                );
-            }
-        };
+        return FunctionFactory.binary(
+                "+",
+                String.class, String.class, String.class, (lhs, rhs) -> lhs + rhs
+        );
     }
 
     private static Function countSubstring() {
-        return new Function() {
-            @Override
-            public String name() {
-                return "count";
-            }
-
-            @Override
-            public List<TypeDescriptor> arguments() {
-                return List.of(
-                        type(String.class),
-                        type(String.class)
-                );
-            }
-
-            @Override
-            public EvaluatedExpression run(EvaluatedExpression... arguments) {
-                EvaluatedExpression lhsExpression = arguments[0];
-                EvaluatedExpression rhsExpression = arguments[1];
-                String lhs = (String) lhsExpression.value();
-                String rhs = (String) rhsExpression.value();
-                int occurences = 0;
-                while (lhs.contains(rhs)) {
-                    occurences++;
-                    lhs = lhs.replaceFirst(rhs, "");
+        return FunctionFactory.binary(
+                "count",
+                String.class, String.class, Number.class, (lhs, rhs) -> {
+                    int occurences = 0;
+                    while (lhs.contains(rhs)) {
+                        occurences++;
+                        lhs = lhs.replaceFirst(rhs, "");
+                    }
+                    return occurences;
                 }
-                return new EvaluatedExpression.FunctionCall(
-                        "count",
-                        type(Number.class),
-                        occurences,
-                        Arrays.stream(arguments).toList()
-                );
-            }
-        };
+        );
     }
 
     private static Function addNumbers() {
-        return new Function() {
-            @Override
-            public String name() {
-                return "+";
-            }
-
-            @Override
-            public List<TypeDescriptor> arguments() {
-                return List.of(type(Number.class), type(Number.class));
-            }
-
-            @Override
-            public EvaluatedExpression run(EvaluatedExpression... arguments) {
-                EvaluatedExpression lhsExpression = arguments[0];
-                EvaluatedExpression rhsExpression = arguments[1];
-                Number lhs = (Number) lhsExpression.value();
-                Number rhs = (Number) rhsExpression.value();
-                return new EvaluatedExpression.BinaryOperator(
-                        "+",
-                        type(Number.class),
-                        lhs.doubleValue() + rhs.doubleValue(),
-                        lhsExpression, rhsExpression
-                );
-            }
-        };
+        return FunctionFactory.binary(
+                "+",
+                Number.class, Number.class, Number.class, (lhs, rhs) -> lhs.doubleValue() + rhs.doubleValue()
+        );
     }
 
     @Override
