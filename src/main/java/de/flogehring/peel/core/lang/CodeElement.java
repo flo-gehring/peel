@@ -1,6 +1,6 @@
-package de.flogehring.peel.lang;
+package de.flogehring.peel.core.lang;
 
-import static de.flogehring.peel.eval.TypeDescriptor.type;
+import static de.flogehring.peel.core.TypeDescriptor.type;
 import static de.flogehring.peel.util.GenericChecker.isGeneric;
 
 public sealed interface CodeElement permits Expression, Statement {

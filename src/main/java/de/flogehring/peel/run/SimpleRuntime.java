@@ -1,11 +1,12 @@
 package de.flogehring.peel.run;
 
-import de.flogehring.peel.eval.Runtime;
-import de.flogehring.peel.eval.*;
-import de.flogehring.peel.lang.CodeElement;
-import de.flogehring.peel.lang.Expression;
-import de.flogehring.peel.lang.Program;
-import de.flogehring.peel.lang.Statement;
+import de.flogehring.peel.core.*;
+import de.flogehring.peel.core.eval.*;
+import de.flogehring.peel.core.eval.Runtime;
+import de.flogehring.peel.core.lang.CodeElement;
+import de.flogehring.peel.core.lang.Expression;
+import de.flogehring.peel.core.lang.Program;
+import de.flogehring.peel.core.lang.Statement;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -17,12 +18,8 @@ public class SimpleRuntime implements Runtime {
     private final HashMap<String, EvaluatedExpression> variables;
     private final HashMap<String, List<Function>> functions;
 
-    public static SimpleRuntime simpleLang() {
-        SimpleRuntime runtime = new SimpleRuntime();
-        runtime.register(addNumbers());
-        runtime.register(addStrings());
-        runtime.register(countSubstring());
-        return runtime;
+    public static SimpleRuntime empty() {
+        return new SimpleRuntime();
     }
 
     private SimpleRuntime() {
@@ -44,35 +41,6 @@ public class SimpleRuntime implements Runtime {
                 lhs.stream(),
                 rhs.stream()
         ).toList());
-    }
-
-    private static Function addStrings() {
-
-        return FunctionFactory.binary(
-                "+",
-                String.class, String.class, String.class, (lhs, rhs) -> lhs + rhs
-        );
-    }
-
-    private static Function countSubstring() {
-        return FunctionFactory.binary(
-                "count",
-                String.class, String.class, Number.class, (lhs, rhs) -> {
-                    int occurences = 0;
-                    while (lhs.contains(rhs)) {
-                        occurences++;
-                        lhs = lhs.replaceFirst(rhs, "");
-                    }
-                    return occurences;
-                }
-        );
-    }
-
-    private static Function addNumbers() {
-        return FunctionFactory.binary(
-                "+",
-                Number.class, Number.class, Number.class, (lhs, rhs) -> lhs.doubleValue() + rhs.doubleValue()
-        );
     }
 
     @Override

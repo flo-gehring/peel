@@ -1,4 +1,4 @@
-package de.flogehring.peel.lang;
+package de.flogehring.peel.core.lang;
 
 import java.util.List;
 

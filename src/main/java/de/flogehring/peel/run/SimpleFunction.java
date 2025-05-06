@@ -1,8 +1,8 @@
 package de.flogehring.peel.run;
 
-import de.flogehring.peel.eval.EvaluatedExpression;
-import de.flogehring.peel.eval.Function;
-import de.flogehring.peel.eval.TypeDescriptor;
+import de.flogehring.peel.core.eval.EvaluatedExpression;
+import de.flogehring.peel.core.eval.Function;
+import de.flogehring.peel.core.TypeDescriptor;
 
 import java.util.Arrays;
 import java.util.List;

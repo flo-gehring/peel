@@ -1,6 +1,6 @@
-package de.flogehring.peel.lang;
+package de.flogehring.peel.core.lang;
 
-import de.flogehring.peel.eval.TypeDescriptor;
+import de.flogehring.peel.core.TypeDescriptor;
 
 import java.util.List;
 

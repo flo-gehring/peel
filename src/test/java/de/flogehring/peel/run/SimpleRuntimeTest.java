@@ -1,15 +1,20 @@
 package de.flogehring.peel.run;
 
-import de.flogehring.peel.eval.*;
-import de.flogehring.peel.lang.CodeElement;
-import de.flogehring.peel.lang.Expression;
-import de.flogehring.peel.lang.Program;
+import de.flogehring.peel.convenience.RuntimeFactory;
+import de.flogehring.peel.core.lang.Program;
+import de.flogehring.peel.core.TypeDescriptor;
+import de.flogehring.peel.core.eval.EvaluatedExpression;
+import de.flogehring.peel.core.eval.EvaluatedProgram;
+import de.flogehring.peel.core.eval.Function;
+import de.flogehring.peel.core.eval.Variable;
+import de.flogehring.peel.core.lang.CodeElement;
+import de.flogehring.peel.core.lang.Expression;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 
 import java.util.List;
 
-import static de.flogehring.peel.eval.TypeDescriptor.type;
+import static de.flogehring.peel.core.TypeDescriptor.type;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
 
@@ -22,7 +27,7 @@ public class SimpleRuntimeTest {
                 CodeElement.assign("y", CodeElement.literal(1)),
                 CodeElement.expr(CodeElement.var("x"), "+", CodeElement.var("y"))
         ));
-        SimpleRuntime runtime = SimpleRuntime.simpleLang();
+        SimpleRuntime runtime = RuntimeFactory.defaultLanguage();
         Assertions.assertEquals(2.0, runtime.run(p).getLastExpression().value());
     }
 
@@ -33,7 +38,7 @@ public class SimpleRuntimeTest {
                 CodeElement.assign("y", CodeElement.literal("1")),
                 CodeElement.expr(CodeElement.var("x"), "+", CodeElement.var("y"))
         ));
-        SimpleRuntime runtime = SimpleRuntime.simpleLang();
+        SimpleRuntime runtime = RuntimeFactory.defaultLanguage();
         Assertions.assertEquals("11", runtime.run(p).getLastExpression().value());
     }
 
@@ -42,7 +47,7 @@ public class SimpleRuntimeTest {
         Program p = new Program(List.of(
                 CodeElement.expr(CodeElement.var("x"), "+", CodeElement.var("y"))
         ));
-        SimpleRuntime runtime = SimpleRuntime.simpleLang();
+        SimpleRuntime runtime = RuntimeFactory.defaultLanguage();
         runtime.register(getVariable("x", "1"));
         runtime.register(getVariable("y", "2"));
         Assertions.assertEquals("12", runtime.run(p).getLastExpression().value());
@@ -50,7 +55,7 @@ public class SimpleRuntimeTest {
 
     @Test
     void registerOperator() {
-        SimpleRuntime runtime = SimpleRuntime.simpleLang();
+        SimpleRuntime runtime = RuntimeFactory.defaultLanguage();
         runtime.register(new Function() {
             @Override
             public String name() {
@@ -94,13 +99,13 @@ public class SimpleRuntimeTest {
                                 new Expression.Literal(type(String.class), "l")
                         )))
         );
-        EvaluatedProgram evaluatedProgram = SimpleRuntime.simpleLang().run(p);
+        EvaluatedProgram evaluatedProgram = RuntimeFactory.defaultLanguage().run(p);
         assertThat(evaluatedProgram.getLastExpression().value()).isEqualTo(2);
     }
 
     @Test
     void multipleOperatorDefinitions() {
-        SimpleRuntime runtime = SimpleRuntime.simpleLang();
+        SimpleRuntime runtime = RuntimeFactory.defaultLanguage();
         runtime.register(new Function() {
             @Override
             public String name() {
@@ -135,7 +140,7 @@ public class SimpleRuntimeTest {
 
     @Test
     void noFunctionDefinitions() {
-        SimpleRuntime runtime = SimpleRuntime.simpleLang();
+        SimpleRuntime runtime = RuntimeFactory.defaultLanguage();
         runtime.register(getVariable("y", new Object()));
         runtime.register(getVariable("x", new Object()));
         Program p = new Program(List.of(

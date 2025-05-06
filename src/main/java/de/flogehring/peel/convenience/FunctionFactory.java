@@ -1,12 +1,13 @@
-package de.flogehring.peel.run;
+package de.flogehring.peel.convenience;
 
-import de.flogehring.peel.eval.Function;
+import de.flogehring.peel.core.eval.Function;
+import de.flogehring.peel.run.SimpleFunction;
 
 import java.util.List;
 import java.util.function.BiFunction;
 import java.util.function.UnaryOperator;
 
-import static de.flogehring.peel.eval.TypeDescriptor.type;
+import static de.flogehring.peel.core.TypeDescriptor.type;
 
 public class FunctionFactory {
 

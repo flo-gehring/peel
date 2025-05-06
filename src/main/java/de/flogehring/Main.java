@@ -1,7 +1,8 @@
 package de.flogehring;
 
-import de.flogehring.peel.lang.CodeElement;
-import de.flogehring.peel.lang.Program;
+import de.flogehring.peel.convenience.RuntimeFactory;
+import de.flogehring.peel.core.lang.CodeElement;
+import de.flogehring.peel.core.lang.Program;
 import de.flogehring.peel.run.SimpleRuntime;
 
 import java.util.List;
@@ -19,7 +20,7 @@ public class Main {
                 CodeElement.assign("y", CodeElement.literal(1)),
                 CodeElement.expr(CodeElement.var("x"), "+", CodeElement.var("y"))
         ));
-        SimpleRuntime runtime = SimpleRuntime.simpleLang();
+        SimpleRuntime runtime = RuntimeFactory.defaultLanguage();
         System.out.println(runtime.run(p));
     }
 }

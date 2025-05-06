@@ -1,4 +1,4 @@
-package de.flogehring.peel.eval;
+package de.flogehring.peel.core;
 
 public sealed interface TypeDescriptor {
 

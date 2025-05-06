@@ -1,6 +1,6 @@
-package de.flogehring.peel.eval;
+package de.flogehring.peel.core.eval;
 
-import de.flogehring.peel.lang.Program;
+import de.flogehring.peel.core.lang.Program;
 
 public interface Runtime {
 
