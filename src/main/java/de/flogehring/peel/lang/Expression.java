@@ -2,6 +2,8 @@ package de.flogehring.peel.lang;
 
 import de.flogehring.peel.eval.TypeDescriptor;
 
+import java.util.List;
+
 public sealed interface Expression extends CodeElement {
 
     // TODO Now the Type Descriptor is part of the language, this is weird. Can this be avoided?
@@ -12,5 +14,12 @@ public sealed interface Expression extends CodeElement {
     }
 
     record VariableName(String name) implements Expression {
+    }
+
+    record FunctionCall(
+            String functionName,
+            List<Expression> arguments
+    ) implements Expression{
+
     }
 }

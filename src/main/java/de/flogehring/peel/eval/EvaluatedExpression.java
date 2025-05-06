@@ -1,5 +1,7 @@
 package de.flogehring.peel.eval;
 
+import java.util.List;
+
 public sealed interface EvaluatedExpression extends EvaluatedCodeElement {
 
     Object value();
@@ -26,6 +28,7 @@ public sealed interface EvaluatedExpression extends EvaluatedCodeElement {
             EvaluatedExpression backingExpression
     ) implements EvaluatedExpression {
         @Override
+
         public TypeDescriptor type() {
             return backingExpression.type();
         }
@@ -34,5 +37,14 @@ public sealed interface EvaluatedExpression extends EvaluatedCodeElement {
         public Object value() {
             return backingExpression.value();
         }
+    }
+
+    record FunctionCall(
+            String name,
+            TypeDescriptor type,
+            Object value,
+            List<EvaluatedExpression> arguments
+    ) implements EvaluatedExpression {
+
     }
 }

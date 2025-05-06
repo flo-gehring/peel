@@ -1,10 +1,8 @@
 package de.flogehring.peel.run;
 
-import de.flogehring.peel.eval.EvaluatedExpression;
-import de.flogehring.peel.eval.Function;
-import de.flogehring.peel.eval.TypeDescriptor;
-import de.flogehring.peel.eval.Variable;
+import de.flogehring.peel.eval.*;
 import de.flogehring.peel.lang.CodeElement;
+import de.flogehring.peel.lang.Expression;
 import de.flogehring.peel.lang.Program;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.Assertions;
@@ -52,7 +50,7 @@ public class SimpleRuntimeTest {
     }
 
     @Test
-    void registerFunctions() {
+    void registerOperator() {
         SimpleRuntime runtime = SimpleRuntime.simpleLang();
         runtime.register(new Function() {
             @Override
@@ -89,7 +87,20 @@ public class SimpleRuntimeTest {
     }
 
     @Test
-    void multipleFunctionDefinitions() {
+    void functionCall() {
+        Program p = new Program(List.of(
+                new Expression.FunctionCall(
+                        "count",
+                        List.of(new Expression.Literal(type(String.class), "hello"),
+                                new Expression.Literal(type(String.class), "l")
+                        )))
+        );
+        EvaluatedProgram evaluatedProgram = SimpleRuntime.simpleLang().run(p);
+        assertThat(evaluatedProgram.getLastExpression().value()).isEqualTo(2);
+    }
+
+    @Test
+    void multipleOperatorDefinitions() {
         SimpleRuntime runtime = SimpleRuntime.simpleLang();
         runtime.register(new Function() {
             @Override

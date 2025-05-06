@@ -8,6 +8,7 @@ import de.flogehring.peel.lang.Program;
 import de.flogehring.peel.lang.Statement;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.stream.Stream;
@@ -23,6 +24,7 @@ public class SimpleRuntime implements Runtime {
         SimpleRuntime runtime = new SimpleRuntime();
         runtime.register(addNumbers());
         runtime.register(addStrings());
+        runtime.register(countSubstring());
         return runtime;
     }
 
@@ -69,6 +71,42 @@ public class SimpleRuntime implements Runtime {
                         lhs + rhs,
                         arguments[0],
                         arguments[1]
+                );
+            }
+        };
+    }
+
+    private static Function countSubstring() {
+        return new Function() {
+            @Override
+            public String name() {
+                return "count";
+            }
+
+            @Override
+            public List<TypeDescriptor> arguments() {
+                return List.of(
+                        type(String.class),
+                        type(String.class)
+                );
+            }
+
+            @Override
+            public EvaluatedExpression run(EvaluatedExpression... arguments) {
+                EvaluatedExpression lhsExpression = arguments[0];
+                EvaluatedExpression rhsExpression = arguments[1];
+                String lhs = (String) lhsExpression.value();
+                String rhs = (String) rhsExpression.value();
+                int occurences = 0;
+                while (lhs.contains(rhs)) {
+                    occurences++;
+                    lhs = lhs.replaceFirst(rhs, "");
+                }
+                return new EvaluatedExpression.FunctionCall(
+                        "count",
+                        type(Number.class),
+                        occurences,
+                        Arrays.stream(arguments).toList()
                 );
             }
         };
@@ -136,7 +174,24 @@ public class SimpleRuntime implements Runtime {
             case Expression.Literal(var typeDescriptor, var literal) ->
                     new EvaluatedExpression.Literal(literal, typeDescriptor);
             case Expression.VariableName(var name) -> variables.get(name);
+            case Expression.FunctionCall functionCall -> evaluateFunction(functionCall);
         };
+    }
+
+    private EvaluatedExpression evaluateFunction(Expression.FunctionCall functionCall) {
+        List<EvaluatedExpression> arguments = functionCall.arguments().stream()
+                .map(this::evaluateExpr)
+                .toList();
+        List<Function> matchingName = functions.get(functionCall.functionName());
+        List<Function> list = matchingName.stream()
+                .filter(f -> argumentsFit(f.arguments(), arguments))
+                .toList();
+        Function f = requireOneFunction(
+                list,
+                getNoFunctionFoundException(functionCall.functionName(), arguments.toArray()),
+                getMultipleFunctionsFoundException(functionCall.functionName(), list)
+        );
+        return f.run(arguments.toArray(new EvaluatedExpression[0]));
     }
 
     private EvaluatedExpression evaluateOperator(Expression.BinaryOperator operator) {
@@ -148,18 +203,18 @@ public class SimpleRuntime implements Runtime {
                 .toList();
         Function f = requireOneFunction(
                 list,
-                getNoFunctionFoundException(operator, lhs, rhs),
-                getMultipleFunctionsFoundException(operator)
+                getNoFunctionFoundException(operator.operator(), lhs, rhs),
+                getMultipleFunctionsFoundException(operator.operator(), list)
         );
         return f.run(lhs, rhs);
     }
 
-    private static NoFunctionFoundException getNoFunctionFoundException(Expression.BinaryOperator operator, Object lhs, Object rhs) {
-        return new NoFunctionFoundException(operator.operator(), lhs, rhs);
+    private static NoFunctionFoundException getNoFunctionFoundException(String operator, Object... arguments) {
+        return new NoFunctionFoundException(operator, arguments);
     }
 
-    private MultipleFunctionsFoundException getMultipleFunctionsFoundException(Expression.BinaryOperator operator) {
-        return new MultipleFunctionsFoundException(operator.operator(), functions.size());
+    private MultipleFunctionsFoundException getMultipleFunctionsFoundException(String operator, List<Function> list) {
+        return new MultipleFunctionsFoundException(operator, list.size());
     }
 
     private Function requireOneFunction(List<Function> list, NoFunctionFoundException e, MultipleFunctionsFoundException multipleFunctionsFoundException) {
