@@ -145,12 +145,12 @@ public class SimpleRuntime implements Runtime {
     private boolean matches(TypeDescriptor typeDescriptor, TypeDescriptor arg) {
         return switch (typeDescriptor) {
             case TypeDescriptor.Type(var t) -> switch (arg) {
-                case TypeDescriptor.ListOf<?> _ -> false;
+                case TypeDescriptor.ListOf<?> ignored -> false;
                 case TypeDescriptor.Type(var t2) -> t.isAssignableFrom(t2);
             };
             case TypeDescriptor.ListOf(var t1) -> switch (arg) {
                 case TypeDescriptor.ListOf(var t2) -> t1.isAssignableFrom(t2);
-                case TypeDescriptor.Type(var _) -> false;
+                case TypeDescriptor.Type(var ignored) -> false;
             };
         };
     }

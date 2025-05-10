@@ -8,6 +8,7 @@
         <option name="gradleHome" value="" />
         <option name="modules">
           <set>
+            <option value="$PROJECT_DIR$/../jetpackparser/jetpackparser" />
             <option value="$PROJECT_DIR$" />
           </set>
         </option>

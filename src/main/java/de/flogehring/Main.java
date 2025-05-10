@@ -3,6 +3,7 @@ package de.flogehring;
 import de.flogehring.peel.convenience.RuntimeFactory;
 import de.flogehring.peel.core.lang.CodeElement;
 import de.flogehring.peel.core.lang.Program;
+import de.flogehring.peel.parse.PeelGrammar;
 import de.flogehring.peel.run.SimpleRuntime;
 
 import java.util.List;
@@ -22,5 +23,11 @@ public class Main {
         ));
         SimpleRuntime runtime = RuntimeFactory.defaultLanguage();
         System.out.println(runtime.run(p));
+        Program parse = PeelGrammar.parse("""
+         a = 1 + 2
+         b = 5 + 2
+         a + b
+        """);
+        System.out.println(runtime.run(parse));
     }
 }
