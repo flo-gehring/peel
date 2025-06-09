@@ -1,7 +1,7 @@
 package de.flogehring.peel.parse;
 
-import de.flogehring.jetpack.annotationmapper.Delegate;
-import de.flogehring.jetpack.annotationmapper.FromRule;
+import de.friendlyhedgehog.jetpack.annotationmapper.Delegate;
+import de.friendlyhedgehog.jetpack.annotationmapper.FromRule;
 import de.flogehring.peel.core.lang.CodeElement;
 import de.flogehring.peel.core.lang.Expression;
 

@@ -14,9 +14,6 @@ repositories {
     mavenCentral()
 }
 
-
-
-
 dependencies {
     implementation(project(":jetpackparser"))
     testImplementation(platform("org.junit:junit-bom:5.10.0"))

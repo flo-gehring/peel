@@ -1,9 +1,9 @@
 package de.flogehring.peel.parse;
 
-import de.flogehring.jetpack.annotationmapper.FromChild;
-import de.flogehring.jetpack.annotationmapper.FromRule;
-import de.flogehring.jetpack.annotationmapper.creationstrategies.CreationStrategyConstructor;
-import de.flogehring.jetpack.annotationmapper.creationstrategies.CreatorConstructor;
+import de.friendlyhedgehog.jetpack.annotationmapper.FromChild;
+import de.friendlyhedgehog.jetpack.annotationmapper.FromRule;
+import de.friendlyhedgehog.jetpack.annotationmapper.creationstrategies.CreationStrategyConstructor;
+import de.friendlyhedgehog.jetpack.annotationmapper.creationstrategies.CreatorConstructor;
 import de.flogehring.peel.core.lang.CodeElement;
 import de.flogehring.peel.core.lang.Statement;
 

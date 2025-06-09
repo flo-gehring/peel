@@ -1,9 +1,9 @@
 package de.flogehring.peel.parse;
 
-import de.flogehring.jetpack.annotationmapper.Mapper;
-import de.flogehring.jetpack.datatypes.Node;
-import de.flogehring.jetpack.grammar.Symbol;
-import de.flogehring.jetpack.parse.Grammar;
+import de.friendlyhedgehog.jetpack.annotationmapper.Mapper;
+import de.friendlyhedgehog.jetpack.datatypes.Node;
+import de.friendlyhedgehog.jetpack.grammar.Symbol;
+import de.friendlyhedgehog.jetpack.parse.Grammar;
 import de.flogehring.peel.core.lang.Program;
 
 public class PeelGrammar {
