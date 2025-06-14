@@ -9,7 +9,8 @@ import de.flogehring.peel.core.lang.Program;
 public class PeelGrammar {
 
     private static final String GRAMMAR_DEFINITION = """
-            Program  <- CodeElement+
+            Program  <- CodeElements
+            CodeElements <- CodeElement+
             CodeElement <- Statement / Expression
             Statement <- Assignment
             Expression <- BinaryOperator / Literal / Variable

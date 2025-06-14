@@ -8,8 +8,6 @@ import de.flogehring.peel.run.SimpleRuntime;
 
 import java.util.List;
 
-//TIP To <b>Run</b> code, press <shortcut actionId="Run"/> or
-// click the <icon src="AllIcons.Actions.Execute"/> icon in the gutter.
 public class Main {
     public static void main(String[] args) {
         //TIP Press <shortcut actionId="ShowIntentionActions"/> with your caret at the highlighted text
@@ -24,10 +22,10 @@ public class Main {
         SimpleRuntime runtime = RuntimeFactory.defaultLanguage();
         System.out.println(runtime.run(p));
         Program parse = PeelGrammar.parse("""
-         a = 1 + 2
-         b = 5 + 2
-         a + b
-        """);
+                 a = 1 + 2
+                 b = 5 + 2
+                 a + b
+                """);
         System.out.println(runtime.run(parse));
     }
 }
