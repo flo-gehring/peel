@@ -1,7 +1,8 @@
 package de.flogehring.peel.core.lang;
 
-import static de.flogehring.peel.core.TypeDescriptor.type;
-import static de.flogehring.peel.util.GenericChecker.isGeneric;
+import de.flogehring.peel.core.types.Number;
+import de.flogehring.peel.core.types.Text;
+import de.flogehring.peel.core.values.PeelValue;
 
 public sealed interface CodeElement permits Expression, Statement {
 
@@ -9,11 +10,14 @@ public sealed interface CodeElement permits Expression, Statement {
         return new Expression.BinaryOperator(op, lhs, rhs);
     }
 
-    static Expression.Literal literal(Object literal) {
-        if (isGeneric(literal)) {
-            throw new RuntimeException("Can't automatically infer correct Type info of " + literal.getClass().getName());
-        }
-        return new Expression.Literal(type(literal.getClass()), literal);
+    static Expression.Literal integer(Integer literal) {
+
+        return new Expression.Literal(new PeelValue.Primitive(new Number.Integer(), literal));
+    }
+
+    static Expression.Literal string(String s) {
+        return new Expression.Literal(new PeelValue.Primitive(new Text(), s));
+
     }
 
     static Expression.VariableName var(String name) {

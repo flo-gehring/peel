@@ -1,12 +1,13 @@
 package de.flogehring.peel.run;
 
-import de.flogehring.peel.core.*;
 import de.flogehring.peel.core.eval.*;
 import de.flogehring.peel.core.eval.Runtime;
 import de.flogehring.peel.core.lang.CodeElement;
 import de.flogehring.peel.core.lang.Expression;
 import de.flogehring.peel.core.lang.Program;
 import de.flogehring.peel.core.lang.Statement;
+import de.flogehring.peel.core.types.*;
+import de.flogehring.peel.core.types.Number;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -74,8 +75,7 @@ public class SimpleRuntime implements Runtime {
             case Expression.BinaryOperator operator -> evaluateOperator(
                     operator
             );
-            case Expression.Literal(var typeDescriptor, var literal) ->
-                    new EvaluatedExpression.Literal(literal, typeDescriptor);
+            case Expression.Literal(var value) -> new EvaluatedExpression.Literal(value);
             case Expression.VariableName(var name) -> variables.get(name);
             case Expression.FunctionCall functionCall -> evaluateFunction(functionCall);
         };
@@ -130,28 +130,39 @@ public class SimpleRuntime implements Runtime {
         }
     }
 
-    private boolean argumentsFit(List<TypeDescriptor> arguments, List<EvaluatedExpression> lhs) {
+    private boolean argumentsFit(List<PeelTypes> arguments, List<EvaluatedExpression> lhs) {
         boolean result = arguments.size() == lhs.size();
         if (result) {
             for (int i = 0; i < arguments.size() && result; ++i) {
-                TypeDescriptor typeDescriptor = arguments.get(i);
-                TypeDescriptor arg = lhs.get(i).type();
-                result = matches(typeDescriptor, arg);
+                PeelTypes peelTypes = arguments.get(i);
+                PeelTypes arg = lhs.get(i).value().type();
+                result = matches(peelTypes, arg);
             }
         }
         return result;
     }
 
-    private boolean matches(TypeDescriptor typeDescriptor, TypeDescriptor arg) {
-        return switch (typeDescriptor) {
-            case TypeDescriptor.Type(var t) -> switch (arg) {
-                case TypeDescriptor.ListOf<?> ignored -> false;
-                case TypeDescriptor.Type(var t2) -> t.isAssignableFrom(t2);
+    private boolean matches(PeelTypes peelTypes, PeelTypes arg) {
+        return switch (peelTypes) {
+            case Primitives primitives -> switch (primitives) {
+                case Bool() -> arg instanceof Bool;
+                case Number numberType when arg instanceof Number argNumber -> matchNumber(numberType, argNumber);
+                case Text _ -> arg instanceof Text;
+                case Number _ -> false;
             };
-            case TypeDescriptor.ListOf(var t1) -> switch (arg) {
-                case TypeDescriptor.ListOf(var t2) -> t1.isAssignableFrom(t2);
-                case TypeDescriptor.Type(var ignored) -> false;
+            case Collection collection -> switch (collection) {
+                case Map _ -> arg instanceof Map;
+                case de.flogehring.peel.core.types.List _ -> arg instanceof de.flogehring.peel.core.types.List;
             };
+        };
+    }
+
+    private boolean matchNumber(Number numberType, Number argNumber) {
+        return switch (numberType) {
+            case Number.Complex _ -> argNumber instanceof Number.Complex;
+            case Number.Decimal _ -> argNumber instanceof Number.Decimal;
+            case Number.Float _ -> argNumber instanceof Number.Float;
+            case Number.Integer _ -> argNumber instanceof Number.Integer;
         };
     }
 }

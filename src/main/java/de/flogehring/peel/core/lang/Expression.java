@@ -1,13 +1,13 @@
 package de.flogehring.peel.core.lang;
 
-import de.flogehring.peel.core.TypeDescriptor;
+import de.flogehring.peel.core.values.PeelValue;
 
 import java.util.List;
 
 public sealed interface Expression extends CodeElement {
 
     // TODO Now the Type Descriptor is part of the language, this is weird. Can this be avoided?
-    record Literal(TypeDescriptor typeDescriptor, Object literal) implements Expression {
+    record Literal(PeelValue value) implements Expression {
     }
 
     record BinaryOperator(String operator, Expression lhs, Expression rhs) implements Expression {

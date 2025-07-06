@@ -1,8 +1,9 @@
 package de.flogehring.peel.parse;
 
-import de.flogehring.peel.core.TypeDescriptor;
 import de.flogehring.peel.core.lang.Expression;
 import de.flogehring.peel.core.lang.Program;
+import de.flogehring.peel.core.types.Number;
+import de.flogehring.peel.core.values.PeelValue;
 import org.junit.jupiter.api.Test;
 
 import java.util.List;
@@ -31,6 +32,6 @@ public class PeelGrammarTest {
     }
 
     private static Expression.Literal getNumberLiteral(int literal) {
-        return new Expression.Literal(TypeDescriptor.type(Number.class), literal);
+        return new Expression.Literal(new PeelValue.Primitive(new Number.Integer(), literal));
     }
 }

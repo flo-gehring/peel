@@ -1,25 +1,25 @@
 package de.flogehring.peel.core.eval;
 
-import de.flogehring.peel.core.TypeDescriptor;
+import de.flogehring.peel.core.values.PeelValue;
 
 import java.util.List;
 
 public sealed interface EvaluatedExpression extends EvaluatedCodeElement {
 
-    Object value();
-
-    TypeDescriptor type();
+    PeelValue value();
 
     record Literal(
-            Object value,
-            TypeDescriptor type
+            PeelValue peelValue
     ) implements EvaluatedExpression {
+        @Override
+        public PeelValue value() {
+            return peelValue;
+        }
     }
 
     record BinaryOperator(
             String operator,
-            TypeDescriptor type,
-            Object value,
+            PeelValue value,
             EvaluatedExpression lhs,
             EvaluatedExpression rhs
     ) implements EvaluatedExpression {
@@ -29,22 +29,16 @@ public sealed interface EvaluatedExpression extends EvaluatedCodeElement {
             String name,
             EvaluatedExpression backingExpression
     ) implements EvaluatedExpression {
-        @Override
-
-        public TypeDescriptor type() {
-            return backingExpression.type();
-        }
 
         @Override
-        public Object value() {
+        public PeelValue value() {
             return backingExpression.value();
         }
     }
 
     record FunctionCall(
             String name,
-            TypeDescriptor type,
-            Object value,
+            PeelValue value,
             List<EvaluatedExpression> arguments
     ) implements EvaluatedExpression {
 

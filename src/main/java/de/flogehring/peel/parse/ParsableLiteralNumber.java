@@ -1,10 +1,11 @@
 package de.flogehring.peel.parse;
 
+import de.flogehring.peel.core.lang.Expression;
+import de.flogehring.peel.core.types.Number;
+import de.flogehring.peel.core.values.PeelValue;
 import de.friendlyhedgehog.jetpack.annotationmapper.FromChild;
 import de.friendlyhedgehog.jetpack.annotationmapper.FromRule;
 import de.friendlyhedgehog.jetpack.annotationmapper.creationstrategies.CreationStrategyReflection;
-import de.flogehring.peel.core.TypeDescriptor;
-import de.flogehring.peel.core.lang.Expression;
 
 @FromRule("Literal")
 @CreationStrategyReflection
@@ -15,6 +16,6 @@ public class ParsableLiteralNumber implements ParsableExpression {
 
     @Override
     public Expression toExpression() {
-        return new Expression.Literal(TypeDescriptor.type(Number.class), number);
+        return new Expression.Literal(new PeelValue.Primitive(new Number.Integer(), number));
     }
 }

@@ -1,56 +1,31 @@
 package de.flogehring.peel.convenience;
 
 import de.flogehring.peel.core.eval.Function;
+import de.flogehring.peel.core.types.PeelTypes;
+import de.flogehring.peel.core.values.PeelValue;
 import de.flogehring.peel.run.SimpleFunction;
 
 import java.util.List;
-import java.util.function.BiFunction;
-import java.util.function.UnaryOperator;
-
-import static de.flogehring.peel.core.TypeDescriptor.type;
+import java.util.function.BinaryOperator;
 
 public class FunctionFactory {
 
     private FunctionFactory() {
     }
 
-    public static <S> Function unary(
+    public static  Function binary(
             String name,
-            Class<S> argument, UnaryOperator<S> f
+            PeelTypes firstArgType,
+            PeelTypes secondArgType,
+            BinaryOperator<PeelValue> function
     ) {
         return new SimpleFunction(
                 name,
-                List.of(type(argument)),
-                type(argument),
-                arguments -> f.apply(argument.cast(arguments[0]))
-        );
-    }
+                List.of(firstArgType, secondArgType),
+                arguments -> function.apply(
+                        arguments[0].value(),
+                        arguments[1].value()
 
-    public static <S, T> Function unary(
-            String name,
-            Class<S> argumentType, Class<T> returnType, java.util.function.Function<S, T> f
-    ) {
-        return new SimpleFunction(
-                name,
-                List.of(type(argumentType)),
-                type(returnType),
-                arguments -> f.apply(argumentType.cast(arguments[0]))
-        );
-    }
-
-    public static <S, T, R> Function binary(
-            String name,
-            Class<S> firstArgType,
-            Class<T> secondArgType,
-            Class<R> returnType, BiFunction<S, T, R> f
-    ) {
-        return new SimpleFunction(
-                name,
-                List.of(type(firstArgType), type(secondArgType)),
-                type(returnType),
-                arguments -> f.apply(
-                        firstArgType.cast(arguments[0].value()),
-                        secondArgType.cast(arguments[1].value())
                 )
         );
     }

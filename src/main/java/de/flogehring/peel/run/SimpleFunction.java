@@ -2,7 +2,8 @@ package de.flogehring.peel.run;
 
 import de.flogehring.peel.core.eval.EvaluatedExpression;
 import de.flogehring.peel.core.eval.Function;
-import de.flogehring.peel.core.TypeDescriptor;
+import de.flogehring.peel.core.types.PeelTypes;
+import de.flogehring.peel.core.values.PeelValue;
 
 import java.util.Arrays;
 import java.util.List;
@@ -10,19 +11,16 @@ import java.util.List;
 public class SimpleFunction implements Function {
 
     private final String name;
-    private final List<TypeDescriptor> arguments;
-    private final TypeDescriptor returnType;
-    private final java.util.function.Function<EvaluatedExpression[], Object> function;
+    private final List<PeelTypes> arguments;
+    private final java.util.function.Function<EvaluatedExpression[], PeelValue> function;
 
     public SimpleFunction(
             String name,
-            List<TypeDescriptor> arguments,
-            TypeDescriptor returnType,
-            java.util.function.Function<EvaluatedExpression[], Object> function
+            List<PeelTypes> arguments,
+            java.util.function.Function<EvaluatedExpression[], PeelValue> function
     ) {
         this.name = name;
         this.arguments = arguments;
-        this.returnType = returnType;
         this.function = function;
     }
 
@@ -32,7 +30,7 @@ public class SimpleFunction implements Function {
     }
 
     @Override
-    public List<TypeDescriptor> arguments() {
+    public List<PeelTypes> arguments() {
         return arguments;
     }
 
@@ -40,7 +38,6 @@ public class SimpleFunction implements Function {
     public EvaluatedExpression run(EvaluatedExpression... arguments) {
         return new EvaluatedExpression.FunctionCall(
                 name,
-                returnType,
                 function.apply(arguments),
                 Arrays.stream(arguments).toList()
         );

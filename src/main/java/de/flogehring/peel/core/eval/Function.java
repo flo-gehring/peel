@@ -1,6 +1,6 @@
 package de.flogehring.peel.core.eval;
 
-import de.flogehring.peel.core.TypeDescriptor;
+import de.flogehring.peel.core.types.PeelTypes;
 
 import java.util.List;
 
@@ -8,7 +8,7 @@ public interface Function {
 
     String name();
 
-    List<TypeDescriptor> arguments();
+    List<PeelTypes> arguments();
 
     EvaluatedExpression run(EvaluatedExpression... arguments);
 }

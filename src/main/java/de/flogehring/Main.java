@@ -15,8 +15,8 @@ public class Main {
         System.out.println("Hello and Welcome to peel 👌 🍌!");
 
         Program p = new Program(List.of(
-                CodeElement.assign("x", CodeElement.literal(1)),
-                CodeElement.assign("y", CodeElement.literal(1)),
+                CodeElement.assign("x", CodeElement.integer(1)),
+                CodeElement.assign("y", CodeElement.integer(1)),
                 CodeElement.expr(CodeElement.var("x"), "+", CodeElement.var("y"))
         ));
         SimpleRuntime runtime = RuntimeFactory.defaultLanguage();
