@@ -6,7 +6,7 @@ import java.util.List;
 
 public sealed interface Expression extends CodeElement {
 
-    // TODO Now the Type Descriptor is part of the language, this is weird. Can this be avoided?
+
     record Literal(PeelValue value) implements Expression {
     }
 

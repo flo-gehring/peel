@@ -8,11 +8,10 @@ import de.flogehring.peel.core.eval.Variable;
 import de.flogehring.peel.core.lang.CodeElement;
 import de.flogehring.peel.core.lang.Expression;
 import de.flogehring.peel.core.lang.Program;
-import de.flogehring.peel.core.types.Bool;
-import de.flogehring.peel.core.types.Number;
-import de.flogehring.peel.core.types.PeelTypes;
-import de.flogehring.peel.core.types.Text;
+import de.flogehring.peel.core.values.Bool;
+import de.flogehring.peel.core.values.Number;
 import de.flogehring.peel.core.values.PeelValue;
+import de.flogehring.peel.core.values.Text;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 
@@ -69,8 +68,8 @@ public class SimpleRuntimeTest {
             }
 
             @Override
-            public List<PeelTypes> arguments() {
-                return List.of(new Text(), new Number.Integer());
+            public int arity() {
+                return 2;
             }
 
             @Override
@@ -80,7 +79,7 @@ public class SimpleRuntimeTest {
                 String lhs = (String) argumentLhs.value().value();
                 int rhs = (Integer) argumentRhs.value().value();
                 return new EvaluatedExpression.BinaryOperator(
-                        "*", new PeelValue.Primitive(new Text(), repeatString(lhs, rhs)), argumentLhs, argumentRhs
+                        "*", new Text(repeatString(lhs, rhs)), argumentLhs, argumentRhs
                 );
             }
 
@@ -101,8 +100,8 @@ public class SimpleRuntimeTest {
         Program p = new Program(List.of(
                 new Expression.FunctionCall(
                         "count",
-                        List.of(new Expression.Literal(new PeelValue.Primitive(new Text(), "hello")),
-                                new Expression.Literal(new PeelValue.Primitive(new Text(), "l"))
+                        List.of(new Expression.Literal(new Text("hello")),
+                                new Expression.Literal(new Text("l"))
                         )))
         );
         EvaluatedProgram evaluatedProgram = RuntimeFactory.defaultLanguage().run(p);
@@ -120,8 +119,8 @@ public class SimpleRuntimeTest {
             }
 
             @Override
-            public List<PeelTypes> arguments() {
-                return List.of(new Number.Integer(), new Number.Integer());
+            public int arity() {
+                return 2;
             }
 
             @Override
@@ -131,7 +130,7 @@ public class SimpleRuntimeTest {
                 Integer lhs = (Integer) argumentLhs.value().value();
                 Integer rhs = (Integer) argumentRhs.value().value();
                 return new EvaluatedExpression.BinaryOperator(
-                        "+", new PeelValue.Primitive(new Number.Integer(), lhs + rhs), argumentLhs, argumentRhs
+                        "+", new Number.Integer(lhs + rhs), argumentLhs, argumentRhs
                 );
             }
         });
@@ -148,7 +147,7 @@ public class SimpleRuntimeTest {
     @Test
     void noFunctionDefinitions() {
         SimpleRuntime runtime = RuntimeFactory.defaultLanguage();
-        runtime.register(boolVariable("y",false));
+        runtime.register(boolVariable("y", false));
         runtime.register(boolVariable("x", true));
         Program p = new Program(List.of(
                 CodeElement.expr(CodeElement.var("x"), "+", CodeElement.var("y"))
@@ -171,10 +170,11 @@ public class SimpleRuntimeTest {
 
             @Override
             public EvaluatedExpression value() {
-                return new EvaluatedExpression.Literal(new PeelValue.Primitive(new Number.Integer(), value));
+                return new EvaluatedExpression.Literal(new Number.Integer(value));
             }
         };
     }
+
     private static Variable boolVariable(
             String name,
             boolean value
@@ -187,7 +187,7 @@ public class SimpleRuntimeTest {
 
             @Override
             public EvaluatedExpression value() {
-                return new EvaluatedExpression.Literal(new PeelValue.Primitive(new Bool(), value));
+                return new EvaluatedExpression.Literal(new Bool(value));
             }
         };
     }
@@ -204,12 +204,7 @@ public class SimpleRuntimeTest {
 
             @Override
             public EvaluatedExpression value() {
-                return new EvaluatedExpression.Literal(
-                        new PeelValue.Primitive(
-                                new Text(),
-                                value
-                        )
-                );
+                return new EvaluatedExpression.Literal(new Text(value));
             }
         };
     }

@@ -1,8 +1,7 @@
 package de.flogehring.peel.core.lang;
 
-import de.flogehring.peel.core.types.Number;
-import de.flogehring.peel.core.types.Text;
-import de.flogehring.peel.core.values.PeelValue;
+import de.flogehring.peel.core.values.Number;
+import de.flogehring.peel.core.values.Text;
 
 public sealed interface CodeElement permits Expression, Statement {
 
@@ -12,11 +11,11 @@ public sealed interface CodeElement permits Expression, Statement {
 
     static Expression.Literal integer(Integer literal) {
 
-        return new Expression.Literal(new PeelValue.Primitive(new Number.Integer(), literal));
+        return new Expression.Literal(new Number.Integer(literal));
     }
 
     static Expression.Literal string(String s) {
-        return new Expression.Literal(new PeelValue.Primitive(new Text(), s));
+        return new Expression.Literal(new Text(s));
 
     }
 

@@ -6,8 +6,6 @@ import de.flogehring.peel.core.lang.CodeElement;
 import de.flogehring.peel.core.lang.Expression;
 import de.flogehring.peel.core.lang.Program;
 import de.flogehring.peel.core.lang.Statement;
-import de.flogehring.peel.core.types.*;
-import de.flogehring.peel.core.types.Number;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -86,8 +84,9 @@ public class SimpleRuntime implements Runtime {
                 .map(this::evaluateExpr)
                 .toList();
         List<Function> matchingName = functions.get(functionCall.functionName());
+        int argumentLength = arguments.size();
         List<Function> list = matchingName.stream()
-                .filter(f -> argumentsFit(f.arguments(), arguments))
+                .filter(f -> f.arity() == argumentLength)
                 .toList();
         Function f = requireOneFunction(
                 list,
@@ -98,18 +97,16 @@ public class SimpleRuntime implements Runtime {
     }
 
     private EvaluatedExpression evaluateOperator(Expression.BinaryOperator operator) {
+        // TODO add Special Support for Operators
         List<Function> matchingName = functions.get(operator.operator());
-        EvaluatedExpression lhs = evaluateExpr(operator.lhs());
-        EvaluatedExpression rhs = evaluateExpr(operator.rhs());
-        List<Function> list = matchingName.stream()
-                .filter(f -> argumentsFit(f.arguments(), List.of(lhs, rhs)))
-                .toList();
+        List<Expression> parameters = List.of(operator.lhs(), operator.rhs());
+        List<EvaluatedExpression> arguments = parameters.stream().map(this::evaluateExpr).toList();
         Function f = requireOneFunction(
-                list,
-                getNoFunctionFoundException(operator.operator(), lhs, rhs),
-                getMultipleFunctionsFoundException(operator.operator(), list)
+                matchingName,
+                getNoFunctionFoundException(operator.operator(), parameters),
+                getMultipleFunctionsFoundException(operator.operator(), matchingName)
         );
-        return f.run(lhs, rhs);
+        return f.run(evaluateExpr(operator.lhs()), evaluateExpr(operator.rhs()));
     }
 
     private static NoFunctionFoundException getNoFunctionFoundException(String operator, Object... arguments) {
@@ -128,41 +125,5 @@ public class SimpleRuntime implements Runtime {
         } else {
             return list.getFirst();
         }
-    }
-
-    private boolean argumentsFit(List<PeelTypes> arguments, List<EvaluatedExpression> lhs) {
-        boolean result = arguments.size() == lhs.size();
-        if (result) {
-            for (int i = 0; i < arguments.size() && result; ++i) {
-                PeelTypes peelTypes = arguments.get(i);
-                PeelTypes arg = lhs.get(i).value().type();
-                result = matches(peelTypes, arg);
-            }
-        }
-        return result;
-    }
-
-    private boolean matches(PeelTypes peelTypes, PeelTypes arg) {
-        return switch (peelTypes) {
-            case Primitives primitives -> switch (primitives) {
-                case Bool() -> arg instanceof Bool;
-                case Number numberType when arg instanceof Number argNumber -> matchNumber(numberType, argNumber);
-                case Text _ -> arg instanceof Text;
-                case Number _ -> false;
-            };
-            case Collection collection -> switch (collection) {
-                case Map _ -> arg instanceof Map;
-                case de.flogehring.peel.core.types.List _ -> arg instanceof de.flogehring.peel.core.types.List;
-            };
-        };
-    }
-
-    private boolean matchNumber(Number numberType, Number argNumber) {
-        return switch (numberType) {
-            case Number.Complex _ -> argNumber instanceof Number.Complex;
-            case Number.Decimal _ -> argNumber instanceof Number.Decimal;
-            case Number.Float _ -> argNumber instanceof Number.Float;
-            case Number.Integer _ -> argNumber instanceof Number.Integer;
-        };
     }
 }

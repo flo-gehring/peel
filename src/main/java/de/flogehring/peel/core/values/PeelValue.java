@@ -1,39 +1,29 @@
 package de.flogehring.peel.core.values;
 
-import de.flogehring.peel.core.types.PeelTypes;
-import de.flogehring.peel.core.types.Primitives;
+import java.util.List;
 
-public sealed interface PeelValue {
+public sealed interface PeelValue permits Primitives, PeelValue.Collection {
 
     Object value();
-    PeelTypes type();
 
-    record Primitive(Primitives type, Object value) implements  PeelValue {
-
+    static Collection.List list(List<PeelValue> peelValue) {
+        return new Collection.List(peelValue);
     }
 
+
     sealed interface Collection extends PeelValue {
-        record Map(java.util.Map<Primitive, PeelValue> map) implements Collection {
+        record Map(java.util.Map<Primitives, PeelValue> map) implements Collection {
             @Override
             public Object value() {
                 return map;
             }
 
-            @Override
-            public PeelTypes type() {
-                return new de.flogehring.peel.core.types.Map();
-            }
         }
 
         record List(java.util.List<PeelValue> list) implements Collection {
             @Override
             public Object value() {
                 return list;
-            }
-
-            @Override
-            public PeelTypes type() {
-                return new de.flogehring.peel.core.types.List();
             }
         }
     }
