@@ -125,7 +125,7 @@ public class RuntimeFactory {
             };
             case PeelValue.Collection.Map(var mapLhs) -> {
                 switch (cRhs) {
-                    case PeelValue.Collection.List list -> throw new PeelException(
+                    case PeelValue.Collection.List _ -> throw new PeelException(
                             "Can't add map and list"
                     );
                     case PeelValue.Collection.Map(var mapRhs) -> {
@@ -143,26 +143,16 @@ public class RuntimeFactory {
                 "count",
                 (lhs, rhs) -> {
                     if (lhs instanceof Text(var stringLhs) && rhs instanceof Text(var stringRhs)) {
-
+                        int occurences = 0;
+                        while ((stringLhs).contains(stringRhs)) {
+                            occurences++;
+                            stringLhs = stringLhs.replaceFirst(stringRhs, "");
+                        }
+                        return new Number.Integer(occurences);
+                    } else {
+                        throw new NoFunctionFoundException("Can't count types {0} {1}", lhs.getClass().getName(), rhs.getClass().getName());
                     }
-                    String running = (String) lhs.value();
-                    String rhsS = (String) rhs.value();
-                    int occurences = 0;
-                    while ((running).contains(rhsS)) {
-                        occurences++;
-                        running = running.replaceFirst(rhsS, "");
-                    }
-                    return new Number.Integer(occurences);
                 }
-        );
-    }
-
-    private static Function addNumbers() {
-        return FunctionFactory.binary(
-                "+",
-                (lhs, rhs) -> new Number.Integer(
-                        ((Integer) lhs.value()) + ((Integer) rhs.value())
-                )
         );
     }
 }
