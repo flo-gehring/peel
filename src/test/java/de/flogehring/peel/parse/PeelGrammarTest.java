@@ -15,9 +15,9 @@ public class PeelGrammarTest {
     @Test
     void simple() {
         Program parse = PeelGrammar.parse("""
-                 a = 1 + 2
-                 b = 5 + 2
-                 a + b
+                 a = 1 + 2;
+                 b = 5 + 2;
+                 a + b;
                 """);
         assertThat(parse).isEqualTo(
                 new Program(
