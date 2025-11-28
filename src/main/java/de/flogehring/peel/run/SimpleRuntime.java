@@ -1,28 +1,24 @@
 package de.flogehring.peel.run;
 
-import de.flogehring.peel.lang.CodeElement;
-import de.flogehring.peel.lang.Expression;
-import de.flogehring.peel.lang.Program;
-import de.flogehring.peel.lang.Statement;
+import de.flogehring.peel.core.eval.*;
+import de.flogehring.peel.core.eval.Runtime;
+import de.flogehring.peel.core.lang.CodeElement;
+import de.flogehring.peel.core.lang.Expression;
+import de.flogehring.peel.core.lang.Program;
+import de.flogehring.peel.core.lang.Statement;
 
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
-import java.util.Optional;
 import java.util.stream.Stream;
-
-import static de.flogehring.peel.run.TypeDescriptor.type;
 
 public class SimpleRuntime implements Runtime {
 
-    private final HashMap<String, Variable> variables;
+    private final HashMap<String, EvaluatedExpression> variables;
     private final HashMap<String, List<Function>> functions;
 
-    public static SimpleRuntime simpleLang() {
-        SimpleRuntime runtime = new SimpleRuntime();
-        runtime.register(addNumbers());
-        runtime.register(addStrings());
-        return runtime;
+    public static SimpleRuntime empty() {
+        return new SimpleRuntime();
     }
 
     private SimpleRuntime() {
@@ -32,7 +28,10 @@ public class SimpleRuntime implements Runtime {
 
     @Override
     public void register(Variable v) {
-        variables.put(v.name(), v);
+        variables.put(v.name(), new EvaluatedExpression.VariableName(
+                v.name(),
+                v.value()
+        ));
     }
 
     @Override
@@ -43,111 +42,79 @@ public class SimpleRuntime implements Runtime {
         ).toList());
     }
 
-    private static Function addStrings() {
-        return new Function() {
-            @Override
-            public String name() {
-                return "+";
-            }
-
-            @Override
-            public List<TypeDescriptor> arguments() {
-                return List.of(type(String.class), type(String.class));
-            }
-
-            @Override
-            public Object run(Object... arguments) {
-                String lhs = (String) arguments[0];
-                String rhs = (String) arguments[1];
-                return lhs + rhs;
-            }
-        };
-    }
-
-    private static Function addNumbers() {
-        return new Function() {
-            @Override
-            public String name() {
-                return "+";
-            }
-
-            @Override
-            public List<TypeDescriptor> arguments() {
-                return List.of(type(Number.class), type(Number.class));
-            }
-
-            @Override
-            public Object run(Object... arguments) {
-                Number lhs = (Number) arguments[0];
-                Number rhs = (Number) arguments[1];
-                return rhs.doubleValue() + lhs.doubleValue();
-            }
-        };
-    }
-
     @Override
-    public Object run(Program program) {
-        Optional<Object> result = Optional.empty();
+    public EvaluatedProgram run(Program program) {
+        List<EvaluatedCodeElement> evaluatedCodeElements = new ArrayList<>(program.codeElement().size());
         for (int i = 0; i < program.codeElement().size(); ++i) {
             CodeElement codeElement = program.codeElement().get(i);
-            result = switch (codeElement) {
-                case Expression expression -> Optional.of(evaluateExpr(expression));
-                case Statement statement -> {
-                    runStatement(statement);
-                    yield Optional.empty();
-                }
+            EvaluatedCodeElement evaluatedCodeElement = switch (codeElement) {
+                case Expression expression -> evaluateExpr(expression);
+                case Statement statement -> runStatement(statement);
             };
+            evaluatedCodeElements.add(evaluatedCodeElement);
         }
-        return result.orElseThrow(() -> new PeelException("Program did not contain any top level expression to return"));
+        return new EvaluatedProgram(evaluatedCodeElements);
     }
 
-    private void runStatement(Statement statement) {
-        switch (statement) {
-            case Statement.Assignment(var name, var expression) -> variables.put(name, new Variable() {
-                @Override
-                public String name() {
-                    return name;
-                }
-
-                @Override
-                public Object value() {
-                    return evaluateExpr(expression);
-                }
-            });
-        }
+    private EvaluatedStatement runStatement(Statement statement) {
+        return switch (statement) {
+            case Statement.Assignment(var name, var expression) -> {
+                EvaluatedExpression value = evaluateExpr(expression);
+                variables.put(name, value);
+                yield new EvaluatedStatement.Assignment(
+                        name, value
+                );
+            }
+        };
     }
 
-    private Object evaluateExpr(Expression expression) {
+    private EvaluatedExpression evaluateExpr(Expression expression) {
         return switch (expression) {
             case Expression.BinaryOperator operator -> evaluateOperator(
                     operator
             );
-            case Expression.Literal(var literal) -> literal;
-            case Expression.VariableName(var name) -> variables.get(name).value();
+            case Expression.Literal(var value) -> new EvaluatedExpression.Literal(value);
+            case Expression.VariableName(var name) -> variables.get(name);
+            case Expression.FunctionCall functionCall -> evaluateFunction(functionCall);
         };
     }
 
-    private Object evaluateOperator(Expression.BinaryOperator operator) {
-        List<Function> matchingName = functions.get(operator.operator());
-        Object lhs = evaluateExpr(operator.lhs());
-        Object rhs = evaluateExpr(operator.rhs());
+    private EvaluatedExpression evaluateFunction(Expression.FunctionCall functionCall) {
+        List<EvaluatedExpression> arguments = functionCall.arguments().stream()
+                .map(this::evaluateExpr)
+                .toList();
+        List<Function> matchingName = functions.get(functionCall.functionName());
+        int argumentLength = arguments.size();
         List<Function> list = matchingName.stream()
-                .filter(f -> argumentsFit(f.arguments(), List.of(lhs, rhs)))
+                .filter(f -> f.arity() == argumentLength)
                 .toList();
         Function f = requireOneFunction(
                 list,
-                getNoFunctionFoundException(operator, lhs, rhs),
-                getMultipleFunctionsFoundException(operator)
+                getNoFunctionFoundException(functionCall.functionName(), arguments.toArray()),
+                getMultipleFunctionsFoundException(functionCall.functionName(), list)
         );
-        return f.run(lhs, rhs);
+        return f.run(arguments.toArray(new EvaluatedExpression[0]));
     }
 
-    private static NoFunctionFoundException getNoFunctionFoundException(Expression.BinaryOperator operator, Object lhs, Object rhs) {
-        return new NoFunctionFoundException(operator.operator(), lhs, rhs);
+    private EvaluatedExpression evaluateOperator(Expression.BinaryOperator operator) {
+        // TODO add Special Support for Operators
+        List<Function> matchingName = functions.get(operator.operator());
+        List<Expression> parameters = List.of(operator.lhs(), operator.rhs());
+        List<EvaluatedExpression> arguments = parameters.stream().map(this::evaluateExpr).toList();
+        Function f = requireOneFunction(
+                matchingName,
+                getNoFunctionFoundException(operator.operator(), parameters),
+                getMultipleFunctionsFoundException(operator.operator(), matchingName)
+        );
+        return f.run(evaluateExpr(operator.lhs()), evaluateExpr(operator.rhs()));
     }
 
-    private MultipleFunctionsFoundException getMultipleFunctionsFoundException(Expression.BinaryOperator operator) {
-        return new MultipleFunctionsFoundException(operator.operator(), functions.size());
+    private static NoFunctionFoundException getNoFunctionFoundException(String operator, Object... arguments) {
+        return new NoFunctionFoundException(operator, arguments);
+    }
+
+    private MultipleFunctionsFoundException getMultipleFunctionsFoundException(String operator, List<Function> list) {
+        return new MultipleFunctionsFoundException(operator, list.size());
     }
 
     private Function requireOneFunction(List<Function> list, NoFunctionFoundException e, MultipleFunctionsFoundException multipleFunctionsFoundException) {
@@ -158,24 +125,5 @@ public class SimpleRuntime implements Runtime {
         } else {
             return list.getFirst();
         }
-    }
-
-    private boolean argumentsFit(List<TypeDescriptor> arguments, List<Object> lhs) {
-        boolean result = arguments.size() == lhs.size();
-        if (result) {
-            for (int i = 0; i < arguments.size() && result; ++i) {
-                TypeDescriptor typeDescriptor = arguments.get(i);
-                Object arg = lhs.get(i);
-                result = matches(typeDescriptor, arg);
-            }
-        }
-        return result;
-    }
-
-    private boolean matches(TypeDescriptor typeDescriptor, Object arg) {
-        return switch (typeDescriptor) {
-            case TypeDescriptor.Type(var t) -> t.isAssignableFrom(arg.getClass());
-            case TypeDescriptor.ListOf(var _) -> List.class.isAssignableFrom(arg.getClass());
-        };
     }
 }

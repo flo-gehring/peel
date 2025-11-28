@@ -1,39 +1,51 @@
 package de.flogehring.peel.run;
 
-import de.flogehring.peel.lang.CodeElement;
-import de.flogehring.peel.lang.Program;
-import org.junit.jupiter.api.Test;
+import de.flogehring.peel.convenience.RuntimeFactory;
+import de.flogehring.peel.core.eval.EvaluatedExpression;
+import de.flogehring.peel.core.eval.EvaluatedProgram;
+import de.flogehring.peel.core.eval.Function;
+import de.flogehring.peel.core.eval.Variable;
+import de.flogehring.peel.core.lang.CodeElement;
+import de.flogehring.peel.core.lang.Expression;
+import de.flogehring.peel.core.lang.Program;
+import de.flogehring.peel.core.values.Bool;
+import de.flogehring.peel.core.values.Number;
+import de.flogehring.peel.core.values.PeelValue;
+import de.flogehring.peel.core.values.Text;
 import org.junit.jupiter.api.Assertions;
-
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
+import org.junit.jupiter.api.Test;
 
 import java.util.List;
 
-import static de.flogehring.peel.run.TypeDescriptor.type;
+import static de.flogehring.peel.core.values.PeelValue.integer;
+import static de.flogehring.peel.core.values.PeelValue.text;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
 
 public class SimpleRuntimeTest {
 
     @Test
     void simple() {
         Program p = new Program(List.of(
-                CodeElement.assign("x", CodeElement.literal(1)),
-                CodeElement.assign("y", CodeElement.literal(1)),
+                CodeElement.assign("x", CodeElement.integer(1)),
+                CodeElement.assign("y", CodeElement.integer(1)),
                 CodeElement.expr(CodeElement.var("x"), "+", CodeElement.var("y"))
         ));
-        SimpleRuntime runtime = SimpleRuntime.simpleLang();
-        Assertions.assertEquals(2.0, runtime.run(p));
+        SimpleRuntime runtime = RuntimeFactory.defaultLanguage();
+        PeelValue value = runtime.run(p).getLastExpression().value();
+        Assertions.assertEquals(PeelValue.integer(2), value);
     }
 
     @Test
     void stringAddition() {
         Program p = new Program(List.of(
-                CodeElement.assign("x", CodeElement.literal("1")),
-                CodeElement.assign("y", CodeElement.literal("1")),
+                CodeElement.assign("x", CodeElement.string("1")),
+                CodeElement.assign("y", CodeElement.string("1")),
                 CodeElement.expr(CodeElement.var("x"), "+", CodeElement.var("y"))
         ));
-        SimpleRuntime runtime = SimpleRuntime.simpleLang();
-        Assertions.assertEquals("11", runtime.run(p));
+        SimpleRuntime runtime = RuntimeFactory.defaultLanguage();
+        PeelValue value = runtime.run(p).getLastExpression().value();
+        Assertions.assertEquals(text("11"), value);
     }
 
     @Test
@@ -41,15 +53,16 @@ public class SimpleRuntimeTest {
         Program p = new Program(List.of(
                 CodeElement.expr(CodeElement.var("x"), "+", CodeElement.var("y"))
         ));
-        SimpleRuntime runtime = SimpleRuntime.simpleLang();
+        SimpleRuntime runtime = RuntimeFactory.defaultLanguage();
         runtime.register(getVariable("x", "1"));
         runtime.register(getVariable("y", "2"));
-        Assertions.assertEquals("12", runtime.run(p));
+        PeelValue value = runtime.run(p).getLastExpression().value();
+        Assertions.assertEquals(text("12"), value);
     }
 
     @Test
-    void registerFunctions() {
-        SimpleRuntime runtime = SimpleRuntime.simpleLang();
+    void registerOperator() {
+        SimpleRuntime runtime = RuntimeFactory.defaultLanguage();
         runtime.register(new Function() {
             @Override
             public String name() {
@@ -57,15 +70,19 @@ public class SimpleRuntimeTest {
             }
 
             @Override
-            public List<TypeDescriptor> arguments() {
-                return List.of(type(String.class), type(Integer.class));
+            public int arity() {
+                return 2;
             }
 
             @Override
-            public Object run(Object... arguments) {
-                String lhs = (String) arguments[0];
-                int rhs = (Integer) arguments[1];
-                return repeatString(lhs, rhs);
+            public EvaluatedExpression run(EvaluatedExpression... arguments) {
+                EvaluatedExpression argumentLhs = arguments[0];
+                EvaluatedExpression argumentRhs = arguments[1];
+                String lhs = ((Text) argumentLhs.value()).value();
+                int rhs = ((Number.Integer) argumentRhs.value()).value();
+                return new EvaluatedExpression.BinaryOperator(
+                        "*", new Text(repeatString(lhs, rhs)), argumentLhs, argumentRhs
+                );
             }
 
             private String repeatString(String lhs, int rhs) {
@@ -76,13 +93,27 @@ public class SimpleRuntimeTest {
                 CodeElement.expr(CodeElement.var("x"), "*", CodeElement.var("y"))
         ));
         runtime.register(getVariable("x", "Echo!"));
-        runtime.register(getVariable("y", 2));
-        assertThat(runtime.run(p)).isEqualTo("Echo!Echo!");
+        runtime.register(integerVariable("y", 2));
+        assertThat(runtime.run(p).getLastExpression().value()).isEqualTo(text("Echo!Echo!"));
     }
 
     @Test
-    void multipleFunctionDefinitions() {
-        SimpleRuntime runtime = SimpleRuntime.simpleLang();
+    void functionCall() {
+        Program p = new Program(List.of(
+                new Expression.FunctionCall(
+                        "count",
+                        List.of(new Expression.Literal(new Text("hello")),
+                                new Expression.Literal(new Text("l"))
+                        )))
+        );
+        EvaluatedProgram evaluatedProgram = RuntimeFactory.defaultLanguage().run(p);
+        PeelValue value = evaluatedProgram.getLastExpression().value();
+        assertThat(value).isEqualTo(integer(2));
+    }
+
+    @Test
+    void multipleOperatorDefinitions() {
+        SimpleRuntime runtime = RuntimeFactory.defaultLanguage();
         runtime.register(new Function() {
             @Override
             public String name() {
@@ -90,19 +121,23 @@ public class SimpleRuntimeTest {
             }
 
             @Override
-            public List<TypeDescriptor> arguments() {
-                return List.of(type(Integer.class), type(Integer.class));
+            public int arity() {
+                return 2;
             }
 
             @Override
-            public Object run(Object... arguments) {
-                Integer lhs = (Integer) arguments[0];
-                Integer rhs = (Integer) arguments[1];
-                return lhs + rhs;
+            public EvaluatedExpression run(EvaluatedExpression... arguments) {
+                EvaluatedExpression argumentLhs = arguments[0];
+                EvaluatedExpression argumentRhs = arguments[1];
+                Number.Integer lhs = (Number.Integer) argumentLhs.value();
+                Number.Integer rhs = (Number.Integer) argumentRhs.value();
+                return new EvaluatedExpression.BinaryOperator(
+                        "+", new Number.Integer(lhs.numberValue().add(rhs.numberValue()).intValue()), argumentLhs, argumentRhs
+                );
             }
         });
-        runtime.register(getVariable("y", 2));
-        runtime.register(getVariable("x", 1));
+        runtime.register(integerVariable("y", 2));
+        runtime.register(integerVariable("x", 1));
         Program p = new Program(List.of(
                 CodeElement.expr(CodeElement.var("x"), "+", CodeElement.var("y"))
         ));
@@ -113,9 +148,9 @@ public class SimpleRuntimeTest {
 
     @Test
     void noFunctionDefinitions() {
-        SimpleRuntime runtime = SimpleRuntime.simpleLang();
-        runtime.register(getVariable("y", new Object()));
-        runtime.register(getVariable("x", new Object()));
+        SimpleRuntime runtime = RuntimeFactory.defaultLanguage();
+        runtime.register(boolVariable("y", false));
+        runtime.register(boolVariable("x", true));
         Program p = new Program(List.of(
                 CodeElement.expr(CodeElement.var("x"), "+", CodeElement.var("y"))
         ));
@@ -124,7 +159,11 @@ public class SimpleRuntimeTest {
         );
     }
 
-    private static Variable getVariable(final String name, final Object value) {
+
+    private static Variable integerVariable(
+            String name,
+            int value
+    ) {
         return new Variable() {
             @Override
             public String name() {
@@ -132,8 +171,42 @@ public class SimpleRuntimeTest {
             }
 
             @Override
-            public Object value() {
-                return value;
+            public EvaluatedExpression value() {
+                return new EvaluatedExpression.Literal(integer(value));
+            }
+        };
+    }
+
+    private static Variable boolVariable(
+            String name,
+            boolean value
+    ) {
+        return new Variable() {
+            @Override
+            public String name() {
+                return name;
+            }
+
+            @Override
+            public EvaluatedExpression value() {
+                return new EvaluatedExpression.Literal(new Bool(value));
+            }
+        };
+    }
+
+    private static Variable getVariable(
+            final String name,
+            final String value
+    ) {
+        return new Variable() {
+            @Override
+            public String name() {
+                return name;
+            }
+
+            @Override
+            public EvaluatedExpression value() {
+                return new EvaluatedExpression.Literal(new Text(value));
             }
         };
     }
