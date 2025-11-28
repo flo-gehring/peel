@@ -11,18 +11,11 @@ public class FunctionFactory {
     private FunctionFactory() {
     }
 
-    public static Function binary(
-            String name,
-            BinaryOperator<PeelValue> function
-    ) {
+    public static Function binary(String name, BinaryOperator<PeelValue> function) {
         return new SimpleFunction(
                 name,
                 2,
-                arguments -> function.apply(
-                        arguments[0].value(),
-                        arguments[1].value()
-
-                )
+                arguments -> function.apply(arguments[0].value(), arguments[1].value())
         );
     }
 }

@@ -12,12 +12,12 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.stream.Stream;
 
+import static de.flogehring.peel.convenience.FunctionFactory.binary;
 import static de.flogehring.peel.run.SimpleRuntime.empty;
 
 public class RuntimeFactory {
 
     private RuntimeFactory() {
-
     }
 
     /**
@@ -33,7 +33,7 @@ public class RuntimeFactory {
     }
 
     private static Function add() {
-        return FunctionFactory.binary(
+        return binary(
                 "+",
                 (lhs, rhs) -> switch (lhs) {
                     case PeelValue.Collection cLhs -> switch (rhs) {
@@ -85,8 +85,8 @@ public class RuntimeFactory {
 
     private static PeelValue addNumberPrimitives(Number numberLhs, Number numberRhs) {
         return switch (numberLhs) {
-            case Number.Decimal decimalLhs -> new Number.Decimal(
-                    decimalLhs.value().add(numberRhs.numberValue())
+            case Number.Decimal(var lhsDecimal) -> new Number.Decimal(
+                    lhsDecimal.add(numberRhs.numberValue())
             );
             case Number.Float(var floatLhs) -> {
                 if (numberRhs instanceof Number.Float(var floatRhs)) {
@@ -139,7 +139,7 @@ public class RuntimeFactory {
     }
 
     private static Function countSubstring() {
-        return FunctionFactory.binary(
+        return binary(
                 "count",
                 (lhs, rhs) -> {
                     if (lhs instanceof Text(var stringLhs) && rhs instanceof Text(var stringRhs)) {

@@ -55,9 +55,7 @@ public class PeelGrammar {
             return new ParsableProgramm.Programm(
                     ctx.statement()
                             .stream()
-                            .map(
-                                    child -> child.accept(this)
-                            )
+                            .map(child -> child.accept(this))
                             .toList()
             );
         }
@@ -170,7 +168,7 @@ public class PeelGrammar {
             return new ParsableProgramm.ParsableCodeElement(
                     CodeElement.expr(
                             ctx.expr(0).accept(this).toExpr(),
-                            "*",
+                            ctx.getChild(1).getText(),
                             ctx.expr(1).accept(this).toExpr()
                     )
             );

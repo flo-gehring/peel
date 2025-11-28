@@ -17,6 +17,8 @@ import org.junit.jupiter.api.Test;
 
 import java.util.List;
 
+import static de.flogehring.peel.core.values.PeelValue.integer;
+import static de.flogehring.peel.core.values.PeelValue.text;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
 
@@ -31,7 +33,7 @@ public class SimpleRuntimeTest {
         ));
         SimpleRuntime runtime = RuntimeFactory.defaultLanguage();
         PeelValue value = runtime.run(p).getLastExpression().value();
-        Assertions.assertEquals(2, value.value());
+        Assertions.assertEquals(PeelValue.integer(2), value);
     }
 
     @Test
@@ -43,7 +45,7 @@ public class SimpleRuntimeTest {
         ));
         SimpleRuntime runtime = RuntimeFactory.defaultLanguage();
         PeelValue value = runtime.run(p).getLastExpression().value();
-        Assertions.assertEquals("11", value.value());
+        Assertions.assertEquals(text("11"), value);
     }
 
     @Test
@@ -55,7 +57,7 @@ public class SimpleRuntimeTest {
         runtime.register(getVariable("x", "1"));
         runtime.register(getVariable("y", "2"));
         PeelValue value = runtime.run(p).getLastExpression().value();
-        Assertions.assertEquals("12", value.value());
+        Assertions.assertEquals(text("12"), value);
     }
 
     @Test
@@ -76,8 +78,8 @@ public class SimpleRuntimeTest {
             public EvaluatedExpression run(EvaluatedExpression... arguments) {
                 EvaluatedExpression argumentLhs = arguments[0];
                 EvaluatedExpression argumentRhs = arguments[1];
-                String lhs = (String) argumentLhs.value().value();
-                int rhs = (Integer) argumentRhs.value().value();
+                String lhs = ((Text) argumentLhs.value()).value();
+                int rhs = ((Number.Integer) argumentRhs.value()).value();
                 return new EvaluatedExpression.BinaryOperator(
                         "*", new Text(repeatString(lhs, rhs)), argumentLhs, argumentRhs
                 );
@@ -92,7 +94,7 @@ public class SimpleRuntimeTest {
         ));
         runtime.register(getVariable("x", "Echo!"));
         runtime.register(integerVariable("y", 2));
-        assertThat(runtime.run(p).getLastExpression().value().value()).isEqualTo("Echo!Echo!");
+        assertThat(runtime.run(p).getLastExpression().value()).isEqualTo(text("Echo!Echo!"));
     }
 
     @Test
@@ -106,7 +108,7 @@ public class SimpleRuntimeTest {
         );
         EvaluatedProgram evaluatedProgram = RuntimeFactory.defaultLanguage().run(p);
         PeelValue value = evaluatedProgram.getLastExpression().value();
-        assertThat(value.value()).isEqualTo(2);
+        assertThat(value).isEqualTo(integer(2));
     }
 
     @Test
@@ -127,10 +129,10 @@ public class SimpleRuntimeTest {
             public EvaluatedExpression run(EvaluatedExpression... arguments) {
                 EvaluatedExpression argumentLhs = arguments[0];
                 EvaluatedExpression argumentRhs = arguments[1];
-                Integer lhs = (Integer) argumentLhs.value().value();
-                Integer rhs = (Integer) argumentRhs.value().value();
+                Number.Integer lhs = (Number.Integer) argumentLhs.value();
+                Number.Integer rhs = (Number.Integer) argumentRhs.value();
                 return new EvaluatedExpression.BinaryOperator(
-                        "+", new Number.Integer(lhs + rhs), argumentLhs, argumentRhs
+                        "+", new Number.Integer(lhs.numberValue().add(rhs.numberValue()).intValue()), argumentLhs, argumentRhs
                 );
             }
         });
@@ -170,7 +172,7 @@ public class SimpleRuntimeTest {
 
             @Override
             public EvaluatedExpression value() {
-                return new EvaluatedExpression.Literal(new Number.Integer(value));
+                return new EvaluatedExpression.Literal(integer(value));
             }
         };
     }

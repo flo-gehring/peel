@@ -6,7 +6,7 @@ plugins {
 group = "de.flo-gehring"
 version = "1.0-SNAPSHOT"
 
-val generatedAntlrDir = layout.buildDirectory.dir("generated-src/antlr/main/de.flogehring.peel.antlr")
+val generatedAntlrDir = layout.buildDirectory.dir("generated-src/antlr/main/")
 
 repositories {
     mavenCentral()
