@@ -10,7 +10,6 @@ public sealed interface Expression {
     }
 
     record Assignment(String variableName, Expression assignment) implements Expression {
-
     }
 
     record IfElseStatement(
@@ -18,20 +17,22 @@ public sealed interface Expression {
             Expression.Block thenBlock,
             Expression.Block elseBlock
     ) implements Expression {
-
     }
 
     record IfStatement(
             Expression condition,
             Expression.Block thenBlock
     ) implements Expression {
-
     }
 
     record Literal(PeelValue value) implements Expression {
     }
 
-    record BinaryOperator(String operator, Expression lhs, Expression rhs) implements Expression {
+    record BinaryOperator(
+            String operator,
+            Expression lhs,
+            Expression rhs
+    ) implements Expression {
         public BinaryOperator {
             Expression.assertNotEmpty(operator);
         }
@@ -53,6 +54,4 @@ public sealed interface Expression {
         assert s != null;
         assert !s.isEmpty();
     }
-
-
 }

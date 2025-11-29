@@ -44,7 +44,7 @@ public class SimpleRuntime implements Runtime {
 
     @Override
     public EvaluatedProgram run(Program program) {
-        return new EvaluatedProgram(program.programms().codeElements()
+        return new EvaluatedProgram(program.programm().codeElements()
                 .stream()
                 .map(this::evaluateExpr)
                 .toList()
