@@ -3,7 +3,9 @@
     "allow": [
       "Bash(gh issue create:*)",
       "Bash(gh project item-add:*)",
-      "Bash(./gradlew generateGrammarSource:*)"
+      "Bash(./gradlew generateGrammarSource:*)",
+      "Bash(./gradlew test:*)",
+      "Bash(./gradlew build:*)"
     ],
     "deny": [],
     "ask": []

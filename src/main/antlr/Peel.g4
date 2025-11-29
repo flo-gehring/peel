@@ -43,7 +43,8 @@ block
 // ----------------------
 
 expr
-    : expr '||' expr       # logicalOrExpr
+    : 'if' '(' expr ')' block ('else' 'if' '(' expr ')' block)* ('else' block)?  # ifExpr
+    | expr '||' expr       # logicalOrExpr
     | expr '&&' expr       # logicalAndExpr
     | expr '==' expr       # eqExpr
     | expr '^' expr        # xorExpr

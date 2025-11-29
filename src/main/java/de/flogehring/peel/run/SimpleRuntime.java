@@ -73,7 +73,7 @@ public class SimpleRuntime implements Runtime {
                             .map(this::evaluateExpr)
                             .toList()
             );
-            case Expression.IfStatement(var condition, var ifBlock, var elseBlock) -> {
+            case Expression.IfElseStatement(var condition, var ifBlock, var elseBlock) -> {
                 var evaluatedCondition = evaluateExpr(condition);
                 if (evaluatedCondition.value() instanceof Bool(var c)) {
                     EvaluatedExpression evaluatedBlock = evaluateExpr(c ? ifBlock : elseBlock);
@@ -83,9 +83,28 @@ public class SimpleRuntime implements Runtime {
                             c
                     );
                 } else {
-                    throw new PeelException(
+                    throw new IllegalArgumentException(
                             MessageFormat.format(
-                                    "Condition in if branch has not evaluated to a bool, was {0} ",
+                                    "condition must be Bool, was {0}",
+                                    evaluatedCondition.value().getClass().getSimpleName()
+                            )
+                    );
+                }
+            }
+            case Expression.IfStatement(var condition, var block) -> {
+                var evaluatedCondition = evaluateExpr(condition);
+                if (evaluatedCondition.value() instanceof Bool(var c)) {
+                    yield c ?
+                            new EvaluatedExpression.IfStatement(
+                                    evaluatedCondition,
+                                    (EvaluatedExpression.EvaluatedBlock) evaluateExpr(block),
+                                    c
+                            )
+                            : new EvaluatedExpression.SkippedIfStatement(evaluatedCondition);
+                } else {
+                    throw new IllegalArgumentException(
+                            MessageFormat.format(
+                                    "condition must be Bool, was {0}",
                                     evaluatedCondition.value().getClass().getSimpleName()
                             )
                     );
@@ -128,11 +147,13 @@ public class SimpleRuntime implements Runtime {
         return new NoFunctionFoundException(operator, arguments);
     }
 
-    private MultipleFunctionsFoundException getMultipleFunctionsFoundException(String operator, List<Function> list) {
+    private MultipleFunctionsFoundException getMultipleFunctionsFoundException(String
+                                                                                       operator, List<Function> list) {
         return new MultipleFunctionsFoundException(operator, list.size());
     }
 
-    private Function requireOneFunction(List<Function> list, NoFunctionFoundException e, MultipleFunctionsFoundException multipleFunctionsFoundException) {
+    private Function requireOneFunction(List<Function> list, NoFunctionFoundException
+            e, MultipleFunctionsFoundException multipleFunctionsFoundException) {
         if (list.isEmpty()) {
             throw e;
         } else if (list.size() > 1) {

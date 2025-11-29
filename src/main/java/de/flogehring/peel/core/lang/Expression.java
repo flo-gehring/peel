@@ -15,8 +15,18 @@ public sealed interface Expression extends CodeElement {
 
     }
 
-    record IfStatement(Expression condition, Expression.Block thenBlock,
-                       Expression.Block elseBlock) implements Expression {
+    record IfElseStatement(
+            Expression condition,
+            Expression.Block thenBlock,
+            Expression.Block elseBlock
+    ) implements Expression {
+
+    }
+
+    record IfStatement(
+            Expression condition,
+            Expression.Block thenBlock
+    ) implements Expression {
 
     }
 

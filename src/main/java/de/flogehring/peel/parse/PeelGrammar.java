@@ -106,14 +106,25 @@ public class PeelGrammar {
 
         @Override
         public ParsableProgramm visitIfStatement(PeelParser.IfStatementContext ctx) {
-            return new ParsableProgramm.ParsableCodeElement(
-                    CodeElement.ifExpression(
-                            ctx.expr(0).accept(this).toExpr(),
-                            (Expression.Block) ctx.block(0).accept(this).toExpr(),
-                            (Expression.Block) ctx.block(1).accept(this).toExpr()
 
-                    )
-            );
+            // If there are 2 or more blocks, we have an else clause
+            if (ctx.block().size() >= 2) {
+                Expression.Block elseBlock = (Expression.Block) ctx.block(1).accept(this).toExpr();
+                return new ParsableProgramm.ParsableCodeElement(
+                        CodeElement.ifExpression(
+                                ctx.expr(0).accept(this).toExpr(),
+                                (Expression.Block) ctx.block(0).accept(this).toExpr(),
+                                elseBlock
+                        )
+                );
+            } else {
+                return new ParsableProgramm.ParsableCodeElement(
+                        CodeElement.ifExpression(
+                                ctx.expr(0).accept(this).toExpr(),
+                                (Expression.Block) ctx.block(0).accept(this).toExpr()
+                        )
+                );
+            }
         }
 
         @Override
@@ -124,6 +135,24 @@ public class PeelGrammar {
                                     .stream()
                                     .map(stmt -> stmt.accept(this).toExpr())
                                     .toList()
+                    )
+            );
+        }
+
+        @Override
+        public ParsableProgramm visitIfExpr(PeelParser.IfExprContext ctx) {
+            Expression.Block elseBlock = null;
+
+            // If there are 2 or more blocks, we have an else clause
+            if (ctx.block().size() >= 2) {
+                elseBlock = (Expression.Block) ctx.block(1).accept(this).toExpr();
+            }
+
+            return new ParsableProgramm.ParsableCodeElement(
+                    CodeElement.ifExpression(
+                            ctx.expr(0).accept(this).toExpr(),
+                            (Expression.Block) ctx.block(0).accept(this).toExpr(),
+                            elseBlock
                     )
             );
         }

@@ -31,10 +31,20 @@ public sealed interface CodeElement permits Expression {
             Expression.Block thenBlock,
             Expression.Block elseBlock
     ) {
-        return new Expression.IfStatement(
+        return new Expression.IfElseStatement(
                 condition,
                 thenBlock,
                 elseBlock
+        );
+    }
+
+    static Expression ifExpression(
+            Expression condition,
+            Expression.Block thenBlock
+    ) {
+        return new Expression.IfStatement(
+                condition,
+                thenBlock
         );
     }
 }

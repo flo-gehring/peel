@@ -63,6 +63,13 @@ public sealed interface EvaluatedExpression extends EvaluatedCodeElement {
         }
     }
 
+    record SkippedIfStatement(EvaluatedExpression condition) implements EvaluatedExpression {
+        @Override
+        public PeelValue value() {
+            return None.NONE;
+        }
+    }
+
     record EvaluatedBlock(List<EvaluatedExpression> content) implements EvaluatedExpression {
         @Override
         public PeelValue value() {
