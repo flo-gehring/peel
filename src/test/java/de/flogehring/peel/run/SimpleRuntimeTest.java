@@ -26,11 +26,12 @@ public class SimpleRuntimeTest {
 
     @Test
     void simple() {
-        Program p = new Program(List.of(
-                CodeElement.assign("x", CodeElement.integer(1)),
-                CodeElement.assign("y", CodeElement.integer(1)),
-                CodeElement.expr(CodeElement.var("x"), "+", CodeElement.var("y"))
-        ));
+        Program p = new Program(
+                new Expression.Block(List.of(
+                        CodeElement.assign("x", CodeElement.integer(1)),
+                        CodeElement.assign("y", CodeElement.integer(1)),
+                        CodeElement.expr(CodeElement.var("x"), "+", CodeElement.var("y"))
+                )));
         SimpleRuntime runtime = RuntimeFactory.defaultLanguage();
         PeelValue value = runtime.run(p).getLastExpression().value();
         Assertions.assertEquals(PeelValue.integer(2), value);

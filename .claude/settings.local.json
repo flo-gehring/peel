@@ -2,9 +2,11 @@
   "permissions": {
     "allow": [
       "Bash(gh issue create:*)",
-      "Bash(gh project item-add:*)"
+      "Bash(gh project item-add:*)",
+      "Bash(./gradlew generateGrammarSource:*)"
     ],
     "deny": [],
     "ask": []
-  }
+  },
+  "outputStyle": "default"
 }

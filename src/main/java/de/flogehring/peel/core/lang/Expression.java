@@ -7,6 +7,19 @@ import java.util.List;
 public sealed interface Expression extends CodeElement {
 
 
+    record Block(List<Expression> codeElements) implements Expression {
+
+    }
+
+    record Assignment(String variableName, Expression assignment) implements Expression {
+
+    }
+
+    record IfStatement(Expression condition, Expression.Block thenBlock,
+                       Expression.Block elseBlock) implements Expression {
+
+    }
+
     record Literal(PeelValue value) implements Expression {
     }
 
@@ -32,4 +45,6 @@ public sealed interface Expression extends CodeElement {
         assert s != null;
         assert !s.isEmpty();
     }
+
+
 }

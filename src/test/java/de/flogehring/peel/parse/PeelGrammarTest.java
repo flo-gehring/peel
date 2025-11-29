@@ -21,12 +21,12 @@ public class PeelGrammarTest {
                 """);
         assertThat(parse).isEqualTo(
                 new Program(
-                        List.of(
+                        new Expression.Block(List.of(
                                 assign("a", expr(getNumberLiteral(1), "+", getNumberLiteral(2))),
                                 assign("b", expr(getNumberLiteral(5), "+", getNumberLiteral(2))),
                                 expr(var("a"), "+", var("b"))
                         )
-                )
+                        ))
         );
     }
 

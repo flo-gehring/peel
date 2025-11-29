@@ -3,6 +3,7 @@ package de.flogehring.peel.parse;
 import de.flogehring.peel.antlr.PeelLexer;
 import de.flogehring.peel.antlr.PeelParser;
 import de.flogehring.peel.core.lang.CodeElement;
+import de.flogehring.peel.core.lang.Expression;
 import de.flogehring.peel.core.lang.Program;
 import de.flogehring.peel.run.PeelException;
 import org.antlr.v4.runtime.CharStreams;
@@ -65,6 +66,8 @@ public class PeelGrammar {
             if (ctx.assignment() != null) {
                 ParseTree child = assertOneChild(ctx);
                 return child.accept(this);
+            } else if (ctx.ifStatement() != null) {
+                return ctx.ifStatement().accept(this);
             } else {
                 return ctx.expr().accept(this);
             }
@@ -94,6 +97,30 @@ public class PeelGrammar {
                             ctx.expr(0).accept(this).toExpr(),
                             "||",
                             ctx.expr(1).accept(this).toExpr()
+                    )
+            );
+        }
+
+        @Override
+        public ParsableProgramm visitIfStatement(PeelParser.IfStatementContext ctx) {
+            return new ParsableProgramm.ParsableCodeElement(
+                    CodeElement.ifExpression(
+                            ctx.expr(0).accept(this).toExpr(),
+                            (Expression.Block) ctx.block(0).accept(this).toExpr(),
+                            (Expression.Block) ctx.block(1).accept(this).toExpr()
+
+                    )
+            );
+        }
+
+        @Override
+        public ParsableProgramm visitBlock(PeelParser.BlockContext ctx) {
+            return new ParsableProgramm.ParsableCodeElement(
+                    new Expression.Block(
+                            ctx.statement()
+                                    .stream()
+                                    .map(stmt -> stmt.accept(this).toExpr())
+                                    .toList()
                     )
             );
         }

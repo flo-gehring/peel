@@ -1,6 +1,5 @@
 package de.flogehring.peel.parse;
 
-import de.flogehring.peel.core.lang.CodeElement;
 import de.flogehring.peel.core.lang.Expression;
 import de.flogehring.peel.core.lang.Program;
 import de.flogehring.peel.run.PeelException;
@@ -19,22 +18,23 @@ sealed interface ParsableProgramm {
 
         Program toProgramm() {
             return new Program(
-                    programm.stream().map(
+                    new Expression.Block(programm.stream().map(
                             this::toCodeElement
                     ).toList()
+                    )
             );
         }
 
-        private CodeElement toCodeElement(ParsableProgramm parsableProgramm) {
-            if (parsableProgramm instanceof ParsableCodeElement(CodeElement codeElement)) {
-                return codeElement;
+        private Expression toCodeElement(ParsableProgramm parsableProgramm) {
+            if (parsableProgramm instanceof ParsableCodeElement(var expression)) {
+                return expression;
             } else {
                 throw new PeelException("parsing error");
             }
         }
     }
 
-    record ParsableCodeElement(CodeElement codeElement) implements ParsableProgramm {
+    record ParsableCodeElement(Expression codeElement) implements ParsableProgramm {
         @Override
         public Expression toExpr() {
             if (codeElement instanceof Expression expression) {

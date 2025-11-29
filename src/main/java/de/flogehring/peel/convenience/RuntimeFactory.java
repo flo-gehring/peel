@@ -79,6 +79,9 @@ public class RuntimeFactory {
                     );
                 }
             }
+            case None _ -> throw new PeelException(
+                    "Can't add None to number"
+            );
         };
 
     }

@@ -2,11 +2,11 @@ package de.flogehring.peel.run;
 
 import de.flogehring.peel.core.eval.*;
 import de.flogehring.peel.core.eval.Runtime;
-import de.flogehring.peel.core.lang.CodeElement;
 import de.flogehring.peel.core.lang.Expression;
 import de.flogehring.peel.core.lang.Program;
-import de.flogehring.peel.core.lang.Statement;
+import de.flogehring.peel.core.values.Bool;
 
+import java.text.MessageFormat;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -44,28 +44,12 @@ public class SimpleRuntime implements Runtime {
 
     @Override
     public EvaluatedProgram run(Program program) {
-        List<EvaluatedCodeElement> evaluatedCodeElements = new ArrayList<>(program.codeElement().size());
-        for (int i = 0; i < program.codeElement().size(); ++i) {
-            CodeElement codeElement = program.codeElement().get(i);
-            EvaluatedCodeElement evaluatedCodeElement = switch (codeElement) {
-                case Expression expression -> evaluateExpr(expression);
-                case Statement statement -> runStatement(statement);
-            };
-            evaluatedCodeElements.add(evaluatedCodeElement);
-        }
-        return new EvaluatedProgram(evaluatedCodeElements);
-    }
+        return new EvaluatedProgram(program.programms().codeElements()
+                .stream()
+                .map(this::evaluateExpr)
+                .toList()
+        );
 
-    private EvaluatedStatement runStatement(Statement statement) {
-        return switch (statement) {
-            case Statement.Assignment(var name, var expression) -> {
-                EvaluatedExpression value = evaluateExpr(expression);
-                variables.put(name, value);
-                yield new EvaluatedStatement.Assignment(
-                        name, value
-                );
-            }
-        };
     }
 
     private EvaluatedExpression evaluateExpr(Expression expression) {
@@ -76,6 +60,37 @@ public class SimpleRuntime implements Runtime {
             case Expression.Literal(var value) -> new EvaluatedExpression.Literal(value);
             case Expression.VariableName(var name) -> variables.get(name);
             case Expression.FunctionCall functionCall -> evaluateFunction(functionCall);
+            case Expression.Assignment(var name, var expression1) -> {
+                EvaluatedExpression value = evaluateExpr(expression1);
+                variables.put(name, value);
+                yield new EvaluatedExpression.Assignment(
+                        name, value
+                );
+            }
+            case Expression.Block(var expressions) -> new EvaluatedExpression.EvaluatedBlock(
+                    expressions
+                            .stream()
+                            .map(this::evaluateExpr)
+                            .toList()
+            );
+            case Expression.IfStatement(var condition, var ifBlock, var elseBlock) -> {
+                var evaluatedCondition = evaluateExpr(condition);
+                if (evaluatedCondition.value() instanceof Bool(var c)) {
+                    EvaluatedExpression evaluatedBlock = evaluateExpr(c ? ifBlock : elseBlock);
+                    yield new EvaluatedExpression.IfStatement(
+                            evaluatedCondition,
+                            (EvaluatedExpression.EvaluatedBlock) evaluatedBlock,
+                            c
+                    );
+                } else {
+                    throw new PeelException(
+                            MessageFormat.format(
+                                    "Condition in if branch has not evaluated to a bool, was {0} ",
+                                    evaluatedCondition.value().getClass().getSimpleName()
+                            )
+                    );
+                }
+            }
         };
     }
 

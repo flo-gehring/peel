@@ -1,5 +1,6 @@
 package de.flogehring.peel.core.eval;
 
+import de.flogehring.peel.core.values.None;
 import de.flogehring.peel.core.values.PeelValue;
 
 import java.util.List;
@@ -43,4 +44,33 @@ public sealed interface EvaluatedExpression extends EvaluatedCodeElement {
     ) implements EvaluatedExpression {
 
     }
+
+    record Assignment(String variableName, EvaluatedExpression expression) implements EvaluatedExpression {
+        @Override
+        public PeelValue value() {
+            return expression.value();
+        }
+    }
+
+    record IfStatement(
+            EvaluatedExpression condition,
+            EvaluatedBlock executedBlock,
+            boolean tookThenBranch
+    ) implements EvaluatedExpression {
+        @Override
+        public PeelValue value() {
+            return executedBlock.value();
+        }
+    }
+
+    record EvaluatedBlock(List<EvaluatedExpression> content) implements EvaluatedExpression {
+        @Override
+        public PeelValue value() {
+            if (content.isEmpty()) {
+                return None.NONE;
+            }
+            return content.getLast().value();
+        }
+    }
+
 }
