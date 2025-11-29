@@ -2,8 +2,8 @@ package de.flogehring.peel.parse;
 
 import de.flogehring.peel.antlr.PeelLexer;
 import de.flogehring.peel.antlr.PeelParser;
-import de.flogehring.peel.core.lang.CodeElement;
 import de.flogehring.peel.core.lang.Expression;
+import de.flogehring.peel.core.lang.ExpressionFactoryMethods;
 import de.flogehring.peel.core.lang.Program;
 import de.flogehring.peel.run.PeelException;
 import org.antlr.v4.runtime.CharStreams;
@@ -22,21 +22,6 @@ public class PeelGrammar {
 
     private PeelGrammar() {
     }
-
-    private static final String GRAMMAR_DEFINITION = """
-            Program  <- CodeElements
-            CodeElements <- CodeElement+
-            CodeElement <- Statement / Expression
-            Statement <- Assignment
-            Expression <- BinaryOperator / Literal / Variable
-            Variable <- VariableName
-            BinaryOperator <- Expression Operator Expression
-            Literal <- Num
-            Operator <- "\\+" / "\\*" / "[a-zA-Z]+"
-            Assignment <- VariableName "=" Expression
-            Num <- "[0-9]+"
-            VariableName <- "[a-zA-Z]+"
-            """;
 
     public static Program parse(String program) {
         PeelLexer peelLexer = new PeelLexer(CharStreams.fromString(program));
@@ -86,7 +71,7 @@ public class PeelGrammar {
             String text = ctx.IDENT().getSymbol().getText();
             ParsableProgramm accept = ctx.expr().accept(this);
             return new ParsableProgramm.ParsableCodeElement(
-                    CodeElement.assign(
+                    ExpressionFactoryMethods.assign(
                             text,
                             accept.toExpr()
                     )
@@ -96,7 +81,7 @@ public class PeelGrammar {
         @Override
         public ParsableProgramm visitLogicalOrExpr(PeelParser.LogicalOrExprContext ctx) {
             return new ParsableProgramm.ParsableCodeElement(
-                    CodeElement.expr(
+                    ExpressionFactoryMethods.expr(
                             ctx.expr(0).accept(this).toExpr(),
                             "||",
                             ctx.expr(1).accept(this).toExpr()
@@ -111,7 +96,7 @@ public class PeelGrammar {
             if (ctx.block().size() >= 2) {
                 Expression.Block elseBlock = (Expression.Block) ctx.block(1).accept(this).toExpr();
                 return new ParsableProgramm.ParsableCodeElement(
-                        CodeElement.ifExpression(
+                        ExpressionFactoryMethods.ifExpression(
                                 ctx.expr(0).accept(this).toExpr(),
                                 (Expression.Block) ctx.block(0).accept(this).toExpr(),
                                 elseBlock
@@ -119,7 +104,7 @@ public class PeelGrammar {
                 );
             } else {
                 return new ParsableProgramm.ParsableCodeElement(
-                        CodeElement.ifExpression(
+                        ExpressionFactoryMethods.ifExpression(
                                 ctx.expr(0).accept(this).toExpr(),
                                 (Expression.Block) ctx.block(0).accept(this).toExpr()
                         )
@@ -149,7 +134,7 @@ public class PeelGrammar {
             }
 
             return new ParsableProgramm.ParsableCodeElement(
-                    CodeElement.ifExpression(
+                    ExpressionFactoryMethods.ifExpression(
                             ctx.expr(0).accept(this).toExpr(),
                             (Expression.Block) ctx.block(0).accept(this).toExpr(),
                             elseBlock
@@ -160,14 +145,14 @@ public class PeelGrammar {
         @Override
         public ParsableProgramm visitVarExpr(PeelParser.VarExprContext ctx) {
             return new ParsableProgramm.ParsableCodeElement(
-                    CodeElement.var(ctx.getText())
+                    ExpressionFactoryMethods.var(ctx.getText())
             );
         }
 
         @Override
         public ParsableProgramm visitEqExpr(PeelParser.EqExprContext ctx) {
             return new ParsableProgramm.ParsableCodeElement(
-                    CodeElement.expr(
+                    ExpressionFactoryMethods.expr(
                             ctx.expr(0).accept(this).toExpr(),
                             "==",
                             ctx.expr(1).accept(this).toExpr()
@@ -185,7 +170,7 @@ public class PeelGrammar {
         @Override
         public ParsableProgramm visitAddSubExpr(PeelParser.AddSubExprContext ctx) {
             return new ParsableProgramm.ParsableCodeElement(
-                    CodeElement.expr(
+                    ExpressionFactoryMethods.expr(
                             ctx.expr(0).accept(this).toExpr(),
                             ctx.getChild(1).getText(),
                             ctx.expr(1).accept(this).toExpr()
@@ -196,7 +181,7 @@ public class PeelGrammar {
         @Override
         public ParsableProgramm visitLogicalAndExpr(PeelParser.LogicalAndExprContext ctx) {
             return new ParsableProgramm.ParsableCodeElement(
-                    CodeElement.expr(
+                    ExpressionFactoryMethods.expr(
                             ctx.expr(0).accept(this).toExpr(),
                             "&&",
                             ctx.expr(1).accept(this).toExpr()
@@ -207,14 +192,14 @@ public class PeelGrammar {
         @Override
         public ParsableProgramm visitNumberExpr(PeelParser.NumberExprContext ctx) {
             return new ParsableProgramm.ParsableCodeElement(
-                    CodeElement.integer(Integer.valueOf(ctx.NUMBER().getText()))
+                    ExpressionFactoryMethods.integer(Integer.valueOf(ctx.NUMBER().getText()))
             );
         }
 
         @Override
         public ParsableProgramm visitXorExpr(PeelParser.XorExprContext ctx) {
             return new ParsableProgramm.ParsableCodeElement(
-                    CodeElement.expr(
+                    ExpressionFactoryMethods.expr(
                             ctx.expr(0).accept(this).toExpr(),
                             "^",
                             ctx.expr(1).accept(this).toExpr()
@@ -225,7 +210,7 @@ public class PeelGrammar {
         @Override
         public ParsableProgramm visitMulDivExpr(PeelParser.MulDivExprContext ctx) {
             return new ParsableProgramm.ParsableCodeElement(
-                    CodeElement.expr(
+                    ExpressionFactoryMethods.expr(
                             ctx.expr(0).accept(this).toExpr(),
                             ctx.getChild(1).getText(),
                             ctx.expr(1).accept(this).toExpr()

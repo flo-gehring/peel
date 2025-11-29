@@ -4,11 +4,9 @@ import de.flogehring.peel.core.values.PeelValue;
 
 import java.util.List;
 
-public sealed interface Expression extends CodeElement {
-
+public sealed interface Expression {
 
     record Block(List<Expression> codeElements) implements Expression {
-
     }
 
     record Assignment(String variableName, Expression assignment) implements Expression {

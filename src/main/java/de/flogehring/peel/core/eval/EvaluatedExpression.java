@@ -5,7 +5,7 @@ import de.flogehring.peel.core.values.PeelValue;
 
 import java.util.List;
 
-public sealed interface EvaluatedExpression extends EvaluatedCodeElement {
+public sealed interface EvaluatedExpression {
 
     PeelValue value();
 

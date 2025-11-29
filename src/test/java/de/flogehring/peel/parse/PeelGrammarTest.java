@@ -7,7 +7,7 @@ import org.junit.jupiter.api.Test;
 
 import java.util.List;
 
-import static de.flogehring.peel.core.lang.CodeElement.*;
+import static de.flogehring.peel.core.lang.ExpressionFactoryMethods.*;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 
 public class PeelGrammarTest {
