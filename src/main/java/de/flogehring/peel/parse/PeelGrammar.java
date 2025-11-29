@@ -2,7 +2,8 @@ package de.flogehring.peel.parse;
 
 import de.flogehring.peel.antlr.PeelLexer;
 import de.flogehring.peel.antlr.PeelParser;
-import de.flogehring.peel.core.lang.CodeElement;
+import de.flogehring.peel.core.lang.Expression;
+import de.flogehring.peel.core.lang.ExpressionFactoryMethods;
 import de.flogehring.peel.core.lang.Program;
 import de.flogehring.peel.run.PeelException;
 import org.antlr.v4.runtime.CharStreams;
@@ -19,20 +20,8 @@ import java.util.List;
 
 public class PeelGrammar {
 
-    private static final String GRAMMAR_DEFINITION = """
-            Program  <- CodeElements
-            CodeElements <- CodeElement+
-            CodeElement <- Statement / Expression
-            Statement <- Assignment
-            Expression <- BinaryOperator / Literal / Variable
-            Variable <- VariableName
-            BinaryOperator <- Expression Operator Expression
-            Literal <- Num
-            Operator <- "\\+" / "\\*" / "[a-zA-Z]+"
-            Assignment <- VariableName "=" Expression
-            Num <- "[0-9]+"
-            VariableName <- "[a-zA-Z]+"
-            """;
+    private PeelGrammar() {
+    }
 
     public static Program parse(String program) {
         PeelLexer peelLexer = new PeelLexer(CharStreams.fromString(program));
@@ -65,6 +54,8 @@ public class PeelGrammar {
             if (ctx.assignment() != null) {
                 ParseTree child = assertOneChild(ctx);
                 return child.accept(this);
+            } else if (ctx.ifStatement() != null) {
+                return ctx.ifStatement().accept(this);
             } else {
                 return ctx.expr().accept(this);
             }
@@ -80,7 +71,7 @@ public class PeelGrammar {
             String text = ctx.IDENT().getSymbol().getText();
             ParsableProgramm accept = ctx.expr().accept(this);
             return new ParsableProgramm.ParsableCodeElement(
-                    CodeElement.assign(
+                    ExpressionFactoryMethods.assign(
                             text,
                             accept.toExpr()
                     )
@@ -90,7 +81,7 @@ public class PeelGrammar {
         @Override
         public ParsableProgramm visitLogicalOrExpr(PeelParser.LogicalOrExprContext ctx) {
             return new ParsableProgramm.ParsableCodeElement(
-                    CodeElement.expr(
+                    ExpressionFactoryMethods.expr(
                             ctx.expr(0).accept(this).toExpr(),
                             "||",
                             ctx.expr(1).accept(this).toExpr()
@@ -99,16 +90,69 @@ public class PeelGrammar {
         }
 
         @Override
+        public ParsableProgramm visitIfStatement(PeelParser.IfStatementContext ctx) {
+
+            // If there are 2 or more blocks, we have an else clause
+            if (ctx.block().size() >= 2) {
+                Expression.Block elseBlock = (Expression.Block) ctx.block(1).accept(this).toExpr();
+                return new ParsableProgramm.ParsableCodeElement(
+                        ExpressionFactoryMethods.ifExpression(
+                                ctx.expr(0).accept(this).toExpr(),
+                                (Expression.Block) ctx.block(0).accept(this).toExpr(),
+                                elseBlock
+                        )
+                );
+            } else {
+                return new ParsableProgramm.ParsableCodeElement(
+                        ExpressionFactoryMethods.ifExpression(
+                                ctx.expr(0).accept(this).toExpr(),
+                                (Expression.Block) ctx.block(0).accept(this).toExpr()
+                        )
+                );
+            }
+        }
+
+        @Override
+        public ParsableProgramm visitBlock(PeelParser.BlockContext ctx) {
+            return new ParsableProgramm.ParsableCodeElement(
+                    new Expression.Block(
+                            ctx.statement()
+                                    .stream()
+                                    .map(stmt -> stmt.accept(this).toExpr())
+                                    .toList()
+                    )
+            );
+        }
+
+        @Override
+        public ParsableProgramm visitIfExpr(PeelParser.IfExprContext ctx) {
+            Expression.Block elseBlock = null;
+
+            // If there are 2 or more blocks, we have an else clause
+            if (ctx.block().size() >= 2) {
+                elseBlock = (Expression.Block) ctx.block(1).accept(this).toExpr();
+            }
+
+            return new ParsableProgramm.ParsableCodeElement(
+                    ExpressionFactoryMethods.ifExpression(
+                            ctx.expr(0).accept(this).toExpr(),
+                            (Expression.Block) ctx.block(0).accept(this).toExpr(),
+                            elseBlock
+                    )
+            );
+        }
+
+        @Override
         public ParsableProgramm visitVarExpr(PeelParser.VarExprContext ctx) {
             return new ParsableProgramm.ParsableCodeElement(
-                    CodeElement.var(ctx.getText())
+                    ExpressionFactoryMethods.var(ctx.getText())
             );
         }
 
         @Override
         public ParsableProgramm visitEqExpr(PeelParser.EqExprContext ctx) {
             return new ParsableProgramm.ParsableCodeElement(
-                    CodeElement.expr(
+                    ExpressionFactoryMethods.expr(
                             ctx.expr(0).accept(this).toExpr(),
                             "==",
                             ctx.expr(1).accept(this).toExpr()
@@ -126,7 +170,7 @@ public class PeelGrammar {
         @Override
         public ParsableProgramm visitAddSubExpr(PeelParser.AddSubExprContext ctx) {
             return new ParsableProgramm.ParsableCodeElement(
-                    CodeElement.expr(
+                    ExpressionFactoryMethods.expr(
                             ctx.expr(0).accept(this).toExpr(),
                             ctx.getChild(1).getText(),
                             ctx.expr(1).accept(this).toExpr()
@@ -137,7 +181,7 @@ public class PeelGrammar {
         @Override
         public ParsableProgramm visitLogicalAndExpr(PeelParser.LogicalAndExprContext ctx) {
             return new ParsableProgramm.ParsableCodeElement(
-                    CodeElement.expr(
+                    ExpressionFactoryMethods.expr(
                             ctx.expr(0).accept(this).toExpr(),
                             "&&",
                             ctx.expr(1).accept(this).toExpr()
@@ -148,14 +192,14 @@ public class PeelGrammar {
         @Override
         public ParsableProgramm visitNumberExpr(PeelParser.NumberExprContext ctx) {
             return new ParsableProgramm.ParsableCodeElement(
-                    CodeElement.integer(Integer.valueOf(ctx.NUMBER().getText()))
+                    ExpressionFactoryMethods.integer(Integer.valueOf(ctx.NUMBER().getText()))
             );
         }
 
         @Override
         public ParsableProgramm visitXorExpr(PeelParser.XorExprContext ctx) {
             return new ParsableProgramm.ParsableCodeElement(
-                    CodeElement.expr(
+                    ExpressionFactoryMethods.expr(
                             ctx.expr(0).accept(this).toExpr(),
                             "^",
                             ctx.expr(1).accept(this).toExpr()
@@ -166,7 +210,7 @@ public class PeelGrammar {
         @Override
         public ParsableProgramm visitMulDivExpr(PeelParser.MulDivExprContext ctx) {
             return new ParsableProgramm.ParsableCodeElement(
-                    CodeElement.expr(
+                    ExpressionFactoryMethods.expr(
                             ctx.expr(0).accept(this).toExpr(),
                             ctx.getChild(1).getText(),
                             ctx.expr(1).accept(this).toExpr()

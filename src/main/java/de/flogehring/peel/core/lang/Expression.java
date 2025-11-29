@@ -4,13 +4,35 @@ import de.flogehring.peel.core.values.PeelValue;
 
 import java.util.List;
 
-public sealed interface Expression extends CodeElement {
+public sealed interface Expression {
 
+    record Block(List<Expression> codeElements) implements Expression {
+    }
+
+    record Assignment(String variableName, Expression assignment) implements Expression {
+    }
+
+    record IfElseStatement(
+            Expression condition,
+            Expression.Block thenBlock,
+            Expression.Block elseBlock
+    ) implements Expression {
+    }
+
+    record IfStatement(
+            Expression condition,
+            Expression.Block thenBlock
+    ) implements Expression {
+    }
 
     record Literal(PeelValue value) implements Expression {
     }
 
-    record BinaryOperator(String operator, Expression lhs, Expression rhs) implements Expression {
+    record BinaryOperator(
+            String operator,
+            Expression lhs,
+            Expression rhs
+    ) implements Expression {
         public BinaryOperator {
             Expression.assertNotEmpty(operator);
         }

@@ -29,7 +29,15 @@ public class RuntimeFactory {
         SimpleRuntime runtime = empty();
         runtime.register(add());
         runtime.register(countSubstring());
+        runtime.register(comparison());
         return runtime;
+    }
+
+    private static Function comparison() {
+        return binary(
+                "==",
+                (lhs, rhs) -> PeelValue.bool(lhs.equals(rhs))
+        );
     }
 
     private static Function add() {
@@ -79,6 +87,9 @@ public class RuntimeFactory {
                     );
                 }
             }
+            case None _ -> throw new PeelException(
+                    "Can't add None to number"
+            );
         };
 
     }

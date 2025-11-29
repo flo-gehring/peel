@@ -1,7 +1,8 @@
 package de.flogehring;
 
 import de.flogehring.peel.convenience.RuntimeFactory;
-import de.flogehring.peel.core.lang.CodeElement;
+import de.flogehring.peel.core.lang.Expression;
+import de.flogehring.peel.core.lang.ExpressionFactoryMethods;
 import de.flogehring.peel.core.lang.Program;
 import de.flogehring.peel.parse.PeelGrammar;
 import de.flogehring.peel.run.SimpleRuntime;
@@ -14,11 +15,11 @@ public class Main {
         // to see how IntelliJ IDEA suggests fixing it.
         System.out.println("Hello and Welcome to peel 👌 🍌!");
 
-        Program p = new Program(List.of(
-                CodeElement.assign("x", CodeElement.integer(1)),
-                CodeElement.assign("y", CodeElement.integer(1)),
-                CodeElement.expr(CodeElement.var("x"), "+", CodeElement.var("y"))
-        ));
+        Program p = new Program(new Expression.Block(List.of(
+                ExpressionFactoryMethods.assign("x", ExpressionFactoryMethods.integer(1)),
+                ExpressionFactoryMethods.assign("y", ExpressionFactoryMethods.integer(1)),
+                ExpressionFactoryMethods.expr(ExpressionFactoryMethods.var("x"), "+", ExpressionFactoryMethods.var("y"))
+        )));
         SimpleRuntime runtime = RuntimeFactory.defaultLanguage();
         System.out.println(runtime.run(p));
         Program parse = PeelGrammar.parse("""

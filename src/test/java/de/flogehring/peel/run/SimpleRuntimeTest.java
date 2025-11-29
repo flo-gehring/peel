@@ -5,8 +5,8 @@ import de.flogehring.peel.core.eval.EvaluatedExpression;
 import de.flogehring.peel.core.eval.EvaluatedProgram;
 import de.flogehring.peel.core.eval.Function;
 import de.flogehring.peel.core.eval.Variable;
-import de.flogehring.peel.core.lang.CodeElement;
 import de.flogehring.peel.core.lang.Expression;
+import de.flogehring.peel.core.lang.ExpressionFactoryMethods;
 import de.flogehring.peel.core.lang.Program;
 import de.flogehring.peel.core.values.Bool;
 import de.flogehring.peel.core.values.Number;
@@ -26,11 +26,12 @@ public class SimpleRuntimeTest {
 
     @Test
     void simple() {
-        Program p = new Program(List.of(
-                CodeElement.assign("x", CodeElement.integer(1)),
-                CodeElement.assign("y", CodeElement.integer(1)),
-                CodeElement.expr(CodeElement.var("x"), "+", CodeElement.var("y"))
-        ));
+        Program p = new Program(
+                new Expression.Block(List.of(
+                        ExpressionFactoryMethods.assign("x", ExpressionFactoryMethods.integer(1)),
+                        ExpressionFactoryMethods.assign("y", ExpressionFactoryMethods.integer(1)),
+                        ExpressionFactoryMethods.expr(ExpressionFactoryMethods.var("x"), "+", ExpressionFactoryMethods.var("y"))
+                )));
         SimpleRuntime runtime = RuntimeFactory.defaultLanguage();
         PeelValue value = runtime.run(p).getLastExpression().value();
         Assertions.assertEquals(PeelValue.integer(2), value);
@@ -39,9 +40,9 @@ public class SimpleRuntimeTest {
     @Test
     void stringAddition() {
         Program p = new Program(List.of(
-                CodeElement.assign("x", CodeElement.string("1")),
-                CodeElement.assign("y", CodeElement.string("1")),
-                CodeElement.expr(CodeElement.var("x"), "+", CodeElement.var("y"))
+                ExpressionFactoryMethods.assign("x", ExpressionFactoryMethods.string("1")),
+                ExpressionFactoryMethods.assign("y", ExpressionFactoryMethods.string("1")),
+                ExpressionFactoryMethods.expr(ExpressionFactoryMethods.var("x"), "+", ExpressionFactoryMethods.var("y"))
         ));
         SimpleRuntime runtime = RuntimeFactory.defaultLanguage();
         PeelValue value = runtime.run(p).getLastExpression().value();
@@ -51,7 +52,7 @@ public class SimpleRuntimeTest {
     @Test
     void registerVariables() {
         Program p = new Program(List.of(
-                CodeElement.expr(CodeElement.var("x"), "+", CodeElement.var("y"))
+                ExpressionFactoryMethods.expr(ExpressionFactoryMethods.var("x"), "+", ExpressionFactoryMethods.var("y"))
         ));
         SimpleRuntime runtime = RuntimeFactory.defaultLanguage();
         runtime.register(getVariable("x", "1"));
@@ -90,7 +91,7 @@ public class SimpleRuntimeTest {
             }
         });
         Program p = new Program(List.of(
-                CodeElement.expr(CodeElement.var("x"), "*", CodeElement.var("y"))
+                ExpressionFactoryMethods.expr(ExpressionFactoryMethods.var("x"), "*", ExpressionFactoryMethods.var("y"))
         ));
         runtime.register(getVariable("x", "Echo!"));
         runtime.register(integerVariable("y", 2));
@@ -139,7 +140,7 @@ public class SimpleRuntimeTest {
         runtime.register(integerVariable("y", 2));
         runtime.register(integerVariable("x", 1));
         Program p = new Program(List.of(
-                CodeElement.expr(CodeElement.var("x"), "+", CodeElement.var("y"))
+                ExpressionFactoryMethods.expr(ExpressionFactoryMethods.var("x"), "+", ExpressionFactoryMethods.var("y"))
         ));
         assertThatExceptionOfType(MultipleFunctionsFoundException.class).isThrownBy(
                 () -> runtime.run(p)
@@ -152,7 +153,7 @@ public class SimpleRuntimeTest {
         runtime.register(boolVariable("y", false));
         runtime.register(boolVariable("x", true));
         Program p = new Program(List.of(
-                CodeElement.expr(CodeElement.var("x"), "+", CodeElement.var("y"))
+                ExpressionFactoryMethods.expr(ExpressionFactoryMethods.var("x"), "+", ExpressionFactoryMethods.var("y"))
         ));
         assertThatExceptionOfType(NoFunctionFoundException.class).isThrownBy(
                 () -> runtime.run(p)

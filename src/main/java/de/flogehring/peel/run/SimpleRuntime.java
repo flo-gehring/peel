@@ -2,11 +2,11 @@ package de.flogehring.peel.run;
 
 import de.flogehring.peel.core.eval.*;
 import de.flogehring.peel.core.eval.Runtime;
-import de.flogehring.peel.core.lang.CodeElement;
 import de.flogehring.peel.core.lang.Expression;
 import de.flogehring.peel.core.lang.Program;
-import de.flogehring.peel.core.lang.Statement;
+import de.flogehring.peel.core.values.Bool;
 
+import java.text.MessageFormat;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -44,28 +44,12 @@ public class SimpleRuntime implements Runtime {
 
     @Override
     public EvaluatedProgram run(Program program) {
-        List<EvaluatedCodeElement> evaluatedCodeElements = new ArrayList<>(program.codeElement().size());
-        for (int i = 0; i < program.codeElement().size(); ++i) {
-            CodeElement codeElement = program.codeElement().get(i);
-            EvaluatedCodeElement evaluatedCodeElement = switch (codeElement) {
-                case Expression expression -> evaluateExpr(expression);
-                case Statement statement -> runStatement(statement);
-            };
-            evaluatedCodeElements.add(evaluatedCodeElement);
-        }
-        return new EvaluatedProgram(evaluatedCodeElements);
-    }
+        return new EvaluatedProgram(program.programm().codeElements()
+                .stream()
+                .map(this::evaluateExpr)
+                .toList()
+        );
 
-    private EvaluatedStatement runStatement(Statement statement) {
-        return switch (statement) {
-            case Statement.Assignment(var name, var expression) -> {
-                EvaluatedExpression value = evaluateExpr(expression);
-                variables.put(name, value);
-                yield new EvaluatedStatement.Assignment(
-                        name, value
-                );
-            }
-        };
     }
 
     private EvaluatedExpression evaluateExpr(Expression expression) {
@@ -76,6 +60,55 @@ public class SimpleRuntime implements Runtime {
             case Expression.Literal(var value) -> new EvaluatedExpression.Literal(value);
             case Expression.VariableName(var name) -> variables.get(name);
             case Expression.FunctionCall functionCall -> evaluateFunction(functionCall);
+            case Expression.Assignment(var name, var expression1) -> {
+                EvaluatedExpression value = evaluateExpr(expression1);
+                variables.put(name, value);
+                yield new EvaluatedExpression.Assignment(
+                        name, value
+                );
+            }
+            case Expression.Block(var expressions) -> new EvaluatedExpression.EvaluatedBlock(
+                    expressions
+                            .stream()
+                            .map(this::evaluateExpr)
+                            .toList()
+            );
+            case Expression.IfElseStatement(var condition, var ifBlock, var elseBlock) -> {
+                var evaluatedCondition = evaluateExpr(condition);
+                if (evaluatedCondition.value() instanceof Bool(var c)) {
+                    EvaluatedExpression evaluatedBlock = evaluateExpr(c ? ifBlock : elseBlock);
+                    yield new EvaluatedExpression.IfStatement(
+                            evaluatedCondition,
+                            (EvaluatedExpression.EvaluatedBlock) evaluatedBlock
+                    );
+                } else {
+                    throw new IllegalArgumentException(
+                            MessageFormat.format(
+                                    "condition must be Bool, was {0}",
+                                    evaluatedCondition.value().getClass().getSimpleName()
+                            )
+                    );
+                }
+            }
+            case Expression.IfStatement(var condition, var block) -> {
+                var evaluatedCondition = evaluateExpr(condition);
+                if (evaluatedCondition.value() instanceof Bool(var c)) {
+                    EvaluatedExpression evaluatedBlock = c
+                            ? evaluateExpr(block)
+                            : new EvaluatedExpression.EvaluatedBlock(List.of());
+                    yield new EvaluatedExpression.IfStatement(
+                            evaluatedCondition,
+                            (EvaluatedExpression.EvaluatedBlock) evaluatedBlock
+                    );
+                } else {
+                    throw new IllegalArgumentException(
+                            MessageFormat.format(
+                                    "condition must be Bool, was {0}",
+                                    evaluatedCondition.value().getClass().getSimpleName()
+                            )
+                    );
+                }
+            }
         };
     }
 
@@ -100,7 +133,6 @@ public class SimpleRuntime implements Runtime {
         // TODO add Special Support for Operators
         List<Function> matchingName = functions.get(operator.operator());
         List<Expression> parameters = List.of(operator.lhs(), operator.rhs());
-        List<EvaluatedExpression> arguments = parameters.stream().map(this::evaluateExpr).toList();
         Function f = requireOneFunction(
                 matchingName,
                 getNoFunctionFoundException(operator.operator(), parameters),
@@ -113,11 +145,14 @@ public class SimpleRuntime implements Runtime {
         return new NoFunctionFoundException(operator, arguments);
     }
 
-    private MultipleFunctionsFoundException getMultipleFunctionsFoundException(String operator, List<Function> list) {
+    private MultipleFunctionsFoundException getMultipleFunctionsFoundException(
+            String operator, List<Function> list
+    ) {
         return new MultipleFunctionsFoundException(operator, list.size());
     }
 
-    private Function requireOneFunction(List<Function> list, NoFunctionFoundException e, MultipleFunctionsFoundException multipleFunctionsFoundException) {
+    private Function requireOneFunction(List<Function> list, NoFunctionFoundException
+            e, MultipleFunctionsFoundException multipleFunctionsFoundException) {
         if (list.isEmpty()) {
             throw e;
         } else if (list.size() > 1) {
