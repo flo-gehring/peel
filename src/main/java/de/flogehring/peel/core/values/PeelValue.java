@@ -16,6 +16,10 @@ public sealed interface PeelValue permits Primitives, PeelValue.Collection {
         return new Text(s);
     }
 
+    static PeelValue bool(boolean b) {
+        return new Bool(b);
+    }
+
     sealed interface Collection extends PeelValue {
 
         record Map(java.util.Map<Primitives, PeelValue> map) implements Collection {

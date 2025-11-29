@@ -20,6 +20,9 @@ import java.util.List;
 
 public class PeelGrammar {
 
+    private PeelGrammar() {
+    }
+
     private static final String GRAMMAR_DEFINITION = """
             Program  <- CodeElements
             CodeElements <- CodeElement+
