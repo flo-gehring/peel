@@ -79,8 +79,7 @@ public class SimpleRuntime implements Runtime {
                     EvaluatedExpression evaluatedBlock = evaluateExpr(c ? ifBlock : elseBlock);
                     yield new EvaluatedExpression.IfStatement(
                             evaluatedCondition,
-                            (EvaluatedExpression.EvaluatedBlock) evaluatedBlock,
-                            c
+                            (EvaluatedExpression.EvaluatedBlock) evaluatedBlock
                     );
                 } else {
                     throw new IllegalArgumentException(
@@ -94,13 +93,13 @@ public class SimpleRuntime implements Runtime {
             case Expression.IfStatement(var condition, var block) -> {
                 var evaluatedCondition = evaluateExpr(condition);
                 if (evaluatedCondition.value() instanceof Bool(var c)) {
-                    yield c ?
-                            new EvaluatedExpression.IfStatement(
-                                    evaluatedCondition,
-                                    (EvaluatedExpression.EvaluatedBlock) evaluateExpr(block),
-                                    c
-                            )
-                            : new EvaluatedExpression.SkippedIfStatement(evaluatedCondition);
+                    EvaluatedExpression evaluatedBlock = c
+                            ? evaluateExpr(block)
+                            : new EvaluatedExpression.EvaluatedBlock(List.of());
+                    yield new EvaluatedExpression.IfStatement(
+                            evaluatedCondition,
+                            (EvaluatedExpression.EvaluatedBlock) evaluatedBlock
+                    );
                 } else {
                     throw new IllegalArgumentException(
                             MessageFormat.format(
@@ -134,7 +133,6 @@ public class SimpleRuntime implements Runtime {
         // TODO add Special Support for Operators
         List<Function> matchingName = functions.get(operator.operator());
         List<Expression> parameters = List.of(operator.lhs(), operator.rhs());
-        List<EvaluatedExpression> arguments = parameters.stream().map(this::evaluateExpr).toList();
         Function f = requireOneFunction(
                 matchingName,
                 getNoFunctionFoundException(operator.operator(), parameters),
@@ -147,8 +145,9 @@ public class SimpleRuntime implements Runtime {
         return new NoFunctionFoundException(operator, arguments);
     }
 
-    private MultipleFunctionsFoundException getMultipleFunctionsFoundException(String
-                                                                                       operator, List<Function> list) {
+    private MultipleFunctionsFoundException getMultipleFunctionsFoundException(
+            String operator, List<Function> list
+    ) {
         return new MultipleFunctionsFoundException(operator, list.size());
     }
 

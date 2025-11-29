@@ -54,19 +54,11 @@ public sealed interface EvaluatedExpression extends EvaluatedCodeElement {
 
     record IfStatement(
             EvaluatedExpression condition,
-            EvaluatedBlock executedBlock,
-            boolean tookThenBranch
+            EvaluatedBlock executedBlock
     ) implements EvaluatedExpression {
         @Override
         public PeelValue value() {
             return executedBlock.value();
-        }
-    }
-
-    record SkippedIfStatement(EvaluatedExpression condition) implements EvaluatedExpression {
-        @Override
-        public PeelValue value() {
-            return None.NONE;
         }
     }
 
