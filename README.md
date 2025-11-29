@@ -1,9 +1,15 @@
-~~# PEEL 🍌
+# PEEL 🍌
 
 **P**rintable, **E**xtendable **E**xpression **L**anguage
 
 PEEL is an expression language designed for expert systems in regulated industries. It enables domain experts to write
 calculation logic that is both executable and auditable, with built-in traceability of intermediate results.
+
+*Extendable*: The IT-Departments can provide building-blocks, like functions to lookup values in databases, connectors
+to customer data and the domain experts can implement snippets of business logic.
+
+*Printable*: The result of the calculation is not a single value, but the whole execution trace. This can be used to
+populate documents for customers or regulators or just help domain experts to verify the calculations.
 
 ## Vision
 
@@ -16,7 +22,7 @@ PEEL bridges this gap by providing:
 - **Printable**: Every calculation step is captured and can be rendered into compliance documents
 - **Extendable**: Plug in custom arithmetic, functions, and domain-specific logic
 - **Auditable**: Scripts stored in databases with version control and approval workflows
-- **Integrated**: Embed calculations into existing systems via Java API~~
+- **Integrated**: Embed calculations into existing systems via Java API.
 
 Think of it as "better integrated Excel for production systems."
 
@@ -56,39 +62,12 @@ Runtime runtime = RuntimeBuilder.create()
 
 Experts write scripts, IT provides the building blocks.
 
-### Type-Safe & Fast
+### Language Features
 
-- Written in Java 22 with modern language features
-- ANTLR-based parser for robust syntax
-- Sealed types for exhaustive pattern matching
-- First-class functions with closures
-- Lexical scoping
+* Dynamic Typing
+* First-Class Functions and Closures
 
-## Quick Example
 
-```javascript
-// PEEL script for loan approval
-creditScore = applicant.getCreditScore();
-debtToIncome = applicant.getDebt() / applicant.getIncome();
-
-if (creditScore > 700 && debtToIncome < 0.43) {
-    approved = true;
-    rate = baseRate - 0.5;
-} else if (creditScore > 650 && debtToIncome < 0.35) {
-    approved = true;
-    rate = baseRate;
-} else {
-    approved = false;
-    rate = 0;
-}
-```
-
-This script can be:
-
-- Stored in a database
-- Evaluated with different applicant data
-- Rendered into a decision document showing every calculation step
-- Versioned and audited for compliance
 
 ## Current Status
 
@@ -114,34 +93,6 @@ See [`docs/product/`](docs/product/) for detailed epic planning.
 
 # Run tests
 ./gradlew test
-
-# Generate ANTLR parser (automatically done by build)
-./gradlew generateGrammarSource
-```
-
-### Basic Usage
-
-```java
-import de.flogehring.peel.parse.PeelGrammar;
-import de.flogehring.peel.core.lang.Program;
-import de.flogehring.peel.run.SimpleRuntime;
-import de.flogehring.peel.convenience.RuntimeFactory;
-
-// Parse PEEL source code
-Program program = PeelGrammar.parse("""
-            x = 10;
-            y = 20;
-            x + y;
-        """);
-
-        // Create runtime with standard functions
-        SimpleRuntime runtime = RuntimeFactory.defaultLanguage();
-
-        // Evaluate
-        EvaluatedProgram result = runtime.run(program);
-System.out.
-
-        println(result);  // Shows: x = 10, y = 20, result = 30
 ```
 
 ## Documentation
@@ -156,19 +107,6 @@ System.out.
 - **Java 22** - Uses modern pattern matching and sealed types
 - **Gradle** - Build system
 - **ANTLR 4** - Parser generator
-
-## Architecture Highlights
-
-PEEL separates concerns cleanly:
-
-1. **Language Representation** (`core.lang`) - Immutable AST nodes
-2. **Value System** (`core.values`) - Sealed value types (Number, Text, Bool, Collections)
-3. **Evaluation** (`core.eval`) - Runtime interface for execution
-4. **Parsing** (`parse`) - ANTLR-based parser with visitor pattern
-5. **Convenience Layer** (`convenience`) - Pre-configured runtimes and helpers
-
-The architecture supports pluggable arithmetic engines and function registries, enabling domain-specific customization
-without forking the core evaluator.
 
 ## Use Cases
 
