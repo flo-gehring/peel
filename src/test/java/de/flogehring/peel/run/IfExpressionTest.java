@@ -3,6 +3,7 @@ package de.flogehring.peel.run;
 import de.flogehring.peel.convenience.RuntimeFactory;
 import de.flogehring.peel.core.eval.EvaluatedProgram;
 import de.flogehring.peel.core.lang.Program;
+import de.flogehring.peel.core.values.None;
 import de.flogehring.peel.core.values.Number;
 import de.flogehring.peel.core.values.PeelValue;
 import de.flogehring.peel.parse.PeelGrammar;
@@ -121,6 +122,72 @@ public class IfExpressionTest {
                     .isThrownBy(() -> runtime.run(program))
                     .withMessageContaining("condition must be Bool");
         }
+
+        @Test
+        void ifWithoutElseWhenConditionFalse() {
+            runProgrammAndExpect("""
+                        x = if (1 == 2) {
+                            10;
+                        };
+                        x;
+                    """, None.NONE);
+        }
+
+        @Test
+        void ifWithoutElseReturnsNoneWhenFalse() {
+            runProgrammAndExpect("""
+                        if (5 == 10) {
+                            42;
+                        }
+                    """, None.NONE);
+        }
+
+        @Test
+        void ifWithoutElseReturnsValueWhenTrue() {
+            runProgrammAndExpect("""
+                        if (5 == 5) {
+                            42;
+                        }
+                    """, integer(42));
+        }
+
+        @Test
+        void ifElseBranchesWithDifferentTypes() {
+            runProgrammAndExpect("""
+                        x = if (1 == 1) {
+                            42;
+                        } else {
+                            "text";
+                        };
+                        x;
+                    """, integer(42));
+        }
+
+        @Test
+        void ifElseReturningNoneAndInteger() {
+            runProgrammAndExpect("""
+                        result = if (1 == 2) {
+                            100;
+                        } else {
+                        };
+                        result;
+                    """, None.NONE);
+        }
+
+        @Test
+        void ifConditionWithComplexExpression() {
+            runProgrammAndExpect("""
+                        x = 5;
+                        y = 3;
+                        sum = x + y;
+                        result = if (sum == 8) {
+                            100;
+                        } else {
+                            0;
+                        };
+                        result;
+                    """, integer(100));
+        }
     }
 
     @Nested
@@ -205,6 +272,174 @@ public class IfExpressionTest {
                     """, integer(3));
         }
 
+        @Test
+        void ifElseChainAsAssignment() {
+            runProgrammAndExpect("""
+                        x = 3;
+                        result = if (x == 1) {
+                            100;
+                        } else if (x == 2) {
+                            200;
+                        } else if (x == 3) {
+                            300;
+                        } else {
+                            400;
+                        };
+                        result;
+                    """, integer(300));
+        }
+
+        @Test
+        void nestedIfElseAsAssignment() {
+            runProgrammAndExpect("""
+                        x = 1;
+                        y = 2;
+                        result = if (x == 1) {
+                            if (y == 2) {
+                                42;
+                            } else {
+                                21;
+                            }
+                        } else {
+                            0;
+                        };
+                        result;
+                    """, integer(42));
+        }
+
+        @Test
+        void ifElseWithMultipleStatementsInBranches() {
+            runProgrammAndExpect("""
+                        x = 5;
+                        result = if (x == 5) {
+                            a = 10;
+                            b = 20;
+                            a + b;
+                        } else {
+                            a = 1;
+                            b = 2;
+                            a * b;
+                        };
+                        result;
+                    """, integer(30));
+        }
+
+        @Test
+        void ifElseIfWithoutFinalElseWhenNoMatch() {
+            runProgrammAndExpect("""
+                        x = if (5 == 1) {
+                            1;
+                        } else if (5 == 2) {
+                            2;
+                        };
+                        x;
+                    """, None.NONE);
+        }
+
+        @Test
+        void allBranchesSkipped() {
+            runProgrammAndExpect("""
+                        x = 10;
+                        result = if (x == 1) {
+                            1;
+                        } else if (x == 2) {
+                            2;
+                        } else if (x == 3) {
+                            3;
+                        };
+                        result;
+                    """, None.NONE);
+        }
+
+    }
+
+    @Nested
+    class EmptyBlocks {
+
+        @Test
+        void emptyThenBlockReturnsNone() {
+            runProgrammAndExpect("""
+                        x = if (1 == 1) {
+                        };
+                        x;
+                    """, None.NONE);
+        }
+
+        @Test
+        void emptyElseBlockReturnsNone() {
+            runProgrammAndExpect("""
+                        x = if (1 == 2) {
+                            10;
+                        } else {
+                        };
+                        x;
+                    """, None.NONE);
+        }
+
+        @Test
+        void emptyBlockInElseIfChain() {
+            runProgrammAndExpect("""
+                        x = if (1 == 2) {
+                            1;
+                        } else if (2 == 2) {
+                        } else {
+                            3;
+                        };
+                        x;
+                    """, None.NONE);
+        }
+    }
+
+    @Nested
+    class EdgeCases {
+
+        @Test
+        void multipleIndependentIfStatements() {
+            runProgrammAndExpect("""
+                        x = 0;
+                        if (1 == 1) {
+                            x = 1;
+                        }
+                        if (2 == 2) {
+                            x = 2;
+                        }
+                        x;
+                    """, integer(2));
+        }
+
+        @Test
+        void deeplyNestedIfStatements() {
+            runProgrammAndExpect("""
+                        result = 0;
+                        if (1 == 1) {
+                            if (2 == 2) {
+                                if (3 == 3) {
+                                    if (4 == 4) {
+                                        result = 42;
+                                    }
+                                }
+                            }
+                        }
+                        result;
+                    """, integer(42));
+        }
+
+        @Test
+        void nestedIfElseInElseBranch() {
+            runProgrammAndExpect("""
+                        x = 10;
+                        result = if (x == 5) {
+                            1;
+                        } else {
+                            if (x == 10) {
+                                2;
+                            } else {
+                                3;
+                            }
+                        };
+                        result;
+                    """, integer(2));
+        }
     }
 
     private static void runProgrammAndExpect(String text, PeelValue expected) {
