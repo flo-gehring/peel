@@ -42,6 +42,8 @@ block
 // Expressions
 // ----------------------
 
+// TODO Nest the Expression so they have the usual precedence rules
+
 expr
     : 'if' '(' expr ')' block ('else' 'if' '(' expr ')' block)* ('else' block)?  # ifExpr
     | expr '||' expr       # logicalOrExpr
@@ -51,9 +53,24 @@ expr
     | '!' expr             # notExpr
     | expr ('*' | '/') expr # mulDivExpr
     | expr ('+' | '-') expr # addSubExpr
+    | nonTernaryExpr '?' nonTernaryExpr ':' nonTernaryExpr # ternaryExpr
     | '(' expr ')'         # parenExpr
     | IDENT                # varExpr
     | NUMBER               # numberExpr
+    ;
+
+nonTernaryExpr
+    : 'if' '(' nonTernaryExpr ')' block ('else' 'if' '(' nonTernaryExpr ')' block)* ('else' block)?  # nonTernaryIfExpr
+    | nonTernaryExpr '||' nonTernaryExpr       # nonTernaryLogicalOrExpr
+    | nonTernaryExpr '&&' nonTernaryExpr       # nonTernaryLogicalAndExpr
+    | nonTernaryExpr '==' nonTernaryExpr       # nonTernaryEqExpr
+    | nonTernaryExpr '^' nonTernaryExpr        # nonTernaryXorExpr
+    | '!' nonTernaryExpr             # nonTernaryNotExpr
+    | nonTernaryExpr ('*' | '/') nonTernaryExpr # nonTernaryMulDivExpr
+    | nonTernaryExpr ('+' | '-') nonTernaryExpr # nonTernaryAddSubExpr
+    | '(' nonTernaryExpr ')'         # nonTernaryParenExpr
+    | IDENT                # nonTernaryVarExpr
+    | NUMBER               # nonTernaryNumberExpr
     ;
 
 // ----------------------

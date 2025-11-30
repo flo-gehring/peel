@@ -54,7 +54,7 @@ public sealed interface EvaluatedExpression {
 
     record IfStatement(
             EvaluatedExpression condition,
-            EvaluatedBlock executedBlock
+            EvaluatedExpression executedBlock
     ) implements EvaluatedExpression {
         @Override
         public PeelValue value() {
