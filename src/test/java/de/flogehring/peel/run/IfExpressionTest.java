@@ -11,6 +11,7 @@ import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 
 import static de.flogehring.peel.core.values.PeelValue.integer;
+import static de.flogehring.peel.run.TestHelpers.runProgrammAndExpect;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThatExceptionOfType;
 
@@ -440,12 +441,5 @@ public class IfExpressionTest {
                         result;
                     """, integer(2));
         }
-    }
-
-    private static void runProgrammAndExpect(String text, PeelValue expected) {
-        Program program = PeelGrammar.parse(text);
-        SimpleRuntime runtime = RuntimeFactory.defaultLanguage();
-        EvaluatedProgram evaluated = runtime.run(program);
-        assertThat(evaluated.getLastExpression().value()).isEqualTo(expected);
     }
 }

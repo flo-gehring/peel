@@ -80,14 +80,14 @@ public class SimpleRuntime implements Runtime {
                     if (requireBool(evaluatedCondition)) {
                         yield new EvaluatedExpression.IfStatement(
                                 evaluatedCondition,
-                                (EvaluatedExpression.EvaluatedBlock) evaluateExpr(cond.then())
+                                evaluateExpr(cond.then())
                         );
                     }
                 }
                 yield elseBlock.map(
                         block -> new EvaluatedExpression.IfStatement(
                                 EvaluatedExpression.EvaluatedBlock.empty(),
-                                (EvaluatedExpression.EvaluatedBlock) evaluateExpr(block)
+                                evaluateExpr(block)
                         )
                 ).orElseGet(() -> new EvaluatedExpression.IfStatement(
                         EvaluatedExpression.EvaluatedBlock.empty(),

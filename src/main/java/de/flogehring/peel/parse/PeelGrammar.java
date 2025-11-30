@@ -80,6 +80,23 @@ public class PeelGrammar {
         }
 
         @Override
+        public ParsableProgramm visitTernaryExpr(PeelParser.TernaryExprContext ctx) {
+            return new ParsableProgramm.ParsableCodeElement(
+                    new Expression.IfElseStatement(
+                            List.of(
+                                    new Expression.IfElseStatement.ConditionalExecution(
+                                            ctx.getChild(0).accept(this).toExpr(),
+                                            ctx.getChild(2).accept(this).toExpr()
+                                    )
+                            ),
+                            Optional.of(
+                                    ctx.getChild(4).accept(this).toExpr()
+                            )
+                    )
+            );
+        }
+
+        @Override
         public ParsableProgramm visitLogicalOrExpr(PeelParser.LogicalOrExprContext ctx) {
             return new ParsableProgramm.ParsableCodeElement(
                     ExpressionFactoryMethods.expr(
@@ -268,7 +285,127 @@ public class PeelGrammar {
 
         @Override
         public ParsableProgramm visitParenExpr(PeelParser.ParenExprContext ctx) {
-            return visit(ctx);
+            return ctx.expr().accept(this);
+        }
+
+        // NonTernary expression visitors - delegate to the same logic as regular expressions
+        @Override
+        public ParsableProgramm visitNonTernaryIfExpr(PeelParser.NonTernaryIfExprContext ctx) {
+            var blocks = ctx.block();
+            var expr = ctx.nonTernaryExpr();
+            List<Expression.IfElseStatement.ConditionalExecution> conditionals = new ArrayList<>();
+            for (int i = 0; i < expr.size(); ++i) {
+                conditionals.add(
+                        new Expression.IfElseStatement.ConditionalExecution(
+                                expr.get(i).accept(this).toExpr(),
+                                blocks.get(i).accept(this).toExpr()
+                        )
+                );
+            }
+            Optional<Expression> elseBlock = Optional.empty();
+            if (blocks.size() > expr.size()) {
+                elseBlock = Optional.of(
+                        blocks.getLast().accept(this).toExpr()
+                );
+            }
+            return new ParsableProgramm.ParsableCodeElement(
+                    new Expression.IfElseStatement(
+                            conditionals,
+                            elseBlock
+                    )
+            );
+        }
+
+        @Override
+        public ParsableProgramm visitNonTernaryLogicalOrExpr(PeelParser.NonTernaryLogicalOrExprContext ctx) {
+            return new ParsableProgramm.ParsableCodeElement(
+                    ExpressionFactoryMethods.expr(
+                            ctx.nonTernaryExpr(0).accept(this).toExpr(),
+                            "||",
+                            ctx.nonTernaryExpr(1).accept(this).toExpr()
+                    )
+            );
+        }
+
+        @Override
+        public ParsableProgramm visitNonTernaryLogicalAndExpr(PeelParser.NonTernaryLogicalAndExprContext ctx) {
+            return new ParsableProgramm.ParsableCodeElement(
+                    ExpressionFactoryMethods.expr(
+                            ctx.nonTernaryExpr(0).accept(this).toExpr(),
+                            "&&",
+                            ctx.nonTernaryExpr(1).accept(this).toExpr()
+                    )
+            );
+        }
+
+        @Override
+        public ParsableProgramm visitNonTernaryEqExpr(PeelParser.NonTernaryEqExprContext ctx) {
+            return new ParsableProgramm.ParsableCodeElement(
+                    ExpressionFactoryMethods.expr(
+                            ctx.nonTernaryExpr(0).accept(this).toExpr(),
+                            "==",
+                            ctx.nonTernaryExpr(1).accept(this).toExpr()
+                    )
+            );
+        }
+
+        @Override
+        public ParsableProgramm visitNonTernaryXorExpr(PeelParser.NonTernaryXorExprContext ctx) {
+            return new ParsableProgramm.ParsableCodeElement(
+                    ExpressionFactoryMethods.expr(
+                            ctx.nonTernaryExpr(0).accept(this).toExpr(),
+                            "^",
+                            ctx.nonTernaryExpr(1).accept(this).toExpr()
+                    )
+            );
+        }
+
+        @Override
+        public ParsableProgramm visitNonTernaryNotExpr(PeelParser.NonTernaryNotExprContext ctx) {
+            return new ParsableProgramm.ParsableCodeElement(
+                    ctx.accept(this).toExpr() // TODO not operator
+            );
+        }
+
+        @Override
+        public ParsableProgramm visitNonTernaryMulDivExpr(PeelParser.NonTernaryMulDivExprContext ctx) {
+            return new ParsableProgramm.ParsableCodeElement(
+                    ExpressionFactoryMethods.expr(
+                            ctx.nonTernaryExpr(0).accept(this).toExpr(),
+                            ctx.getChild(1).getText(),
+                            ctx.nonTernaryExpr(1).accept(this).toExpr()
+                    )
+            );
+        }
+
+        @Override
+        public ParsableProgramm visitNonTernaryAddSubExpr(PeelParser.NonTernaryAddSubExprContext ctx) {
+            return new ParsableProgramm.ParsableCodeElement(
+                    ExpressionFactoryMethods.expr(
+                            ctx.nonTernaryExpr(0).accept(this).toExpr(),
+                            ctx.getChild(1).getText(),
+                            ctx.nonTernaryExpr(1).accept(this).toExpr()
+                    )
+            );
+        }
+
+        @Override
+        public ParsableProgramm visitNonTernaryParenExpr(PeelParser.NonTernaryParenExprContext ctx) {
+            return ctx.nonTernaryExpr().accept(this);
+        }
+
+        @Override
+        public ParsableProgramm visitNonTernaryVarExpr(PeelParser.NonTernaryVarExprContext ctx) {
+            return new ParsableProgramm.ParsableCodeElement(
+                    ExpressionFactoryMethods.var(ctx.getText())
+            );
+        }
+
+        @Override
+        public ParsableProgramm visitNonTernaryNumberExpr(PeelParser.NonTernaryNumberExprContext ctx) {
+            return new ParsableProgramm.ParsableCodeElement(
+                    ExpressionFactoryMethods.integer(Integer.valueOf(ctx.NUMBER().getText()))
+            );
         }
     }
 }
