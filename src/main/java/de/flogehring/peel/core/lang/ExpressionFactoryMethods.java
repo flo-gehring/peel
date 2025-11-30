@@ -29,26 +29,4 @@ public class ExpressionFactoryMethods {
     public static Expression.Assignment assign(String var, Expression expr) {
         return new Expression.Assignment(var, expr);
     }
-
-    public static Expression ifExpression(
-            Expression condition,
-            Expression.Block thenBlock,
-            Expression.Block elseBlock
-    ) {
-        return new Expression.IfElseStatement(
-                condition,
-                thenBlock,
-                elseBlock
-        );
-    }
-
-    public static Expression ifExpression(
-            Expression condition,
-            Expression.Block thenBlock
-    ) {
-        return new Expression.IfStatement(
-                condition,
-                thenBlock
-        );
-    }
 }

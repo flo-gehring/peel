@@ -6,7 +6,6 @@ import de.flogehring.peel.core.lang.Expression;
 import de.flogehring.peel.core.lang.Program;
 import de.flogehring.peel.core.values.Bool;
 
-import java.text.MessageFormat;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -73,43 +72,37 @@ public class SimpleRuntime implements Runtime {
                             .map(this::evaluateExpr)
                             .toList()
             );
-            case Expression.IfElseStatement(var condition, var ifBlock, var elseBlock) -> {
-                var evaluatedCondition = evaluateExpr(condition);
-                if (evaluatedCondition.value() instanceof Bool(var c)) {
-                    EvaluatedExpression evaluatedBlock = evaluateExpr(c ? ifBlock : elseBlock);
-                    yield new EvaluatedExpression.IfStatement(
-                            evaluatedCondition,
-                            (EvaluatedExpression.EvaluatedBlock) evaluatedBlock
-                    );
-                } else {
-                    throw new IllegalArgumentException(
-                            MessageFormat.format(
-                                    "condition must be Bool, was {0}",
-                                    evaluatedCondition.value().getClass().getSimpleName()
-                            )
-                    );
+            case Expression.IfElseStatement(var elseIfs, var elseBlock) -> {
+
+                EvaluatedExpression result;
+                for (Expression.IfElseStatement.ConditionalExecution cond : elseIfs) {
+                    EvaluatedExpression evaluatedCondition = evaluateExpr(cond.condition());
+                    if (requireBool(evaluatedCondition)) {
+                        yield new EvaluatedExpression.IfStatement(
+                                evaluatedCondition,
+                                (EvaluatedExpression.EvaluatedBlock) evaluateExpr(cond.then())
+                        );
+                    }
                 }
-            }
-            case Expression.IfStatement(var condition, var block) -> {
-                var evaluatedCondition = evaluateExpr(condition);
-                if (evaluatedCondition.value() instanceof Bool(var c)) {
-                    EvaluatedExpression evaluatedBlock = c
-                            ? evaluateExpr(block)
-                            : new EvaluatedExpression.EvaluatedBlock(List.of());
-                    yield new EvaluatedExpression.IfStatement(
-                            evaluatedCondition,
-                            (EvaluatedExpression.EvaluatedBlock) evaluatedBlock
-                    );
-                } else {
-                    throw new IllegalArgumentException(
-                            MessageFormat.format(
-                                    "condition must be Bool, was {0}",
-                                    evaluatedCondition.value().getClass().getSimpleName()
-                            )
-                    );
-                }
+                yield elseBlock.map(
+                        block -> new EvaluatedExpression.IfStatement(
+                                EvaluatedExpression.EvaluatedBlock.empty(),
+                                (EvaluatedExpression.EvaluatedBlock) evaluateExpr(block)
+                        )
+                ).orElseGet(() -> new EvaluatedExpression.IfStatement(
+                        EvaluatedExpression.EvaluatedBlock.empty(),
+                        EvaluatedExpression.EvaluatedBlock.empty()
+                ));
             }
         };
+    }
+
+    private boolean requireBool(EvaluatedExpression evaluatedExpression) {
+        if (evaluatedExpression.value() instanceof Bool(var b)) {
+            return b;
+        } else {
+            throw new PeelException("condition must be Bool, was {0}", evaluatedExpression.value().getClass().getSimpleName());
+        }
     }
 
     private EvaluatedExpression evaluateFunction(Expression.FunctionCall functionCall) {

@@ -3,6 +3,7 @@ package de.flogehring.peel.core.lang;
 import de.flogehring.peel.core.values.PeelValue;
 
 import java.util.List;
+import java.util.Optional;
 
 public sealed interface Expression {
 
@@ -12,17 +13,15 @@ public sealed interface Expression {
     record Assignment(String variableName, Expression assignment) implements Expression {
     }
 
-    record IfElseStatement(
-            Expression condition,
-            Expression.Block thenBlock,
-            Expression.Block elseBlock
-    ) implements Expression {
-    }
 
-    record IfStatement(
-            Expression condition,
-            Expression.Block thenBlock
+    record IfElseStatement(
+            List<ConditionalExecution> conditionals,
+            Optional<Expression> elseExpr
     ) implements Expression {
+
+        public record ConditionalExecution(Expression condition, Expression then) {
+
+        }
     }
 
     record Literal(PeelValue value) implements Expression {

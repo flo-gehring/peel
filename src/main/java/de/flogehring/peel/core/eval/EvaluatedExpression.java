@@ -63,6 +63,13 @@ public sealed interface EvaluatedExpression {
     }
 
     record EvaluatedBlock(List<EvaluatedExpression> content) implements EvaluatedExpression {
+
+        private static final EvaluatedBlock EVALUATED_BLOCK = new EvaluatedBlock(List.of());
+
+        public static EvaluatedBlock empty() {
+            return EVALUATED_BLOCK;
+        }
+
         @Override
         public PeelValue value() {
             if (content.isEmpty()) {
