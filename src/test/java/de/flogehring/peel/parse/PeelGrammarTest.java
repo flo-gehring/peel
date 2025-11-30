@@ -7,7 +7,7 @@ import org.junit.jupiter.api.Test;
 
 import java.util.List;
 
-import static de.flogehring.peel.core.lang.CodeElement.*;
+import static de.flogehring.peel.core.lang.ExpressionFactoryMethods.*;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 
 public class PeelGrammarTest {
@@ -21,12 +21,12 @@ public class PeelGrammarTest {
                 """);
         assertThat(parse).isEqualTo(
                 new Program(
-                        List.of(
+                        new Expression.Block(List.of(
                                 assign("a", expr(getNumberLiteral(1), "+", getNumberLiteral(2))),
                                 assign("b", expr(getNumberLiteral(5), "+", getNumberLiteral(2))),
                                 expr(var("a"), "+", var("b"))
                         )
-                )
+                        ))
         );
     }
 

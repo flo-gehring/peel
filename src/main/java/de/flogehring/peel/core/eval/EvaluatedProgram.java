@@ -1,15 +1,15 @@
 package de.flogehring.peel.core.eval;
 
+import de.flogehring.peel.core.values.None;
+
 import java.util.List;
 
-public record EvaluatedProgram(List<EvaluatedCodeElement> evaluatedCodeElement) {
+public record EvaluatedProgram(List<EvaluatedExpression> evaluatedCodeElement) {
 
     public EvaluatedExpression getLastExpression() {
-        return evaluatedCodeElement.stream()
-                .filter(EvaluatedExpression.class::isInstance)
-                .map(EvaluatedExpression.class::cast)
-                .toList()
-                .reversed()
-                .getFirst();
+        if (evaluatedCodeElement.isEmpty()) {
+            return new EvaluatedExpression.Literal(None.NONE);
+        }
+        return evaluatedCodeElement.getLast();
     }
 }
