@@ -36,18 +36,7 @@ jobs:
       run: ./gradlew build
     - name: Run test
       run: ./gradlew test
-    - name: JaCoCo Code Coverage Report
-      id: jacoco_reporter
-      uses: PavanMudigonda/jacoco-reporter@v5.0
-      with:
-        coverage_results_path: : ${{ github.workspace }}/build/reports/jacoco/test/jacocoTestReport.xml
-        coverage_report_name: Coverage
-        coverage_report_title: JaCoCo
-        github_token: ${{ secrets.GITHUB_TOKEN }}
-        skip_check_run: false
-        minimum_coverage: 80
-        fail_below_threshold: false
-        publish_only_summary: false
+
   dependency-submission:
     runs-on: ubuntu-latest
     permissions:
