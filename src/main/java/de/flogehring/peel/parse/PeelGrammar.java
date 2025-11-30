@@ -17,6 +17,7 @@ import org.antlr.v4.runtime.tree.TerminalNode;
 import java.text.MessageFormat;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 
 public class PeelGrammar {
 
@@ -91,25 +92,29 @@ public class PeelGrammar {
 
         @Override
         public ParsableProgramm visitIfStatement(PeelParser.IfStatementContext ctx) {
-
-            // If there are 2 or more blocks, we have an else clause
-            if (ctx.block().size() >= 2) {
-                Expression.Block elseBlock = (Expression.Block) ctx.block(1).accept(this).toExpr();
-                return new ParsableProgramm.ParsableCodeElement(
-                        ExpressionFactoryMethods.ifExpression(
-                                ctx.expr(0).accept(this).toExpr(),
-                                (Expression.Block) ctx.block(0).accept(this).toExpr(),
-                                elseBlock
-                        )
-                );
-            } else {
-                return new ParsableProgramm.ParsableCodeElement(
-                        ExpressionFactoryMethods.ifExpression(
-                                ctx.expr(0).accept(this).toExpr(),
-                                (Expression.Block) ctx.block(0).accept(this).toExpr()
+            var blocks = ctx.block();
+            var expr = ctx.expr();
+            List<Expression.IfElseStatement.ConditionalExecution> conditionals = new ArrayList<>();
+            for (int i = 0; i < expr.size(); ++i) {
+                conditionals.add(
+                        new Expression.IfElseStatement.ConditionalExecution(
+                                expr.get(i).accept(this).toExpr(),
+                                blocks.get(i).accept(this).toExpr()
                         )
                 );
             }
+            Optional<Expression> elseBlock = Optional.empty();
+            if (blocks.size() > expr.size()) {
+                elseBlock = Optional.of(
+                        blocks.getLast().accept(this).toExpr()
+                );
+            }
+            return new ParsableProgramm.ParsableCodeElement(
+                    new Expression.IfElseStatement(
+                            conditionals,
+                            elseBlock
+                    )
+            );
         }
 
         @Override
@@ -126,17 +131,26 @@ public class PeelGrammar {
 
         @Override
         public ParsableProgramm visitIfExpr(PeelParser.IfExprContext ctx) {
-            Expression.Block elseBlock = null;
-
-            // If there are 2 or more blocks, we have an else clause
-            if (ctx.block().size() >= 2) {
-                elseBlock = (Expression.Block) ctx.block(1).accept(this).toExpr();
+            var blocks = ctx.block();
+            var expr = ctx.expr();
+            List<Expression.IfElseStatement.ConditionalExecution> conditionals = new ArrayList<>();
+            for (int i = 0; i < expr.size(); ++i) {
+                conditionals.add(
+                        new Expression.IfElseStatement.ConditionalExecution(
+                                expr.get(i).accept(this).toExpr(),
+                                blocks.get(i).accept(this).toExpr()
+                        )
+                );
             }
-
+            Optional<Expression> elseBlock = Optional.empty();
+            if (blocks.size() > expr.size()) {
+                elseBlock = Optional.of(
+                        blocks.getLast().accept(this).toExpr()
+                );
+            }
             return new ParsableProgramm.ParsableCodeElement(
-                    ExpressionFactoryMethods.ifExpression(
-                            ctx.expr(0).accept(this).toExpr(),
-                            (Expression.Block) ctx.block(0).accept(this).toExpr(),
+                    new Expression.IfElseStatement(
+                            conditionals,
                             elseBlock
                     )
             );
