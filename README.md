@@ -60,7 +60,7 @@ Experts write scripts, IT provides the building blocks.
 
 - ✅ Basic expressions and operators
 - ✅ Variables and assignments
-- 🚧 Control flow (if/else, loops)
+- ✅ Control flow (if/else, loops)
 - 🚧 Lexical scoping
 - 🚧 First-class functions
 - 🚧 Extensible runtime architecture

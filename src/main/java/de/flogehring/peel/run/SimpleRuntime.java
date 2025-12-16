@@ -200,8 +200,11 @@ public class SimpleRuntime implements Runtime {
         return new MultipleFunctionsFoundException(operator, list.size());
     }
 
-    private Function requireOneFunction(List<Function> list, NoFunctionFoundException
-            e, MultipleFunctionsFoundException multipleFunctionsFoundException) {
+    private Function requireOneFunction(
+            List<Function> list,
+            NoFunctionFoundException e,
+            MultipleFunctionsFoundException multipleFunctionsFoundException
+    ) {
         if (list.isEmpty()) {
             throw e;
         } else if (list.size() > 1) {
