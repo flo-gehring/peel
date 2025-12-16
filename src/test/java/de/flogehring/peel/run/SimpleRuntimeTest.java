@@ -67,7 +67,7 @@ public class SimpleRuntimeTest {
         runtime.register(new Function() {
             @Override
             public String name() {
-                return "*";
+                return "µ";
             }
 
             @Override
@@ -91,7 +91,7 @@ public class SimpleRuntimeTest {
             }
         });
         Program p = new Program(List.of(
-                ExpressionFactoryMethods.expr(ExpressionFactoryMethods.var("x"), "*", ExpressionFactoryMethods.var("y"))
+                ExpressionFactoryMethods.expr(ExpressionFactoryMethods.var("x"), "µ", ExpressionFactoryMethods.var("y"))
         ));
         runtime.register(getVariable("x", "Echo!"));
         runtime.register(integerVariable("y", 2));
@@ -172,8 +172,8 @@ public class SimpleRuntimeTest {
             }
 
             @Override
-            public EvaluatedExpression value() {
-                return new EvaluatedExpression.Literal(integer(value));
+            public PeelValue value() {
+                return integer(value);
             }
         };
     }
@@ -189,8 +189,8 @@ public class SimpleRuntimeTest {
             }
 
             @Override
-            public EvaluatedExpression value() {
-                return new EvaluatedExpression.Literal(new Bool(value));
+            public PeelValue value() {
+                return new Bool(value);
             }
         };
     }
@@ -206,8 +206,8 @@ public class SimpleRuntimeTest {
             }
 
             @Override
-            public EvaluatedExpression value() {
-                return new EvaluatedExpression.Literal(new Text(value));
+            public PeelValue value() {
+                return new Text(value);
             }
         };
     }

@@ -23,6 +23,8 @@ statement
     : assignment
     | ifStatement
     | expr ';'
+    | whileStatement
+    | forEachStatement
     ;
 
 assignment
@@ -31,6 +33,14 @@ assignment
 
 ifStatement
     : 'if' '(' expr ')' block ('else' 'if' '(' expr ')' block)* ('else' block)?
+    ;
+
+whileStatement
+    : 'while' '(' expr ')' block
+    ;
+
+forEachStatement
+    : 'for' '(' IDENT 'in' expr ')' block
     ;
 
 block
@@ -53,15 +63,18 @@ expr
     | '!' expr             # notExpr
     | expr ('*' | '/') expr # mulDivExpr
     | expr ('+' | '-') expr # addSubExpr
+    | '[' expr ? (',' expr)* ','? ']'              # listExpr
     | nonTernaryExpr '?' nonTernaryExpr ':' nonTernaryExpr # ternaryExpr
     | '(' expr ')'         # parenExpr
     | IDENT                # varExpr
     | NUMBER               # numberExpr
+
     ;
 
 nonTernaryExpr
     : 'if' '(' nonTernaryExpr ')' block ('else' 'if' '(' nonTernaryExpr ')' block)* ('else' block)?  # nonTernaryIfExpr
     | nonTernaryExpr '||' nonTernaryExpr       # nonTernaryLogicalOrExpr
+    | '[' nonTernaryExpr ? (',' nonTernaryExpr )* ','? ']'              # nonTernaryListExpr
     | nonTernaryExpr '&&' nonTernaryExpr       # nonTernaryLogicalAndExpr
     | nonTernaryExpr '==' nonTernaryExpr       # nonTernaryEqExpr
     | nonTernaryExpr '^' nonTernaryExpr        # nonTernaryXorExpr

@@ -5,15 +5,14 @@ import de.flogehring.peel.core.eval.Runtime;
 import de.flogehring.peel.core.lang.Expression;
 import de.flogehring.peel.core.lang.Program;
 import de.flogehring.peel.core.values.Bool;
+import de.flogehring.peel.core.values.PeelValue;
 
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
+import java.util.*;
 import java.util.stream.Stream;
 
 public class SimpleRuntime implements Runtime {
 
-    private final HashMap<String, EvaluatedExpression> variables;
+    private final HashMap<String, PeelValue> variables;
     private final HashMap<String, List<Function>> functions;
 
     public static SimpleRuntime empty() {
@@ -27,10 +26,8 @@ public class SimpleRuntime implements Runtime {
 
     @Override
     public void register(Variable v) {
-        variables.put(v.name(), new EvaluatedExpression.VariableName(
-                v.name(),
-                v.value()
-        ));
+        variables.put(v.name(), v.value()
+        );
     }
 
     @Override
@@ -57,11 +54,11 @@ public class SimpleRuntime implements Runtime {
                     operator
             );
             case Expression.Literal(var value) -> new EvaluatedExpression.Literal(value);
-            case Expression.VariableName(var name) -> variables.get(name);
+            case Expression.VariableName(var name) -> new EvaluatedExpression.VariableName(name, variables.get(name));
             case Expression.FunctionCall functionCall -> evaluateFunction(functionCall);
             case Expression.Assignment(var name, var expression1) -> {
                 EvaluatedExpression value = evaluateExpr(expression1);
-                variables.put(name, value);
+                variables.put(name, value.value());
                 yield new EvaluatedExpression.Assignment(
                         name, value
                 );
@@ -73,8 +70,6 @@ public class SimpleRuntime implements Runtime {
                             .toList()
             );
             case Expression.IfElseStatement(var elseIfs, var elseBlock) -> {
-
-                EvaluatedExpression result;
                 for (Expression.IfElseStatement.ConditionalExecution cond : elseIfs) {
                     EvaluatedExpression evaluatedCondition = evaluateExpr(cond.condition());
                     if (requireBool(evaluatedCondition)) {
@@ -94,8 +89,69 @@ public class SimpleRuntime implements Runtime {
                         EvaluatedExpression.EvaluatedBlock.empty()
                 ));
             }
+            case Expression.WhileLoop(var condition, var block) -> runLoop(condition, block);
+            case Expression.UnaryPrefixOperator(var operator, var argument) -> evaluateUnary(operator, argument);
+            case Expression.ForEachLoop(var varName, var listExpr, var block) ->
+                    runForEachLoop(varName, listExpr, block);
+            case Expression.ListLiteral(var list) -> evaluateListLiteral(list);
         };
     }
+
+    private EvaluatedExpression evaluateListLiteral(List<Expression> list) {
+        List<EvaluatedExpression> evaluated = list.stream().map(this::evaluateExpr).toList();
+        return new EvaluatedExpression.EvaluatedListLiteral(evaluated,
+                new PeelValue.Collection.List(
+                        evaluated.stream().map(EvaluatedExpression::value).toList()
+                )
+        );
+    }
+
+    private EvaluatedExpression runForEachLoop(String varName, Expression listExpr, Expression.Block block) {
+        List<EvaluatedExpression.ForEachLoop.Iteration> iterations = new ArrayList<>();
+        PeelValue.Collection.List list = requireList(evaluateExpr(listExpr));
+        for (PeelValue value : list.list()) {
+            variables.put(varName, value);
+            iterations.add(
+                    new EvaluatedExpression.ForEachLoop.Iteration(
+                            value,
+                            (EvaluatedExpression.EvaluatedBlock) evaluateExpr(block)
+                    )
+            );
+        }
+        return new EvaluatedExpression.ForEachLoop(iterations);
+    }
+
+    private PeelValue.Collection.List requireList(EvaluatedExpression evaluatedExpression) {
+        if (evaluatedExpression instanceof EvaluatedExpression.EvaluatedListLiteral(var _, var value)) {
+            return value;
+        }
+        throw new PeelException("Expected list");
+    }
+
+    private EvaluatedExpression evaluateUnary(String operator, Expression argument) {
+        if (!Objects.equals(operator, "!")) {
+            throw new PeelException("Currently only the Unary-Not is supported");
+        }
+        EvaluatedExpression expression = evaluateExpr(argument);
+        return new EvaluatedExpression.UnaryPrefixOperator(
+                operator,
+                PeelValue.bool(!requireBool(expression)),
+                expression
+        );
+    }
+
+    private EvaluatedExpression runLoop(Expression condition, Expression.Block block) {
+        List<EvaluatedExpression.WhileLoop.Iteration> iterations = new ArrayList<>();
+        EvaluatedExpression evaluatedCondition = evaluateExpr(condition);
+        while (requireBool(evaluatedCondition)) {
+            EvaluatedExpression.EvaluatedBlock evaluatedBlock = (EvaluatedExpression.EvaluatedBlock) evaluateExpr(block);
+            iterations.add(new EvaluatedExpression.WhileLoop.Iteration(evaluatedCondition, Optional.of(evaluatedBlock)));
+            evaluatedCondition = evaluateExpr(condition);
+        }
+        iterations.add(new EvaluatedExpression.WhileLoop.Iteration(evaluatedCondition, Optional.empty()));
+        return new EvaluatedExpression.WhileLoop(iterations);
+    }
+
 
     private boolean requireBool(EvaluatedExpression evaluatedExpression) {
         if (evaluatedExpression.value() instanceof Bool(var b)) {
@@ -144,8 +200,11 @@ public class SimpleRuntime implements Runtime {
         return new MultipleFunctionsFoundException(operator, list.size());
     }
 
-    private Function requireOneFunction(List<Function> list, NoFunctionFoundException
-            e, MultipleFunctionsFoundException multipleFunctionsFoundException) {
+    private Function requireOneFunction(
+            List<Function> list,
+            NoFunctionFoundException e,
+            MultipleFunctionsFoundException multipleFunctionsFoundException
+    ) {
         if (list.isEmpty()) {
             throw e;
         } else if (list.size() > 1) {

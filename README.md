@@ -2,29 +2,14 @@
 
 **P**rintable, **E**xtendable **E**xpression **L**anguage
 
-PEEL is an expression language designed for expert systems in regulated industries. It enables domain experts to write
-calculation logic that is both executable and auditable, with built-in traceability of intermediate results.
-
-*Extendable*: The IT-Departments can provide building-blocks, like functions to lookup values in databases, connectors
-to customer data and the domain experts can implement snippets of business logic.
+PEEL is an expression language designed for expert systems where domain experts write
+calculation logic that is executable, auditable and printable.
 
 *Printable*: The result of the calculation is not a single value, but the whole execution trace. This can be used to
 populate documents for customers or regulators or just help domain experts to verify the calculations.
 
-## Vision
-
-In banking, insurance, and risk management, experts need to implement complex calculations and business rules.
-Currently, they use Excel spreadsheets - which work for exploration but fail at governance, auditability, and
-integration.
-
-PEEL bridges this gap by providing:
-
-- **Printable**: Every calculation step is captured and can be rendered into compliance documents
-- **Extendable**: Plug in custom arithmetic, functions, and domain-specific logic
-- **Auditable**: Scripts stored in databases with version control and approval workflows
-- **Integrated**: Embed calculations into existing systems via Java API.
-
-Think of it as "better integrated Excel for production systems."
+*Extendable*: The IT-Departments can provide building-blocks, like functions to lookup values in databases, connectors
+to customer data and the domain experts can implement snippets of business logic.
 
 ## Key Features
 
@@ -75,7 +60,7 @@ Experts write scripts, IT provides the building blocks.
 
 - ✅ Basic expressions and operators
 - ✅ Variables and assignments
-- 🚧 Control flow (if/else, loops)
+- ✅ Control flow (if/else, loops)
 - 🚧 Lexical scoping
 - 🚧 First-class functions
 - 🚧 Extensible runtime architecture
@@ -108,26 +93,6 @@ See [`docs/product/`](docs/product/) for detailed epic planning.
 - **Gradle** - Build system
 - **ANTLR 4** - Parser generator
 
-## Use Cases
-
-### Expert Systems
-
-Domain experts write calculation logic in PEEL, stored in databases, evaluated as part of workflows.
-
-### Compliance & Auditability
-
-Every calculation step is captured, enabling automatic generation of compliance documents showing "how we got this
-number."
-
-### Business Rules
-
-Complex decision logic that needs to be versioned, tested, and audited independently of the main application code.
-
-### Template Calculations
-
-Define a calculation once, evaluate it thousands of times with different input data (e.g., pricing models, risk
-calculations).
-
 ## Roadmap
 
 **Version 0.1 (MVP)** - Core language features
@@ -151,17 +116,9 @@ calculations).
 
 See [docs/product/backlog/](docs/product/backlog/) for full roadmap.
 
-## Contributing
-
-PEEL is currently in active development toward the 0.1 MVP. The architecture is stabilizing, but significant changes are
-expected during Epic 3 (Lexical Scoping) and Epic 5 (Extensibility).
-
-For architecture questions or feature discussions, see [CLAUDE.md](CLAUDE.md) or open an issue.
 
 ## License
 
 [License information to be added]
 
 ---
-
-**PEEL**: Making expert calculations auditable, maintainable, and production-ready.

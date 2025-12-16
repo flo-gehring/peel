@@ -24,6 +24,10 @@ public sealed interface Expression {
         }
     }
 
+    record ListLiteral(List<Expression> elements) implements Expression {
+
+    }
+
     record Literal(PeelValue value) implements Expression {
     }
 
@@ -37,6 +41,12 @@ public sealed interface Expression {
         }
     }
 
+    record UnaryPrefixOperator(
+            String operator,
+            Expression arg
+    ) implements Expression {
+    }
+
     record VariableName(String name) implements Expression {
         public VariableName {
             Expression.assertNotEmpty(name);
@@ -47,6 +57,14 @@ public sealed interface Expression {
         public FunctionCall {
             Expression.assertNotEmpty(functionName);
         }
+    }
+
+    record WhileLoop(Expression condition, Block body) implements Expression {
+
+    }
+
+    record ForEachLoop(String varName, Expression list, Block body) implements Expression {
+
     }
 
     private static void assertNotEmpty(String s) {
