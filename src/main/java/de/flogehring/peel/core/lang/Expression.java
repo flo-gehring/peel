@@ -24,6 +24,10 @@ public sealed interface Expression {
         }
     }
 
+    record ListLiteral(List<Expression> elements) implements Expression {
+
+    }
+
     record Literal(PeelValue value) implements Expression {
     }
 
@@ -55,7 +59,11 @@ public sealed interface Expression {
         }
     }
 
-    record Loop(Expression condition, Block body) implements Expression {
+    record WhileLoop(Expression condition, Block body) implements Expression {
+
+    }
+
+    record ForEachLoop(String varName, Expression list, Block body) implements Expression {
 
     }
 

@@ -172,8 +172,8 @@ public class SimpleRuntimeTest {
             }
 
             @Override
-            public EvaluatedExpression value() {
-                return new EvaluatedExpression.Literal(integer(value));
+            public PeelValue value() {
+                return integer(value);
             }
         };
     }
@@ -189,8 +189,8 @@ public class SimpleRuntimeTest {
             }
 
             @Override
-            public EvaluatedExpression value() {
-                return new EvaluatedExpression.Literal(new Bool(value));
+            public PeelValue value() {
+                return new Bool(value);
             }
         };
     }
@@ -206,8 +206,8 @@ public class SimpleRuntimeTest {
             }
 
             @Override
-            public EvaluatedExpression value() {
-                return new EvaluatedExpression.Literal(new Text(value));
+            public PeelValue value() {
+                return new Text(value);
             }
         };
     }

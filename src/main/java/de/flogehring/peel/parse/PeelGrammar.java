@@ -59,6 +59,8 @@ public class PeelGrammar {
                 return ctx.ifStatement().accept(this);
             } else if (ctx.whileStatement() != null) {
                 return ctx.whileStatement().accept(this);
+            } else if (ctx.forEachStatement() != null) {
+                return ctx.forEachStatement().accept(this);
             } else {
                 return ctx.expr().accept(this);
             }
@@ -101,7 +103,18 @@ public class PeelGrammar {
         @Override
         public ParsableProgramm visitWhileStatement(PeelParser.WhileStatementContext ctx) {
             return new ParsableProgramm.ParsableCodeElement(
-                    new Expression.Loop(
+                    new Expression.WhileLoop(
+                            ctx.expr().accept(this).toExpr(),
+                            (Expression.Block) ctx.block().accept(this).toExpr()
+                    )
+            );
+        }
+
+        @Override
+        public ParsableProgramm visitForEachStatement(PeelParser.ForEachStatementContext ctx) {
+            return new ParsableProgramm.ParsableCodeElement(
+                    new Expression.ForEachLoop(
+                            ctx.getChild(2).getText(),
                             ctx.expr().accept(this).toExpr(),
                             (Expression.Block) ctx.block().accept(this).toExpr()
                     )
@@ -281,6 +294,25 @@ public class PeelGrammar {
         public ParsableProgramm visitChildren(RuleNode node) {
             int childCount = node.getChildCount();
             return node.getChild(childCount - 1).accept(this);
+        }
+
+        @Override
+        public ParsableProgramm visitListExpr(PeelParser.ListExprContext ctx) {
+            return new ParsableProgramm.ParsableCodeElement(
+                    new Expression.ListLiteral(
+                            ctx.expr().stream().map(exprCtx -> exprCtx.accept(this).toExpr()).toList()
+
+                    )
+            );
+        }
+
+        @Override
+        public ParsableProgramm visitNonTernaryListExpr(PeelParser.NonTernaryListExprContext ctx) {
+            return new ParsableProgramm.ParsableCodeElement(
+                    new Expression.ListLiteral(
+                            ctx.nonTernaryExpr().stream().map(exprCtx -> exprCtx.accept(this).toExpr()).toList()
+                    )
+            );
         }
 
         @Override

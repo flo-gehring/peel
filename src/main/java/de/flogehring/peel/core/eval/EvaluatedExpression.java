@@ -37,13 +37,8 @@ public sealed interface EvaluatedExpression {
 
     record VariableName(
             String name,
-            EvaluatedExpression backingExpression
+            PeelValue value
     ) implements EvaluatedExpression {
-
-        @Override
-        public PeelValue value() {
-            return backingExpression.value();
-        }
     }
 
     record FunctionCall(
@@ -86,6 +81,24 @@ public sealed interface EvaluatedExpression {
         public record Iteration(EvaluatedExpression condition, Optional<EvaluatedBlock> evaluatedBlock) {
 
         }
+    }
+
+    record ForEachLoop(List<ForEachLoop.Iteration> iterations) implements EvaluatedExpression {
+
+        @Override
+        public PeelValue value() {
+            return iterations.isEmpty() ? EvaluatedBlock.empty().value() : iterations.getLast().body.value();
+        }
+
+        public record Iteration(PeelValue val, EvaluatedBlock body) {
+        }
+    }
+
+    record EvaluatedListLiteral(
+            List<EvaluatedExpression> elements,
+            PeelValue.Collection.List value
+    ) implements EvaluatedExpression {
+
     }
 
     record EvaluatedBlock(List<EvaluatedExpression> content) implements EvaluatedExpression {
