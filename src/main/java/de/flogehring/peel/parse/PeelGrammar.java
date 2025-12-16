@@ -57,6 +57,8 @@ public class PeelGrammar {
                 return child.accept(this);
             } else if (ctx.ifStatement() != null) {
                 return ctx.ifStatement().accept(this);
+            } else if (ctx.whileStatement() != null) {
+                return ctx.whileStatement().accept(this);
             } else {
                 return ctx.expr().accept(this);
             }
@@ -92,6 +94,16 @@ public class PeelGrammar {
                             Optional.of(
                                     ctx.getChild(4).accept(this).toExpr()
                             )
+                    )
+            );
+        }
+
+        @Override
+        public ParsableProgramm visitWhileStatement(PeelParser.WhileStatementContext ctx) {
+            return new ParsableProgramm.ParsableCodeElement(
+                    new Expression.Loop(
+                            ctx.expr().accept(this).toExpr(),
+                            (Expression.Block) ctx.block().accept(this).toExpr()
                     )
             );
         }
@@ -194,7 +206,10 @@ public class PeelGrammar {
         @Override
         public ParsableProgramm visitNotExpr(PeelParser.NotExprContext ctx) {
             return new ParsableProgramm.ParsableCodeElement(
-                    ctx.accept(this).toExpr() // TODO not operator
+                    new Expression.UnaryPrefixOperator(
+                            "!",
+                            ctx.expr().accept(this).toExpr()
+                    )
             );
         }
 

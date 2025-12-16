@@ -37,6 +37,12 @@ public sealed interface Expression {
         }
     }
 
+    record UnaryPrefixOperator(
+            String operator,
+            Expression arg
+    ) implements Expression {
+    }
+
     record VariableName(String name) implements Expression {
         public VariableName {
             Expression.assertNotEmpty(name);
@@ -47,6 +53,10 @@ public sealed interface Expression {
         public FunctionCall {
             Expression.assertNotEmpty(functionName);
         }
+    }
+
+    record Loop(Expression condition, Block body) implements Expression {
+
     }
 
     private static void assertNotEmpty(String s) {

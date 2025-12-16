@@ -2,8 +2,10 @@ package de.flogehring.peel.core.eval;
 
 import de.flogehring.peel.core.values.None;
 import de.flogehring.peel.core.values.PeelValue;
+import de.flogehring.peel.run.PeelException;
 
 import java.util.List;
+import java.util.Optional;
 
 public sealed interface EvaluatedExpression {
 
@@ -23,6 +25,13 @@ public sealed interface EvaluatedExpression {
             PeelValue value,
             EvaluatedExpression lhs,
             EvaluatedExpression rhs
+    ) implements EvaluatedExpression {
+    }
+
+    record UnaryPrefixOperator(
+            String operator,
+            PeelValue value,
+            EvaluatedExpression argument
     ) implements EvaluatedExpression {
     }
 
@@ -62,6 +71,23 @@ public sealed interface EvaluatedExpression {
         }
     }
 
+    record WhileLoop(List<Iteration> iterations) implements EvaluatedExpression {
+
+        @Override
+        public PeelValue value() {
+            return iterations.size() == 1
+                    ? EvaluatedBlock.empty().value()
+                    : iterations.get(iterations.size() - 2)
+                    .evaluatedBlock.orElseThrow(
+                            () -> new PeelException("Second to last iteration of a while loop is expected to have an evaluated body.")
+                    ).value();
+        }
+
+        public record Iteration(EvaluatedExpression condition, Optional<EvaluatedBlock> evaluatedBlock) {
+
+        }
+    }
+
     record EvaluatedBlock(List<EvaluatedExpression> content) implements EvaluatedExpression {
 
         private static final EvaluatedBlock EVALUATED_BLOCK = new EvaluatedBlock(List.of());
@@ -78,5 +104,6 @@ public sealed interface EvaluatedExpression {
             return content.getLast().value();
         }
     }
+
 
 }

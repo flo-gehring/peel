@@ -23,6 +23,7 @@ statement
     : assignment
     | ifStatement
     | expr ';'
+    | whileStatement
     ;
 
 assignment
@@ -31,6 +32,10 @@ assignment
 
 ifStatement
     : 'if' '(' expr ')' block ('else' 'if' '(' expr ')' block)* ('else' block)?
+    ;
+
+whileStatement
+    : 'while' '(' expr ')' block
     ;
 
 block

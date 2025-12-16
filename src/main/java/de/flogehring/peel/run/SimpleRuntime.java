@@ -5,10 +5,9 @@ import de.flogehring.peel.core.eval.Runtime;
 import de.flogehring.peel.core.lang.Expression;
 import de.flogehring.peel.core.lang.Program;
 import de.flogehring.peel.core.values.Bool;
+import de.flogehring.peel.core.values.PeelValue;
 
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
+import java.util.*;
 import java.util.stream.Stream;
 
 public class SimpleRuntime implements Runtime {
@@ -94,8 +93,35 @@ public class SimpleRuntime implements Runtime {
                         EvaluatedExpression.EvaluatedBlock.empty()
                 ));
             }
+            case Expression.Loop(var condition, var block) -> runLoop(condition, block);
+            case Expression.UnaryPrefixOperator(var operator, var argument) -> evaluateUnary(operator, argument);
         };
     }
+
+    private EvaluatedExpression evaluateUnary(String operator, Expression argument) {
+        if (!Objects.equals(operator, "!")) {
+            throw new PeelException("Currently only the Unary-Not is supported");
+        }
+        EvaluatedExpression expression = evaluateExpr(argument);
+        return new EvaluatedExpression.UnaryPrefixOperator(
+                operator,
+                PeelValue.bool(!requireBool(expression)),
+                expression
+        );
+    }
+
+    private EvaluatedExpression runLoop(Expression condition, Expression.Block block) {
+        List<EvaluatedExpression.WhileLoop.Iteration> iterations = new ArrayList<>();
+        EvaluatedExpression evaluatedCondition = evaluateExpr(condition);
+        while (requireBool(evaluatedCondition)) {
+            EvaluatedExpression.EvaluatedBlock evaluatedBlock = (EvaluatedExpression.EvaluatedBlock) evaluateExpr(block);
+            iterations.add(new EvaluatedExpression.WhileLoop.Iteration(evaluatedCondition, Optional.of(evaluatedBlock)));
+            evaluatedCondition = evaluateExpr(condition);
+        }
+        iterations.add(new EvaluatedExpression.WhileLoop.Iteration(evaluatedCondition, Optional.empty()));
+        return new EvaluatedExpression.WhileLoop(iterations);
+    }
+
 
     private boolean requireBool(EvaluatedExpression evaluatedExpression) {
         if (evaluatedExpression.value() instanceof Bool(var b)) {
