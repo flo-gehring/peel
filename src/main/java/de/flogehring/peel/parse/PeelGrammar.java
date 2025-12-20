@@ -203,7 +203,8 @@ public class PeelGrammar {
 
         private int findVar(String text) {
             int offset = 0;
-            for (Scope scope : scopes) {
+            for (int i = scopes.size() - 1; i >= 0; --i) {
+                Scope scope = scopes.get(i);
                 if (scope.inScope(text)) {
                     return offset;
                 }
@@ -373,7 +374,7 @@ public class PeelGrammar {
         private int checkIfVarIsInitialized(String varName) {
             int scopeOffset = findVar(varName);
             if (scopeOffset != -1) {
-                Scope scope = scopes.get(scopeOffset);
+                Scope scope = scopes.get(scopes.size() - 1 - scopeOffset);
                 if (!scope.isInitialized(varName)) {
                     throw new UninitializedVarExpression(
                             "Can't access uninitialized variable " + varName

@@ -6,45 +6,53 @@ import de.flogehring.peel.core.lang.Expression;
 import de.flogehring.peel.core.lang.Program;
 import de.flogehring.peel.core.values.Bool;
 import de.flogehring.peel.core.values.PeelValue;
+import de.flogehring.peel.run.exceptions.MultipleFunctionsFoundException;
+import de.flogehring.peel.run.exceptions.NoFunctionFoundException;
+import de.flogehring.peel.run.exceptions.PeelException;
 
-import java.util.*;
-import java.util.stream.Stream;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Objects;
+import java.util.Optional;
 
 public class SimpleRuntime implements Runtime {
 
-    private final HashMap<String, PeelValue> variables;
-    private final HashMap<String, List<Function>> functions;
+
+    private final Scope global;
+    private final List<Scope> scopes;
 
     public static SimpleRuntime empty() {
-        return new SimpleRuntime();
+        return new SimpleRuntime(
+                Scope.empty(),
+                new ArrayList<>()
+        );
     }
 
-    private SimpleRuntime() {
-        functions = new HashMap<>();
-        variables = new HashMap<>();
+    private SimpleRuntime(Scope global, List<Scope> scopes) {
+        this.global = global;
+        this.scopes = scopes;
     }
 
     @Override
     public void register(Variable v) {
-        variables.put(v.name(), v.value()
-        );
+        global.register(v);
     }
 
     @Override
     public void register(Function f) {
-        functions.merge(f.name(), new ArrayList<>(List.of(f)), (lhs, rhs) -> Stream.concat(
-                lhs.stream(),
-                rhs.stream()
-        ).toList());
+        global.register(f);
     }
 
     @Override
     public EvaluatedProgram run(Program program) {
-        return new EvaluatedProgram(program.programm().codeElements()
+        beginnScope();
+        EvaluatedProgram evaluatedProgram = new EvaluatedProgram(program.programm().codeElements()
                 .stream()
                 .map(this::evaluateExpr)
                 .toList()
         );
+        endScope();
+        return evaluatedProgram;
 
     }
 
@@ -55,47 +63,92 @@ public class SimpleRuntime implements Runtime {
             );
             case Expression.Literal(var value) -> new EvaluatedExpression.Literal(value);
             case Expression.VariableName(var name, var scopeOffset) ->
-                    new EvaluatedExpression.VariableName(name, variables.get(name));
+                    new EvaluatedExpression.VariableName(name, getVar(name, scopeOffset));
             case Expression.FunctionCall functionCall -> evaluateFunction(functionCall);
-            case Expression.Assignment(var name, var expression1, int scopeOffset) -> {
-                EvaluatedExpression value = evaluateExpr(expression1);
-                variables.put(name, value.value());
-                yield new EvaluatedExpression.Assignment(
-                        name, value
-                );
-            }
-            case Expression.Block(var expressions) -> new EvaluatedExpression.EvaluatedBlock(
-                    expressions
-                            .stream()
-                            .map(this::evaluateExpr)
-                            .toList()
+            case Expression.Assignment(var name, var expression1, int scopeOffset) ->
+                    evaluateAssignment(name, expression1, scopeOffset);
+            case Expression.Block(var expressions) -> evaluateBlock(expressions);
+            case Expression.IfElseStatement(var elseIfs, var elseBlock) -> evaluateIfStatement(
+                    elseIfs, elseBlock
             );
-            case Expression.IfElseStatement(var elseIfs, var elseBlock) -> {
-                for (Expression.IfElseStatement.ConditionalExecution cond : elseIfs) {
-                    EvaluatedExpression evaluatedCondition = evaluateExpr(cond.condition());
-                    if (requireBool(evaluatedCondition)) {
-                        yield new EvaluatedExpression.IfStatement(
-                                evaluatedCondition,
-                                evaluateExpr(cond.then())
-                        );
-                    }
-                }
-                yield elseBlock.map(
-                        block -> new EvaluatedExpression.IfStatement(
-                                EvaluatedExpression.EvaluatedBlock.empty(),
-                                evaluateExpr(block)
-                        )
-                ).orElseGet(() -> new EvaluatedExpression.IfStatement(
-                        EvaluatedExpression.EvaluatedBlock.empty(),
-                        EvaluatedExpression.EvaluatedBlock.empty()
-                ));
-            }
             case Expression.WhileLoop(var condition, var block) -> runLoop(condition, block);
             case Expression.UnaryPrefixOperator(var operator, var argument) -> evaluateUnary(operator, argument);
             case Expression.ForEachLoop(var varName, var listExpr, var block) ->
                     runForEachLoop(varName, listExpr, block);
             case Expression.ListLiteral(var list) -> evaluateListLiteral(list);
         };
+    }
+
+    private EvaluatedExpression.Assignment evaluateAssignment(
+            String name,
+            Expression expression1,
+            int scopeOffset
+    ) {
+        if (scopeOffset == -1) {
+            throw new PeelException("Can't assign to global variable");
+        }
+        EvaluatedExpression value = evaluateExpr(expression1);
+        getScopeBy(scopeOffset).putVar(name, value.value());
+        return new EvaluatedExpression.Assignment(
+                name, value
+        );
+    }
+
+    private int getScopeIndexBy(int scopeOffset) {
+        return scopes.size() - 1 - scopeOffset;
+    }
+
+    private EvaluatedExpression.IfStatement evaluateIfStatement(List<Expression.IfElseStatement.ConditionalExecution> elseIfs, Optional<Expression> elseBlock) {
+        for (Expression.IfElseStatement.ConditionalExecution cond : elseIfs) {
+            beginnScope();
+            EvaluatedExpression evaluatedCondition = evaluateExpr(cond.condition());
+            endScope();
+            if (requireBool(evaluatedCondition)) {
+                beginnScope();
+                EvaluatedExpression executedBlock = evaluateExpr(cond.then());
+                endScope();
+                return new EvaluatedExpression.IfStatement(
+                        evaluatedCondition,
+                        executedBlock
+                );
+            }
+        }
+        return elseBlock.map(
+                block -> {
+                    beginnScope();
+                    EvaluatedExpression evaluatedBlock = evaluateExpr(block);
+                    endScope();
+                    return new EvaluatedExpression.IfStatement(
+                            EvaluatedExpression.EvaluatedBlock.empty(),
+                            evaluatedBlock
+                    );
+                }
+        ).orElseGet(() -> new EvaluatedExpression.IfStatement(
+                EvaluatedExpression.EvaluatedBlock.empty(),
+                EvaluatedExpression.EvaluatedBlock.empty()
+        ));
+    }
+
+    private EvaluatedExpression.EvaluatedBlock evaluateBlock(List<Expression> expressions) {
+        beginnScope();
+        List<EvaluatedExpression> blockStatements = expressions
+                .stream()
+                .map(this::evaluateExpr)
+                .toList();
+        endScope();
+        return new EvaluatedExpression.EvaluatedBlock(blockStatements);
+    }
+
+    private PeelValue getVar(String name, int scopeOffset) {
+        if (scopeOffset == -1) {
+            return global.getVar(name);
+        } else {
+            return getScopeBy(scopeOffset).getVar(name);
+        }
+    }
+
+    private Scope getScopeBy(int scopeOffset) {
+        return scopes.get(getScopeIndexBy(scopeOffset));
     }
 
     private EvaluatedExpression evaluateListLiteral(List<Expression> list) {
@@ -111,15 +164,25 @@ public class SimpleRuntime implements Runtime {
         List<EvaluatedExpression.ForEachLoop.Iteration> iterations = new ArrayList<>();
         PeelValue.Collection.List list = requireList(evaluateExpr(listExpr));
         for (PeelValue value : list.list()) {
-            variables.put(varName, value);
+            beginnScope();
+            getScopeBy(0).putVar(varName, value);
             iterations.add(
                     new EvaluatedExpression.ForEachLoop.Iteration(
                             value,
                             (EvaluatedExpression.EvaluatedBlock) evaluateExpr(block)
                     )
             );
+            endScope();
         }
         return new EvaluatedExpression.ForEachLoop(iterations);
+    }
+
+    private void beginnScope() {
+        scopes.add(Scope.empty());
+    }
+
+    private void endScope() {
+        scopes.removeLast();
     }
 
     private PeelValue.Collection.List requireList(EvaluatedExpression evaluatedExpression) {
@@ -143,6 +206,7 @@ public class SimpleRuntime implements Runtime {
 
     private EvaluatedExpression runLoop(Expression condition, Expression.Block block) {
         List<EvaluatedExpression.WhileLoop.Iteration> iterations = new ArrayList<>();
+        beginnScope();
         EvaluatedExpression evaluatedCondition = evaluateExpr(condition);
         while (requireBool(evaluatedCondition)) {
             EvaluatedExpression.EvaluatedBlock evaluatedBlock = (EvaluatedExpression.EvaluatedBlock) evaluateExpr(block);
@@ -150,6 +214,7 @@ public class SimpleRuntime implements Runtime {
             evaluatedCondition = evaluateExpr(condition);
         }
         iterations.add(new EvaluatedExpression.WhileLoop.Iteration(evaluatedCondition, Optional.empty()));
+        endScope();
         return new EvaluatedExpression.WhileLoop(iterations);
     }
 
@@ -166,7 +231,7 @@ public class SimpleRuntime implements Runtime {
         List<EvaluatedExpression> arguments = functionCall.arguments().stream()
                 .map(this::evaluateExpr)
                 .toList();
-        List<Function> matchingName = functions.get(functionCall.functionName());
+        List<Function> matchingName = global.getFunction(functionCall.functionName());
         int argumentLength = arguments.size();
         List<Function> list = matchingName.stream()
                 .filter(f -> f.arity() == argumentLength)
@@ -181,7 +246,7 @@ public class SimpleRuntime implements Runtime {
 
     private EvaluatedExpression evaluateOperator(Expression.BinaryOperator operator) {
         // TODO add Special Support for Operators
-        List<Function> matchingName = functions.get(operator.operator());
+        List<Function> matchingName = global.getFunction(operator.operator());
         List<Expression> parameters = List.of(operator.lhs(), operator.rhs());
         Function f = requireOneFunction(
                 matchingName,

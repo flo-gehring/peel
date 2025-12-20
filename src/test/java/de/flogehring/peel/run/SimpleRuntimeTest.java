@@ -12,6 +12,8 @@ import de.flogehring.peel.core.values.Bool;
 import de.flogehring.peel.core.values.Number;
 import de.flogehring.peel.core.values.PeelValue;
 import de.flogehring.peel.core.values.Text;
+import de.flogehring.peel.run.exceptions.MultipleFunctionsFoundException;
+import de.flogehring.peel.run.exceptions.NoFunctionFoundException;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 
@@ -28,9 +30,13 @@ public class SimpleRuntimeTest {
     void simple() {
         Program p = new Program(
                 new Expression.Block(List.of(
-                        ExpressionFactoryMethods.assign("x", ExpressionFactoryMethods.integer(1)),
-                        ExpressionFactoryMethods.assign("y", ExpressionFactoryMethods.integer(1)),
-                        ExpressionFactoryMethods.expr(ExpressionFactoryMethods.var("x"), "+", ExpressionFactoryMethods.var("y"))
+                        ExpressionFactoryMethods.assign("x", ExpressionFactoryMethods.integer(1), 0),
+                        ExpressionFactoryMethods.assign("y", ExpressionFactoryMethods.integer(1), 0),
+                        ExpressionFactoryMethods.expr(
+                                ExpressionFactoryMethods.var("x", 0),
+                                "+",
+                                ExpressionFactoryMethods.var("y", 0)
+                        )
                 )));
         SimpleRuntime runtime = RuntimeFactory.defaultLanguage();
         PeelValue value = runtime.run(p).getLastExpression().value();
@@ -40,9 +46,9 @@ public class SimpleRuntimeTest {
     @Test
     void stringAddition() {
         Program p = new Program(List.of(
-                ExpressionFactoryMethods.assign("x", ExpressionFactoryMethods.string("1")),
-                ExpressionFactoryMethods.assign("y", ExpressionFactoryMethods.string("1")),
-                ExpressionFactoryMethods.expr(ExpressionFactoryMethods.var("x"), "+", ExpressionFactoryMethods.var("y"))
+                ExpressionFactoryMethods.assign("x", ExpressionFactoryMethods.string("1"), 0),
+                ExpressionFactoryMethods.assign("y", ExpressionFactoryMethods.string("1"), 0),
+                ExpressionFactoryMethods.expr(ExpressionFactoryMethods.var("x", 0), "+", ExpressionFactoryMethods.var("y", 0))
         ));
         SimpleRuntime runtime = RuntimeFactory.defaultLanguage();
         PeelValue value = runtime.run(p).getLastExpression().value();

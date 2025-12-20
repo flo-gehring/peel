@@ -2,7 +2,7 @@ package de.flogehring.peel.core.eval;
 
 import de.flogehring.peel.core.values.None;
 import de.flogehring.peel.core.values.PeelValue;
-import de.flogehring.peel.run.PeelException;
+import de.flogehring.peel.run.exceptions.PeelException;
 
 import java.util.List;
 import java.util.Optional;

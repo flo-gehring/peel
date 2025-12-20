@@ -24,7 +24,7 @@ public class ExpressionFactoryMethods {
 
     public static Expression.VariableName var(String name) {
 
-        return new Expression.VariableName(name, 0);
+        return new Expression.VariableName(name, -1);
     }
 
     public static Expression.VariableName var(String name, int scopeOffset) {
@@ -32,7 +32,7 @@ public class ExpressionFactoryMethods {
     }
 
     public static Expression.Assignment assign(String var, Expression expr) {
-        return new Expression.Assignment(var, expr, 0);
+        return new Expression.Assignment(var, expr, -1);
     }
 
     public static Expression.Assignment assign(String var, Expression expr, int scopeOffset) {

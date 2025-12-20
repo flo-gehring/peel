@@ -1,6 +1,7 @@
 package de.flogehring.peel.run;
 
 import de.flogehring.peel.parse.RedeclaredVariableException;
+import de.flogehring.peel.run.exceptions.UndefinedVarException;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 
