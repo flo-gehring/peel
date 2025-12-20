@@ -5,7 +5,6 @@ import de.flogehring.peel.antlr.PeelParser;
 import de.flogehring.peel.core.lang.Expression;
 import de.flogehring.peel.core.lang.ExpressionFactoryMethods;
 import de.flogehring.peel.core.lang.Program;
-import de.flogehring.peel.run.PeelException;
 import org.antlr.v4.runtime.CharStreams;
 import org.antlr.v4.runtime.CommonTokenStream;
 import org.antlr.v4.runtime.ParserRuleContext;
@@ -32,7 +31,7 @@ public class PeelGrammar {
         if (visit instanceof ParsableProgramm.Programm programm) {
             return programm.toProgramm();
         } else {
-            throw new PeelException("Parsing gone wrong");
+            throw new PeelParsingException("Parsing gone wrong");
         }
     }
 
@@ -72,7 +71,7 @@ public class PeelGrammar {
 
             void addVar(String s) {
                 if (inScope(s)) {
-                    throw new PeelException("Identifier " + s + " already declared in scope");
+                    throw new PeelParsingException("Identifier " + s + " already declared in scope");
                 }
                 content.add(new VariableDeclaration(s, false));
             }
@@ -92,8 +91,8 @@ public class PeelGrammar {
 
             void setInitialized(String s) {
                 if (!inScope(s)) {
-                    throw new PeelException(
-                            "Can't inizialize Variable " + s + ", not in Scope"
+                    throw new PeelParsingException(
+                            "Can't initialize Variable " + s + ", not in Scope"
                     );
                 }
                 get(s).initialized = true;
@@ -130,6 +129,11 @@ public class PeelGrammar {
         @Override
         public ParsableProgramm visitDeclaration(PeelParser.DeclarationContext ctx) {
             String varName = ctx.IDENT().getSymbol().getText();
+            if (alreadyInScope(varName)) {
+                throw new RedeclaredVariableException(
+                        "Can't redeclare variable in same scope"
+                );
+            }
             initVar(varName);
             Expression exp = ctx.expr().accept(this).toExpr();
             setInitialized(varName);
@@ -141,6 +145,10 @@ public class PeelGrammar {
                     )
             );
 
+        }
+
+        private boolean alreadyInScope(String varName) {
+            return scopes.getLast().inScope(varName);
         }
 
         private void setInitialized(String varName) {
@@ -180,7 +188,7 @@ public class PeelGrammar {
             ParsableProgramm accept = ctx.expr().accept(this);
             int scopeOffset = findVar(varName);
             if (scopeOffset == -1) {
-                throw new PeelException(
+                throw new AssignmentToUndeclaredVariable(
                         "Can't assign to undeclared Variable " + varName
                 );
             }
@@ -367,7 +375,7 @@ public class PeelGrammar {
             if (scopeOffset != -1) {
                 Scope scope = scopes.get(scopeOffset);
                 if (!scope.isInitialized(varName)) {
-                    throw new PeelException(
+                    throw new UninitializedVarExpression(
                             "Can't access uninitialized variable " + varName
                     );
                 }
@@ -493,7 +501,7 @@ public class PeelGrammar {
 
         @Override
         public ParsableProgramm visitErrorNode(ErrorNode node) {
-            throw new PeelException(MessageFormat.format(
+            throw new PeelParsingException(MessageFormat.format(
                     "Parsing error on {0}:{1} -> {2}",
                     node.getSourceInterval().a,
                     node.getSourceInterval().b,
