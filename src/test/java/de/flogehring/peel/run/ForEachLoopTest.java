@@ -36,7 +36,7 @@ public class ForEachLoopTest {
     void listWithLiteralsSingleStatement() {
         runProgrammAndExpect(
                 """
-                          sum = 0;
+                          var sum = 0;
                           for (x in [1, 2, 3]) {
                               sum = sum + x;
                           }
@@ -62,7 +62,7 @@ public class ForEachLoopTest {
     void listWithExpressionsSumming() {
         runProgrammAndExpect(
                 """
-                          sum = 0;
+                          var sum = 0;
                           for (x in [1 + 1, 2 * 3, 10 - 5]) {
                               sum = sum + x;
                           }
@@ -77,8 +77,8 @@ public class ForEachLoopTest {
     void loopBodyWithMultipleStatements() {
         runProgrammAndExpect(
                 """
-                          sum = 0;
-                          product = 1;
+                          var sum = 0;
+                          var product = 1;
                           for (x in [2, 3, 4]) {
                               sum = sum + x;
                               product = product * x;
@@ -94,7 +94,7 @@ public class ForEachLoopTest {
     void loopVariableInExpression() {
         runProgrammAndExpect(
                 """
-                          result = 0;
+                          var result = 0;
                           for (x in [1, 2, 3]) {
                               result = result + (x * 2);
                           }
@@ -109,7 +109,7 @@ public class ForEachLoopTest {
     void nestedForEachLoops() {
         runProgrammAndExpect(
                 """
-                          sum = 0;
+                          var sum = 0;
                           for (i in [1, 2]) {
                               for (j in [10, 20]) {
                                   sum = sum + (i * j);
@@ -126,7 +126,7 @@ public class ForEachLoopTest {
     void singleElementList() {
         runProgrammAndExpect(
                 """
-                          result = 0;
+                          var result = 0;
                           for (x in [42]) {
                               result = x;
                           }
@@ -141,7 +141,7 @@ public class ForEachLoopTest {
     void emptyListDoesNotModifyVariable() {
         runProgrammAndExpect(
                 """
-                          x = 99;
+                          var x = 99;
                           for (x in []) {
                               x = 0;
                           }

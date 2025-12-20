@@ -20,12 +20,17 @@ program
     ;
 
 statement
-    : assignment
+    : declaration
+    | assignment
     | ifStatement
     | expr ';'
     | whileStatement
     | forEachStatement
     ;
+
+declaration
+ : 'var' IDENT '=' expr? ';'
+ ;
 
 assignment
     : IDENT '=' expr ';'

@@ -27,7 +27,7 @@ public class TernaryOperatorTest {
     void directNestedTernaryInTrueBranchIsForbidden() {
         // Direct nesting without parentheses is forbidden
         assertThatExceptionOfType(Exception.class)
-                .isThrownBy(() -> PeelGrammar.parse("x = 1 == 1 ? 2 == 2 ? 100 : 200 : 300;"));
+                .isThrownBy(() -> PeelGrammar.parse("var x = 1 == 1 ? 2 == 2 ? 100 : 200 : 300;"));
     }
 
     @Test
@@ -36,15 +36,15 @@ public class TernaryOperatorTest {
         // by using nonTernaryExpr. This catches most nesting cases.
         // However, without explicit parens, some edge cases with operator
         // precedence might still parse in unexpected ways.
-        runProgrammAndExpect("x = 1 == 1 ? 5 : 10;", PeelValue.integer(5));
+        runProgrammAndExpect("var x = 1 == 1 ? 5 : 10;", PeelValue.integer(5));
     }
 
     @Test
     void ternaryWithVariablesAndArithmetic() {
         runProgrammAndExpect("""
-                    a = 5;
-                    b = 10;
-                    result = a == 5 ? b + 1 : b - 1;
+                    var a = 5;
+                    var b = 10;
+                    var result = a == 5 ? b + 1 : b - 1;
                     result;
                 """, PeelValue.integer(11));
     }
@@ -52,8 +52,8 @@ public class TernaryOperatorTest {
     @Test
     void ternaryInArithmeticExpression() {
         runProgrammAndExpect("""
-                    x = 1;
-                    result = 10 + (x == 1 ? 5 : 0);
+                    var x = 1;
+                    var result = 10 + (x == 1 ? 5 : 0);
                     result;
                 """, PeelValue.integer(15));
     }

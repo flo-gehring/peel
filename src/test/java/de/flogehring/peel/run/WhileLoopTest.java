@@ -17,8 +17,8 @@ public class WhileLoopTest {
     void immediatelyExit() {
         runProgrammAndExpect(
                 """
-                            x = 2;
-                            y = 2;
+                            var x = 2;
+                            var y = 2;
                             while (!(x == y)) {
                                 x = x + 1;
                             }
@@ -32,8 +32,8 @@ public class WhileLoopTest {
     void twoIterations() {
         runProgrammAndExpect(
                 """
-                            x = 0;
-                            y = 2;
+                            var x = 0;
+                            var y = 2;
                             while (!(x == y)) {
                                 x = x + 1;
                             }

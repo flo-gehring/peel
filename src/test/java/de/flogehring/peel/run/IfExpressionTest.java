@@ -41,7 +41,7 @@ public class IfExpressionTest {
             SimpleRuntime simpleRuntime = RuntimeFactory.defaultLanguage();
             Program parse = PeelGrammar.parse(
                     """
-                            x = 1;
+                            var x = 1;
                             if(x == 1) {
                                 1;
                             } else {
@@ -56,7 +56,7 @@ public class IfExpressionTest {
         @Test
         void ifWithTrueConditionExecutesThenBlock() {
             runProgrammAndExpect("""
-                        x = 0;
+                        var x = 0;
                         if (1 == 1) {
                             x = 5;
                         }
@@ -67,7 +67,7 @@ public class IfExpressionTest {
         @Test
         void ifWithFalseConditionSkipsThenBlock() {
             runProgrammAndExpect("""
-                        x = 0;
+                        var x = 0;
                         if (1 == 2) {
                             x = 5;
                         }
@@ -78,7 +78,7 @@ public class IfExpressionTest {
         @Test
         void ifWithNestedConditions() {
             runProgrammAndExpect("""
-                        x = 0;
+                        var x = 0;
                         if (1 == 1) {
                             if (2 == 2) {
                                 x = 10;
@@ -91,7 +91,7 @@ public class IfExpressionTest {
         @Test
         void ifExpressionReturnsLastValue() {
             runProgrammAndExpect("""
-                        x = if (1 == 1) {
+                        var x = if (1 == 1) {
                             5;
                         };
                         x;
@@ -101,8 +101,8 @@ public class IfExpressionTest {
         @Test
         void ifExpressionWithMultipleStatementsReturnsLast() {
             String program1 = """
-                        x = if (1 == 1) {
-                            y = 3;
+                        var x = if (1 == 1) {
+                            var y = 3;
                             10;
                         };
                         x;
@@ -115,7 +115,7 @@ public class IfExpressionTest {
         void conditionMustBeBooleanType() {
             Program program = PeelGrammar.parse("""
                         if (5) {
-                            x = 1;
+                            var x = 1;
                         }
                     """);
             SimpleRuntime runtime = RuntimeFactory.defaultLanguage();
@@ -127,7 +127,7 @@ public class IfExpressionTest {
         @Test
         void ifWithoutElseWhenConditionFalse() {
             runProgrammAndExpect("""
-                        x = if (1 == 2) {
+                        var x = if (1 == 2) {
                             10;
                         };
                         x;
@@ -155,7 +155,7 @@ public class IfExpressionTest {
         @Test
         void ifElseBranchesWithDifferentTypes() {
             runProgrammAndExpect("""
-                        x = if (1 == 1) {
+                        var x = if (1 == 1) {
                             42;
                         } else {
                             "text";
@@ -167,7 +167,7 @@ public class IfExpressionTest {
         @Test
         void ifElseReturningNoneAndInteger() {
             runProgrammAndExpect("""
-                        result = if (1 == 2) {
+                        var result = if (1 == 2) {
                             100;
                         } else {
                         };
@@ -178,10 +178,10 @@ public class IfExpressionTest {
         @Test
         void ifConditionWithComplexExpression() {
             runProgrammAndExpect("""
-                        x = 5;
-                        y = 3;
-                        sum = x + y;
-                        result = if (sum == 8) {
+                        var x = 5;
+                        var y = 3;
+                        var sum = x + y;
+                        var result = if (sum == 8) {
                             100;
                         } else {
                             0;
@@ -197,9 +197,9 @@ public class IfExpressionTest {
         @Test
         void ifTaken() {
             runProgrammAndExpect("""
-                        result = 5;
-                        y = 1;
-                        x = 1;
+                        var result = 5;
+                        var y = 1;
+                        var x = 1;
                         if (x == y) {
                             result = 1;
                         } else if (x == 1) {
@@ -214,9 +214,9 @@ public class IfExpressionTest {
         @Test
         void firstElseIfTaken() {
             runProgrammAndExpect("""
-                        result = 5;
-                        y = 2;
-                        x = 1;
+                        var result = 5;
+                        var y = 2;
+                        var x = 1;
                         if (x == y) {
                             x = 2;
                             result = 1;
@@ -236,9 +236,9 @@ public class IfExpressionTest {
         @Test
         void secondElseIfTaken() {
             runProgrammAndExpect("""
-                        result = 5;
-                        y = 1;
-                        x = 2;
+                        var result = 5;
+                        var y = 1;
+                        var x = 2;
                         if (x == y) {
                             x = 1;
                             result = 1;
@@ -259,9 +259,9 @@ public class IfExpressionTest {
         @Test
         void elseTaken() {
             runProgrammAndExpect("""
-                        result = 5;
-                        y = 2;
-                        x = 1;
+                        var result = 5;
+                        var y = 2;
+                        var x = 1;
                         if (x == y) {
                             result = 1;
                         } else if (x == 2) {
@@ -276,8 +276,8 @@ public class IfExpressionTest {
         @Test
         void ifElseChainAsAssignment() {
             runProgrammAndExpect("""
-                        x = 3;
-                        result = if (x == 1) {
+                        var x = 3;
+                        var result = if (x == 1) {
                             100;
                         } else if (x == 2) {
                             200;
@@ -293,9 +293,9 @@ public class IfExpressionTest {
         @Test
         void nestedIfElseAsAssignment() {
             runProgrammAndExpect("""
-                        x = 1;
-                        y = 2;
-                        result = if (x == 1) {
+                        var x = 1;
+                        var y = 2;
+                        var result = if (x == 1) {
                             if (y == 2) {
                                 42;
                             } else {
@@ -311,14 +311,14 @@ public class IfExpressionTest {
         @Test
         void ifElseWithMultipleStatementsInBranches() {
             runProgrammAndExpect("""
-                        x = 5;
-                        result = if (x == 5) {
-                            a = 10;
-                            b = 20;
+                        var x = 5;
+                        var result = if (x == 5) {
+                            var a = 10;
+                            var b = 20;
                             a + b;
                         } else {
-                            a = 1;
-                            b = 2;
+                            var a = 1;
+                            var b = 2;
                             a * b;
                         };
                         result;
@@ -328,7 +328,7 @@ public class IfExpressionTest {
         @Test
         void ifElseIfWithoutFinalElseWhenNoMatch() {
             runProgrammAndExpect("""
-                        x = if (5 == 1) {
+                        var x = if (5 == 1) {
                             1;
                         } else if (5 == 2) {
                             2;
@@ -340,8 +340,8 @@ public class IfExpressionTest {
         @Test
         void allBranchesSkipped() {
             runProgrammAndExpect("""
-                        x = 10;
-                        result = if (x == 1) {
+                        var x = 10;
+                        var result = if (x == 1) {
                             1;
                         } else if (x == 2) {
                             2;
@@ -360,7 +360,7 @@ public class IfExpressionTest {
         @Test
         void emptyThenBlockReturnsNone() {
             runProgrammAndExpect("""
-                        x = if (1 == 1) {
+                        var x = if (1 == 1) {
                         };
                         x;
                     """, None.NONE);
@@ -369,7 +369,7 @@ public class IfExpressionTest {
         @Test
         void emptyElseBlockReturnsNone() {
             runProgrammAndExpect("""
-                        x = if (1 == 2) {
+                        var x = if (1 == 2) {
                             10;
                         } else {
                         };
@@ -380,7 +380,7 @@ public class IfExpressionTest {
         @Test
         void emptyBlockInElseIfChain() {
             runProgrammAndExpect("""
-                        x = if (1 == 2) {
+                        var x = if (1 == 2) {
                             1;
                         } else if (2 == 2) {
                         } else {
@@ -397,7 +397,7 @@ public class IfExpressionTest {
         @Test
         void multipleIndependentIfStatements() {
             runProgrammAndExpect("""
-                        x = 0;
+                        var x = 0;
                         if (1 == 1) {
                             x = 1;
                         }
@@ -411,7 +411,7 @@ public class IfExpressionTest {
         @Test
         void deeplyNestedIfStatements() {
             runProgrammAndExpect("""
-                        result = 0;
+                        var result = 0;
                         if (1 == 1) {
                             if (2 == 2) {
                                 if (3 == 3) {
@@ -428,8 +428,8 @@ public class IfExpressionTest {
         @Test
         void nestedIfElseInElseBranch() {
             runProgrammAndExpect("""
-                        x = 10;
-                        result = if (x == 5) {
+                        var x = 10;
+                        var result = if (x == 5) {
                             1;
                         } else {
                             if (x == 10) {

@@ -54,9 +54,10 @@ public class SimpleRuntime implements Runtime {
                     operator
             );
             case Expression.Literal(var value) -> new EvaluatedExpression.Literal(value);
-            case Expression.VariableName(var name) -> new EvaluatedExpression.VariableName(name, variables.get(name));
+            case Expression.VariableName(var name, var scopeOffset) ->
+                    new EvaluatedExpression.VariableName(name, variables.get(name));
             case Expression.FunctionCall functionCall -> evaluateFunction(functionCall);
-            case Expression.Assignment(var name, var expression1) -> {
+            case Expression.Assignment(var name, var expression1, int scopeOffset) -> {
                 EvaluatedExpression value = evaluateExpr(expression1);
                 variables.put(name, value.value());
                 yield new EvaluatedExpression.Assignment(

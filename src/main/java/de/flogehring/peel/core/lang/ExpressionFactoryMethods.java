@@ -23,10 +23,19 @@ public class ExpressionFactoryMethods {
     }
 
     public static Expression.VariableName var(String name) {
-        return new Expression.VariableName(name);
+
+        return new Expression.VariableName(name, 0);
+    }
+
+    public static Expression.VariableName var(String name, int scopeOffset) {
+        return new Expression.VariableName(name, scopeOffset);
     }
 
     public static Expression.Assignment assign(String var, Expression expr) {
-        return new Expression.Assignment(var, expr);
+        return new Expression.Assignment(var, expr, 0);
+    }
+
+    public static Expression.Assignment assign(String var, Expression expr, int scopeOffset) {
+        return new Expression.Assignment(var, expr, scopeOffset);
     }
 }
