@@ -1,11 +1,6 @@
 grammar Peel;
 
 
-@header {
-    package de.flogehring.peel.antlr;
-}
-
-
 @visitor::header {
     package de.flogehring.peel.antlr;
 }

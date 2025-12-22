@@ -7,7 +7,8 @@ plugins {
 group = "de.flo-gehring"
 version = "1.0-SNAPSHOT"
 
-val generatedAntlrDir = layout.buildDirectory.dir("generated-src/antlr/main/")
+val generatedAntlrSrcRoot = layout.buildDirectory.dir("generated-src/antlr/main")
+val generatedAntlrPackageDir = generatedAntlrSrcRoot.map { it.dir("de/flogehring/peel/antlr") }
 
 repositories {
     mavenCentral()
@@ -29,19 +30,20 @@ java {
 
 // Modern Gradle: configure ANTLR task using named<GenerateGrammarSource>
 tasks.named<AntlrTask>("generateGrammarSource") {
-    outputDirectory = generatedAntlrDir.get().asFile
+    outputDirectory = generatedAntlrPackageDir.get().asFile
     maxHeapSize = "64m"
 
     arguments.addAll(
         listOf(
             "-visitor",
-            "-long-messages"
+            "-long-messages",
+            "-package", "de.flogehring.peel.antlr"
         )
     )
 }
 
 sourceSets.named("main") {
-    java.srcDir(generatedAntlrDir)
+    java.srcDir(generatedAntlrSrcRoot)
 }
 
 tasks.named("compileJava") {
