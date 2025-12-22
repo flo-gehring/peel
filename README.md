@@ -2,57 +2,27 @@
 
 **P**rintable, **E**xtendable **E**xpression **L**anguage
 
-PEEL is an expression language designed for expert systems where domain experts write
-calculation logic that is executable, auditable and printable.
+PEEL is an expression language with the goal to provide a language, that is easy and safe to integrate into applications
+while the
+calculations are easily printable.
 
 *Printable*: The result of the calculation is not a single value, but the whole execution trace. This can be used to
-populate documents for customers or regulators or just help domain experts to verify the calculations.
+*Extendable*: The language / runtime can easily be adjusted for the use case. Rounding-Modes can be set and further
+functions easily provided.
 
-*Extendable*: The IT-Departments can provide building-blocks, like functions to lookup values in databases, connectors
-to customer data and the domain experts can implement snippets of business logic.
+### Example Use Case
 
-## Key Features
+An example use case would be an expert-system, where domain experts can implement snippets of business logic themselves,
+while the system provides access to data or "pre-built" logic implemented in another language.
+The output of the calculation is a structured "calculation-sheet", that experts can use to verify or can be printed
+to documents for customers or regulators.
 
-### Printable Execution
-
-Every evaluation produces a tree of intermediate results, not just a final value:
-
-```java
-Program program = PeelGrammar.parse("""
-            principal = 100000;
-            rate = 0.05;
-            years = 30;
-            monthlyPayment = principal * (rate / 12) * (1 + rate/12)^(years*12) / ((1 + rate/12)^(years*12) - 1);
-            monthlyPayment;
-        """);
-
-EvaluatedProgram result = runtime.run(program);
-String jsonOutput = result.toJSON();  // Shows ALL intermediate calculations
-```
-
-The JSON output includes every step: `principal = 100000`, `rate = 0.05`, the calculation of `monthlyPayment`, etc.
-Perfect for generating compliance reports or explaining results to customers.
-
-### Extendable Runtime
-
-Customize arithmetic without reimplementing evaluation:
-
-```java
-Runtime runtime = RuntimeBuilder.create()
-        .withArithmetic(new DecimalArithmetic())  // Custom number handling
-        .registerFunction("npv", netPresentValueFunc)  // Domain-specific functions
-        .registerFunction("irr", internalRateOfReturnFunc)
-        .build();
-```
-
-Experts write scripts, IT provides the building blocks.
 
 ### Language Features
 
 * Dynamic Typing
 * First-Class Functions and Closures
-
-
+* Access to objects provided by the runtime
 
 ## Current Status
 
@@ -61,7 +31,7 @@ Experts write scripts, IT provides the building blocks.
 - ✅ Basic expressions and operators
 - ✅ Variables and assignments
 - ✅ Control flow (if/else, loops)
-- 🚧 Lexical scoping
+- ✅ Lexical scoping
 - 🚧 First-class functions
 - 🚧 Extensible runtime architecture
 - 🚧 JSON output format
@@ -116,9 +86,3 @@ See [`docs/product/`](docs/product/) for detailed epic planning.
 
 See [docs/product/backlog/](docs/product/backlog/) for full roadmap.
 
-
-## License
-
-[License information to be added]
-
----
