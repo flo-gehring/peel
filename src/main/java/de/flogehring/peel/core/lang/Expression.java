@@ -10,7 +10,7 @@ public sealed interface Expression {
     record Block(List<Expression> codeElements) implements Expression {
     }
 
-    record Assignment(String variableName, Expression assignment) implements Expression {
+    record Assignment(String variableName, Expression assignment, int scopeOffset) implements Expression {
     }
 
 
@@ -47,7 +47,7 @@ public sealed interface Expression {
     ) implements Expression {
     }
 
-    record VariableName(String name) implements Expression {
+    record VariableName(String name, int scopeOffset) implements Expression {
         public VariableName {
             Expression.assertNotEmpty(name);
         }

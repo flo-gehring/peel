@@ -3,9 +3,9 @@ package de.flogehring.peel.convenience;
 import de.flogehring.peel.core.eval.Function;
 import de.flogehring.peel.core.values.*;
 import de.flogehring.peel.core.values.Number;
-import de.flogehring.peel.run.NoFunctionFoundException;
-import de.flogehring.peel.run.PeelException;
 import de.flogehring.peel.run.SimpleRuntime;
+import de.flogehring.peel.run.exceptions.NoFunctionFoundException;
+import de.flogehring.peel.run.exceptions.PeelException;
 
 import java.math.BigDecimal;
 import java.util.Collections;

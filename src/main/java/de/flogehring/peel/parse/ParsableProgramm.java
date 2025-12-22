@@ -2,7 +2,7 @@ package de.flogehring.peel.parse;
 
 import de.flogehring.peel.core.lang.Expression;
 import de.flogehring.peel.core.lang.Program;
-import de.flogehring.peel.run.PeelException;
+import de.flogehring.peel.run.exceptions.PeelException;
 
 import java.util.List;
 

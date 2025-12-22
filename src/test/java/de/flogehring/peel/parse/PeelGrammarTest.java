@@ -15,16 +15,16 @@ public class PeelGrammarTest {
     @Test
     void simple() {
         Program parse = PeelGrammar.parse("""
-                 a = 1 + 2;
-                 b = 5 + 2;
+                 var a = 1 + 2;
+                 var b = 5 + 2;
                  a + b;
                 """);
         assertThat(parse).isEqualTo(
                 new Program(
                         new Expression.Block(List.of(
-                                assign("a", expr(getNumberLiteral(1), "+", getNumberLiteral(2))),
-                                assign("b", expr(getNumberLiteral(5), "+", getNumberLiteral(2))),
-                                expr(var("a"), "+", var("b"))
+                                assign("a", expr(getNumberLiteral(1), "+", getNumberLiteral(2)), 0),
+                                assign("b", expr(getNumberLiteral(5), "+", getNumberLiteral(2)), 0),
+                                expr(var("a", 0), "+", var("b", 0))
                         )
                         ))
         );
