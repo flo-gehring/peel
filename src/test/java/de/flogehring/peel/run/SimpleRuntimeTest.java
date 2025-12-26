@@ -82,14 +82,12 @@ public class SimpleRuntimeTest {
             }
 
             @Override
-            public EvaluatedExpression run(EvaluatedExpression... arguments) {
+            public PeelValue run(EvaluatedExpression... arguments) {
                 EvaluatedExpression argumentLhs = arguments[0];
                 EvaluatedExpression argumentRhs = arguments[1];
                 String lhs = ((Text) argumentLhs.value()).value();
                 int rhs = ((Number.Integer) argumentRhs.value()).value();
-                return new EvaluatedExpression.BinaryOperator(
-                        "*", new Text(repeatString(lhs, rhs)), argumentLhs, argumentRhs
-                );
+                return new Text(repeatString(lhs, rhs));
             }
 
             private String repeatString(String lhs, int rhs) {
@@ -108,7 +106,7 @@ public class SimpleRuntimeTest {
     void functionCall() {
         Program p = new Program(List.of(
                 new Expression.FunctionCall(
-                        "count",
+                        new Expression.VariableName("count", 0),
                         List.of(new Expression.Literal(new Text("hello")),
                                 new Expression.Literal(new Text("l"))
                         )))
@@ -133,14 +131,12 @@ public class SimpleRuntimeTest {
             }
 
             @Override
-            public EvaluatedExpression run(EvaluatedExpression... arguments) {
+            public PeelValue run(EvaluatedExpression... arguments) {
                 EvaluatedExpression argumentLhs = arguments[0];
                 EvaluatedExpression argumentRhs = arguments[1];
                 Number.Integer lhs = (Number.Integer) argumentLhs.value();
                 Number.Integer rhs = (Number.Integer) argumentRhs.value();
-                return new EvaluatedExpression.BinaryOperator(
-                        "+", new Number.Integer(lhs.numberValue().add(rhs.numberValue()).intValue()), argumentLhs, argumentRhs
-                );
+                return new Number.Integer(lhs.numberValue().add(rhs.numberValue()).intValue());
             }
         });
         runtime.register(integerVariable("y", 2));

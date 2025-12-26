@@ -5,6 +5,7 @@ import de.flogehring.peel.core.eval.Runtime;
 import de.flogehring.peel.core.lang.Expression;
 import de.flogehring.peel.core.lang.Program;
 import de.flogehring.peel.core.values.Bool;
+import de.flogehring.peel.core.values.PeelCallable;
 import de.flogehring.peel.core.values.PeelValue;
 import de.flogehring.peel.run.exceptions.MultipleFunctionsFoundException;
 import de.flogehring.peel.run.exceptions.NoFunctionFoundException;
@@ -186,8 +187,8 @@ public class SimpleRuntime implements Runtime {
     }
 
     private PeelValue.Collection.List requireList(EvaluatedExpression evaluatedExpression) {
-        if (evaluatedExpression instanceof EvaluatedExpression.EvaluatedListLiteral(var _, var value)) {
-            return value;
+        if (evaluatedExpression.value() instanceof PeelValue.Collection.List list) {
+            return list;
         }
         throw new PeelException("Expected list");
     }
@@ -227,21 +228,118 @@ public class SimpleRuntime implements Runtime {
         }
     }
 
-    private EvaluatedExpression evaluateFunction(Expression.FunctionCall functionCall) {
+    private EvaluatedExpression evaluateFunction(
+            Expression.FunctionCall functionCall
+    ) {
         List<EvaluatedExpression> arguments = functionCall.arguments().stream()
                 .map(this::evaluateExpr)
                 .toList();
-        List<Function> matchingName = global.getFunction(functionCall.functionName());
+        Function f = resolveFunctions(functionCall, arguments);
+        PeelValue value = f.run(arguments.toArray(new EvaluatedExpression[0]));
+        return new EvaluatedExpression.FunctionCall(
+                f.name(),
+                value,
+                arguments
+        );
+    }
+
+    private Function resolveFunctions(Expression.FunctionCall functionCall, List<EvaluatedExpression> arguments) {
+        List<Function> matchingFunctions = getMatchingFunctions(functionCall);
         int argumentLength = arguments.size();
-        List<Function> list = matchingName.stream()
+        List<Function> list = matchingFunctions.stream()
                 .filter(f -> f.arity() == argumentLength)
                 .toList();
         Function f = requireOneFunction(
                 list,
-                getNoFunctionFoundException(functionCall.functionName(), arguments.toArray()),
-                getMultipleFunctionsFoundException(functionCall.functionName(), list)
+                getNoFunctionFoundException("", arguments.toArray()),
+                getMultipleFunctionsFoundException("", list)
         );
-        return f.run(arguments.toArray(new EvaluatedExpression[0]));
+        return f;
+    }
+
+    private List<Function> getMatchingFunctions(Expression.FunctionCall functionCall) {
+        return switch (functionCall.functionName()) {
+            case Expression.VariableName(var name, var offset) -> {
+                List<Function> globalFunction = global.getFunction(name);
+                if (globalFunction.isEmpty()) {
+                    if (getScopeBy(offset).hasVar(name)) {
+                        PeelValue val = getScopeBy(offset).getVar(name);
+                        yield getFunctionFromPeelValue(val);
+                    }
+                }
+                yield globalFunction;
+            }
+            case Expression.Assignment _,
+                 Expression.BinaryOperator _, Expression.Block _,
+                 Expression.ForEachLoop _,
+                 Expression.FunctionCall _,
+                 Expression.IfElseStatement _,
+                 Expression.Literal _,
+                 Expression.UnaryPrefixOperator _,
+                 Expression.WhileLoop _ -> {
+                PeelValue val = evaluateExpr(functionCall.functionName()).value();
+                yield getFunctionFromPeelValue(val);
+            }
+
+            case Expression.ListLiteral _ -> throw new PeelException("Can't call function on Listliteral");
+        };
+    }
+
+    private List<Function> getFunctionFromPeelValue(PeelValue val) {
+        if (val instanceof PeelCallable callable) {
+            return List.of(
+                    getFunctionFrom(callable)
+            );
+        } else {
+            throw new PeelException("Can't call Value of type " + val.getClass().getSimpleName());
+        }
+    }
+
+    private Function getFunctionFrom(PeelCallable callable) {
+        return new Function() {
+            @Override
+            public String name() {
+                return callable.getName();
+            }
+
+            @Override
+            public int arity() {
+                return callable.getParameters().size();
+            }
+
+            @Override
+            public PeelValue run(EvaluatedExpression... arguments) {
+                beginnScope();
+                for (int i = 0; i < callable.getParameters().size(); ++i) {
+                    getScopeBy(0).putVar(
+                            callable.getParameters().get(i),
+                            arguments[i].value()
+                    );
+                }
+                beginnScope();
+                EvaluatedExpression.EvaluatedBlock evaluatedBlock = evaluateBlock(callable.getBody().codeElements());
+                endScope();
+                endScope();
+                return evaluatedBlock.value();
+            }
+        };
+    }
+
+    private static Variable var(
+            String name,
+            PeelValue peelValue
+    ) {
+        return new Variable() {
+            @Override
+            public String name() {
+                return name;
+            }
+
+            @Override
+            public PeelValue value() {
+                return peelValue;
+            }
+        };
     }
 
     private EvaluatedExpression evaluateOperator(Expression.BinaryOperator operator) {
@@ -253,7 +351,13 @@ public class SimpleRuntime implements Runtime {
                 getNoFunctionFoundException(operator.operator(), parameters),
                 getMultipleFunctionsFoundException(operator.operator(), matchingName)
         );
-        return f.run(evaluateExpr(operator.lhs()), evaluateExpr(operator.rhs()));
+        EvaluatedExpression lhs = evaluateExpr(operator.lhs());
+        EvaluatedExpression rhs = evaluateExpr(operator.rhs());
+        return new EvaluatedExpression.FunctionCall(
+                operator.operator(),
+                f.run(lhs, rhs),
+                List.of(lhs, rhs)
+        );
     }
 
     private static NoFunctionFoundException getNoFunctionFoundException(String operator, Object... arguments) {

@@ -43,6 +43,9 @@ public class Scope {
         return variables.get(name);
     }
 
+    public boolean hasVar(String var) {
+        return variables.containsKey(var);
+    }
     public void putVar(String name, PeelValue value) {
         variables.put(name, value);
     }

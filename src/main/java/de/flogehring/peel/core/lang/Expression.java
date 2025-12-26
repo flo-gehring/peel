@@ -13,7 +13,6 @@ public sealed interface Expression {
     record Assignment(String variableName, Expression assignment, int scopeOffset) implements Expression {
     }
 
-
     record IfElseStatement(
             List<ConditionalExecution> conditionals,
             Optional<Expression> elseExpr
@@ -53,10 +52,7 @@ public sealed interface Expression {
         }
     }
 
-    record FunctionCall(String functionName, List<Expression> arguments) implements Expression {
-        public FunctionCall {
-            Expression.assertNotEmpty(functionName);
-        }
+    record FunctionCall(Expression functionName, List<Expression> arguments) implements Expression {
     }
 
     record WhileLoop(Expression condition, Block body) implements Expression {

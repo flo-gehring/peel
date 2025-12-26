@@ -1,8 +1,11 @@
 package de.flogehring.peel.parse;
 
+import de.flogehring.peel.antlr.PeelParser;
 import de.flogehring.peel.core.lang.Expression;
 import de.flogehring.peel.core.lang.ExpressionFactoryMethods;
+import de.flogehring.peel.core.values.PeelCallable;
 import org.antlr.v4.runtime.ParserRuleContext;
+import org.antlr.v4.runtime.Token;
 import org.antlr.v4.runtime.tree.ErrorNode;
 import org.antlr.v4.runtime.tree.ParseTree;
 import org.antlr.v4.runtime.tree.RuleNode;
@@ -23,7 +26,6 @@ class ProgrammVisitor implements de.flogehring.peel.antlr.PeelVisitor<ParsablePr
         String s;
         boolean initialized;
 
-
         public VariableDeclaration(String s, boolean b) {
             this.s = s;
             this.initialized = b;
@@ -36,7 +38,6 @@ class ProgrammVisitor implements de.flogehring.peel.antlr.PeelVisitor<ParsablePr
         boolean initialized() {
             return initialized;
         }
-
     }
 
     record Scope(Set<VariableDeclaration> content) {
@@ -89,6 +90,88 @@ class ProgrammVisitor implements de.flogehring.peel.antlr.PeelVisitor<ParsablePr
 
     private void endScope() {
         scopes.removeLast();
+    }
+
+    @Override
+    public ParsableProgramm visitFunctionDeclaration(PeelParser.FunctionDeclarationContext ctx) {
+        String name = ctx.IDENT().getText();
+        if (alreadyInScope(name)) { // TODO this is not right, because it allows for only one function definition per name
+            throw new RedeclaredVariableException("Can't redeclare function with same scope");
+        }
+        initVar(name);
+        setInitialized(name);
+        beginScope();
+        List<String> parameters = ((ParsableProgramm.ParsableParameters) visitParameters(ctx.parameters())).parameters();
+        parameters.forEach(this::initVar);
+        parameters.forEach(this::setInitialized);
+        Expression.Block expr = (Expression.Block) visitBlock(ctx.block()).toExpr();
+        endScope();
+        return new ParsableProgramm.ParsableCodeElement(
+                new Expression.Assignment(
+                        name,
+                        new Expression.Literal(
+                                PeelCallable.userDefinedFunction(
+                                        name,
+                                        parameters,
+                                        expr
+                                )),
+                        0
+                )
+        );
+    }
+
+    @Override
+    public ParsableProgramm visitParameters(PeelParser.ParametersContext ctx) {
+        return new ParsableProgramm.ParsableParameters(ctx.IDENT().stream().map(TerminalNode::getText).toList());
+    }
+
+    @Override
+    public ParsableProgramm visitFunctionCallExpr(PeelParser.FunctionCallExprContext ctx) {
+        return new ParsableProgramm.ParsableCodeElement(
+                new Expression.FunctionCall(
+                        ctx.expr().accept(this).toExpr(),
+                        visitArguments(ctx.arguments()).arguments()
+                )
+        );
+    }
+
+    @Override
+    public ParsableProgramm visitLambdaExpr(PeelParser.LambdaExprContext ctx) {
+        beginScope();
+        List<String> parameters = ((ParsableProgramm.ParsableParameters) visitParameters(ctx.parameters())).parameters();
+        parameters.forEach(this::initVar);
+        parameters.forEach(this::setInitialized);
+        Expression.Block expr = (Expression.Block) visitBlock(ctx.block()).toExpr();
+        endScope();
+        Token start = ctx.getStart();
+        return new ParsableProgramm.ParsableCodeElement(
+                new Expression.Literal(
+                        PeelCallable.userDefinedFunction(
+                                "<anonymous_function>@" + start.getLine() + ":" + start.getCharPositionInLine(),
+                                parameters,
+                                expr
+                        )
+                )
+        );
+    }
+
+    @Override
+    public ParsableProgramm visitNonTernaryfunctionCallExpr(PeelParser.NonTernaryfunctionCallExprContext ctx) {
+        return new ParsableProgramm.ParsableCodeElement(
+                new Expression.FunctionCall(
+                        ctx.nonTernaryExpr().accept(this).toExpr(),
+                        visitArguments(ctx.arguments()).arguments()
+                )
+        );
+    }
+
+    @Override
+    public ParsableProgramm.ParsableArguments visitArguments(PeelParser.ArgumentsContext ctx) {
+        return new ParsableProgramm.ParsableArguments(
+                ctx.expr()
+                        .stream().map(exprContext -> exprContext.accept(this))
+                        .map(ParsableProgramm::toExpr).toList()
+        );
     }
 
     @Override
@@ -148,6 +231,8 @@ class ProgrammVisitor implements de.flogehring.peel.antlr.PeelVisitor<ParsablePr
             return ctx.whileStatement().accept(this);
         } else if (ctx.forEachStatement() != null) {
             return ctx.forEachStatement().accept(this);
+        } else if (ctx.functionDeclaration() != null) {
+            return ctx.functionDeclaration().accept(this);
         } else {
             return ctx.expr().accept(this);
         }

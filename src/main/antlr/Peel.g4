@@ -16,6 +16,7 @@ program
 
 statement
     : declaration
+    | functionDeclaration
     | assignment
     | ifStatement
     | expr ';'
@@ -26,6 +27,25 @@ statement
 declaration
  : 'var' IDENT '=' expr? ';'
  ;
+
+functionDeclaration
+    : 'fun' IDENT parameters block
+    ;
+
+parameters
+    : '(' (IDENT (',' IDENT)*)? ')'
+    ;
+
+// TODO Clean up grammar wrinkles and inconsistencies.
+// -> IfStatement vs if Expr.
+// ternary vs nonTernary
+// Everything is a statement
+// Missing features
+// Strings should be possible.
+// boolean values
+// map literals
+// map accessors
+
 
 assignment
     : IDENT '=' expr ';'
@@ -65,10 +85,11 @@ expr
     | expr ('+' | '-') expr # addSubExpr
     | '[' expr ? (',' expr)* ','? ']'              # listExpr
     | nonTernaryExpr '?' nonTernaryExpr ':' nonTernaryExpr # ternaryExpr
+    | expr arguments # functionCallExpr
+    | 'fun' parameters block # lambdaExpr
     | '(' expr ')'         # parenExpr
     | IDENT                # varExpr
     | NUMBER               # numberExpr
-
     ;
 
 nonTernaryExpr
@@ -82,8 +103,14 @@ nonTernaryExpr
     | nonTernaryExpr ('*' | '/') nonTernaryExpr # nonTernaryMulDivExpr
     | nonTernaryExpr ('+' | '-') nonTernaryExpr # nonTernaryAddSubExpr
     | '(' nonTernaryExpr ')'         # nonTernaryParenExpr
+    | nonTernaryExpr arguments                # nonTernaryfunctionCallExpr
     | IDENT                # nonTernaryVarExpr
     | NUMBER               # nonTernaryNumberExpr
+    ;
+
+
+arguments:
+    '(' (expr (',' expr)*)?')'
     ;
 
 // ----------------------

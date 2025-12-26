@@ -2,6 +2,7 @@ plugins {
     id("java")
     antlr
     jacoco
+    id("io.freefair.lombok") version "9.1.0"
 }
 
 group = "de.flo-gehring"

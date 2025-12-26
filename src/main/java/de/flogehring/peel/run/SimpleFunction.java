@@ -4,8 +4,6 @@ import de.flogehring.peel.core.eval.EvaluatedExpression;
 import de.flogehring.peel.core.eval.Function;
 import de.flogehring.peel.core.values.PeelValue;
 
-import java.util.Arrays;
-
 public class SimpleFunction implements Function {
 
     private final String name;
@@ -33,11 +31,7 @@ public class SimpleFunction implements Function {
     }
 
     @Override
-    public EvaluatedExpression run(EvaluatedExpression... arguments) {
-        return new EvaluatedExpression.FunctionCall(
-                name,
-                function.apply(arguments),
-                Arrays.stream(arguments).toList()
-        );
+    public PeelValue run(EvaluatedExpression... arguments) {
+        return function.apply(arguments);
     }
 }

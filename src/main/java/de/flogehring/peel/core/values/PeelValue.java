@@ -2,7 +2,7 @@ package de.flogehring.peel.core.values;
 
 import java.util.List;
 
-public sealed interface PeelValue permits Primitives, PeelValue.Collection {
+public sealed interface PeelValue permits Primitives, PeelValue.Collection, PeelCallable {
 
     static Collection.List list(List<PeelValue> peelValue) {
         return new Collection.List(peelValue);
