@@ -49,6 +49,13 @@ public sealed interface EvaluatedExpression {
 
     }
 
+    record Return(EvaluatedExpression toReturn) implements EvaluatedExpression {
+        @Override
+        public PeelValue value() {
+            return toReturn.value();
+        }
+    }
+
     record Assignment(String variableName, EvaluatedExpression expression) implements EvaluatedExpression {
         @Override
         public PeelValue value() {

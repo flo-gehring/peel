@@ -19,13 +19,14 @@ statement
     | functionDeclaration
     | assignment
     | ifStatement
+    | returnStatement
     | expr ';'
     | whileStatement
     | forEachStatement
     ;
 
 declaration
- : 'var' IDENT '=' expr? ';'
+ : 'var' IDENT ('=' expr)? ';'
  ;
 
 functionDeclaration
@@ -61,6 +62,10 @@ whileStatement
 
 forEachStatement
     : 'for' '(' IDENT 'in' expr ')' block
+    ;
+
+returnStatement
+    : 'return' expr? ';'
     ;
 
 block

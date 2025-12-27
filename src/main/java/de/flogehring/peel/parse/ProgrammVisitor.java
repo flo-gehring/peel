@@ -2,7 +2,9 @@ package de.flogehring.peel.parse;
 
 import de.flogehring.peel.antlr.PeelParser;
 import de.flogehring.peel.core.lang.Expression;
+import de.flogehring.peel.core.lang.Expression.IfElseStatement.ConditionalExecution;
 import de.flogehring.peel.core.lang.ExpressionFactoryMethods;
+import de.flogehring.peel.core.values.None;
 import de.flogehring.peel.core.values.PeelCallable;
 import org.antlr.v4.runtime.ParserRuleContext;
 import org.antlr.v4.runtime.Token;
@@ -17,6 +19,7 @@ import java.util.*;
 class ProgrammVisitor implements de.flogehring.peel.antlr.PeelVisitor<ParsableProgramm> {
 
     private final List<Scope> scopes;
+    private int functionDepth = 0;
 
     ProgrammVisitor() {
         this.scopes = new ArrayList<>();
@@ -104,7 +107,9 @@ class ProgrammVisitor implements de.flogehring.peel.antlr.PeelVisitor<ParsablePr
         List<String> parameters = ((ParsableProgramm.ParsableParameters) visitParameters(ctx.parameters())).parameters();
         parameters.forEach(this::initVar);
         parameters.forEach(this::setInitialized);
+        functionDepth++;
         Expression.Block expr = (Expression.Block) visitBlock(ctx.block()).toExpr();
+        functionDepth--;
         endScope();
         return new ParsableProgramm.ParsableCodeElement(
                 new Expression.Assignment(
@@ -141,7 +146,9 @@ class ProgrammVisitor implements de.flogehring.peel.antlr.PeelVisitor<ParsablePr
         List<String> parameters = ((ParsableProgramm.ParsableParameters) visitParameters(ctx.parameters())).parameters();
         parameters.forEach(this::initVar);
         parameters.forEach(this::setInitialized);
+        functionDepth++;
         Expression.Block expr = (Expression.Block) visitBlock(ctx.block()).toExpr();
+        functionDepth--;
         endScope();
         Token start = ctx.getStart();
         return new ParsableProgramm.ParsableCodeElement(
@@ -186,6 +193,28 @@ class ProgrammVisitor implements de.flogehring.peel.antlr.PeelVisitor<ParsablePr
     }
 
     @Override
+    public ParsableProgramm visitStatement(de.flogehring.peel.antlr.PeelParser.StatementContext ctx) {
+        if (ctx.assignment() != null) {
+            ParseTree child = assertOneChild(ctx);
+            return child.accept(this);
+        } else if (ctx.declaration() != null) {
+            return ctx.declaration().accept(this);
+        } else if (ctx.ifStatement() != null) {
+            return ctx.ifStatement().accept(this);
+        } else if (ctx.whileStatement() != null) {
+            return ctx.whileStatement().accept(this);
+        } else if (ctx.forEachStatement() != null) {
+            return ctx.forEachStatement().accept(this);
+        } else if (ctx.functionDeclaration() != null) {
+            return ctx.functionDeclaration().accept(this);
+        } else if (ctx.returnStatement() != null) {
+            return ctx.returnStatement().accept(this);
+        } else {
+            return ctx.expr().accept(this);
+        }
+    }
+
+    @Override
     public ParsableProgramm visitDeclaration(de.flogehring.peel.antlr.PeelParser.DeclarationContext ctx) {
         String varName = ctx.IDENT().getSymbol().getText();
         if (alreadyInScope(varName)) {
@@ -216,26 +245,6 @@ class ProgrammVisitor implements de.flogehring.peel.antlr.PeelVisitor<ParsablePr
 
     private void initVar(String varName) {
         scopes.getLast().addVar(varName);
-    }
-
-    @Override
-    public ParsableProgramm visitStatement(de.flogehring.peel.antlr.PeelParser.StatementContext ctx) {
-        if (ctx.assignment() != null) {
-            ParseTree child = assertOneChild(ctx);
-            return child.accept(this);
-        } else if (ctx.declaration() != null) {
-            return ctx.declaration().accept(this);
-        } else if (ctx.ifStatement() != null) {
-            return ctx.ifStatement().accept(this);
-        } else if (ctx.whileStatement() != null) {
-            return ctx.whileStatement().accept(this);
-        } else if (ctx.forEachStatement() != null) {
-            return ctx.forEachStatement().accept(this);
-        } else if (ctx.functionDeclaration() != null) {
-            return ctx.functionDeclaration().accept(this);
-        } else {
-            return ctx.expr().accept(this);
-        }
     }
 
     private ParseTree assertOneChild(ParserRuleContext ctx) {
@@ -285,18 +294,17 @@ class ProgrammVisitor implements de.flogehring.peel.antlr.PeelVisitor<ParsablePr
         beginScope();
         Expression elseExpr = ctx.getChild(4).accept(this).toExpr();
         endScope();
-        return new ParsableProgramm.ParsableCodeElement(
-                new Expression.IfElseStatement(
-                        List.of(
-                                new Expression.IfElseStatement.ConditionalExecution(
-                                        ifExpr,
-                                        thenExpr
-                                )
-                        ),
-                        Optional.of(
-                                elseExpr
+        Expression.IfElseStatement codeElement = new Expression.IfElseStatement(
+                List.of(
+                        new ConditionalExecution(
+                                ifExpr,
+                                thenExpr
                         )
-                )
+                ),
+                Optional.of(elseExpr)
+        );
+        return new ParsableProgramm.ParsableCodeElement(
+                codeElement
         );
     }
 
@@ -344,7 +352,7 @@ class ProgrammVisitor implements de.flogehring.peel.antlr.PeelVisitor<ParsablePr
     public ParsableProgramm visitIfStatement(de.flogehring.peel.antlr.PeelParser.IfStatementContext ctx) {
         var blocks = ctx.block();
         var ifClauses = ctx.expr();
-        List<Expression.IfElseStatement.ConditionalExecution> conditionals = new ArrayList<>();
+        List<ConditionalExecution> conditionals = new ArrayList<>();
         for (int i = 0; i < ifClauses.size(); ++i) {
             beginScope();
             Expression ifClause = ifClauses.get(i).accept(this).toExpr();
@@ -353,7 +361,7 @@ class ProgrammVisitor implements de.flogehring.peel.antlr.PeelVisitor<ParsablePr
             Expression thenExpr = blocks.get(i).accept(this).toExpr();
             endScope();
             conditionals.add(
-                    new Expression.IfElseStatement.ConditionalExecution(
+                    new ConditionalExecution(
                             ifClause,
                             thenExpr
                     )
@@ -376,6 +384,28 @@ class ProgrammVisitor implements de.flogehring.peel.antlr.PeelVisitor<ParsablePr
     }
 
     @Override
+    public ParsableProgramm visitReturnStatement(
+            PeelParser.ReturnStatementContext ctx
+    ) {
+        if (functionDepth == 0) {
+            Token start = ctx.start;
+
+            throw new PeelParsingException(
+                    "Error at return Statement, outside of function definition: Line " +
+                            getPosString(start)
+            );
+        }
+        return new ParsableProgramm.ParsableCodeElement(new Expression.Return(
+                ctx.expr() != null ? ctx.expr().accept(this).toExpr() : new Expression.Literal(None.NONE)
+        ));
+    }
+
+    private static String getPosString(Token token) {
+        return token.getLine() + ":" + token.getCharPositionInLine();
+    }
+
+
+    @Override
     public ParsableProgramm visitBlock(de.flogehring.peel.antlr.PeelParser.BlockContext ctx) {
         beginScope();
         List<Expression> expressions = ctx.statement()
@@ -392,7 +422,7 @@ class ProgrammVisitor implements de.flogehring.peel.antlr.PeelVisitor<ParsablePr
     public ParsableProgramm visitIfExpr(de.flogehring.peel.antlr.PeelParser.IfExprContext ctx) {
         var ifClauses = ctx.expr();
         var thenBlocks = ctx.block();
-        List<Expression.IfElseStatement.ConditionalExecution> conditionals = new ArrayList<>();
+        List<ConditionalExecution> conditionals = new ArrayList<>();
         for (int i = 0; i < ifClauses.size(); ++i) {
             beginScope();
             Expression ifClause = ifClauses.get(i).accept(this).toExpr();
@@ -401,7 +431,7 @@ class ProgrammVisitor implements de.flogehring.peel.antlr.PeelVisitor<ParsablePr
             Expression thenBlock = thenBlocks.get(i).accept(this).toExpr();
             endScope();
             conditionals.add(
-                    new Expression.IfElseStatement.ConditionalExecution(
+                    new ConditionalExecution(
                             ifClause,
                             thenBlock
                     )
@@ -581,7 +611,7 @@ class ProgrammVisitor implements de.flogehring.peel.antlr.PeelVisitor<ParsablePr
     public ParsableProgramm visitNonTernaryIfExpr(de.flogehring.peel.antlr.PeelParser.NonTernaryIfExprContext ctx) {
         var ifClauses = ctx.nonTernaryExpr();
         var thenBlocks = ctx.block();
-        List<Expression.IfElseStatement.ConditionalExecution> conditionals = new ArrayList<>();
+        List<ConditionalExecution> conditionals = new ArrayList<>();
         for (int i = 0; i < ifClauses.size(); ++i) {
             beginScope();
             Expression ifClause = ifClauses.get(i).accept(this).toExpr();
@@ -590,7 +620,7 @@ class ProgrammVisitor implements de.flogehring.peel.antlr.PeelVisitor<ParsablePr
             Expression thenBlock = thenBlocks.get(i).accept(this).toExpr();
             endScope();
             conditionals.add(
-                    new Expression.IfElseStatement.ConditionalExecution(
+                    new ConditionalExecution(
                             ifClause,
                             thenBlock
                     )

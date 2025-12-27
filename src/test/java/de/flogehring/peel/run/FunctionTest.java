@@ -32,7 +32,7 @@ public class FunctionTest {
                         }
                         add(1,2);
                         """,
-                integer(2)
+                integer(3)
         );
     }
 
@@ -103,8 +103,7 @@ public class FunctionTest {
                             } else {
                                 return fib(n -1) + fib(n -2);
                             }
-                        }
-                        
+                        } 
                         fib(5);
                         """,
                 integer(6)

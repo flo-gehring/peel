@@ -77,6 +77,9 @@ public class SimpleRuntime implements Runtime {
             case Expression.ForEachLoop(var varName, var listExpr, var block) ->
                     runForEachLoop(varName, listExpr, block);
             case Expression.ListLiteral(var list) -> evaluateListLiteral(list);
+            case Expression.Return(var expr) -> throw new ReturnValueFlow(
+                    evaluateExpr(expr)
+            );
         };
     }
 
@@ -235,7 +238,12 @@ public class SimpleRuntime implements Runtime {
                 .map(this::evaluateExpr)
                 .toList();
         Function f = resolveFunctions(functionCall, arguments);
-        PeelValue value = f.run(arguments.toArray(new EvaluatedExpression[0]));
+        PeelValue value;
+        try {
+            value = f.run(arguments.toArray(new EvaluatedExpression[0]));
+        } catch (ReturnValueFlow returnValueFlow) {
+            value = returnValueFlow.getExpr().value();
+        }
         return new EvaluatedExpression.FunctionCall(
                 f.name(),
                 value,
@@ -281,7 +289,8 @@ public class SimpleRuntime implements Runtime {
                 yield getFunctionFromPeelValue(val);
             }
 
-            case Expression.ListLiteral _ -> throw new PeelException("Can't call function on Listliteral");
+            case Expression.ListLiteral _, Expression.Return _ ->
+                    throw new PeelException("Can't call function on " + functionCall.functionName().getClass().getSimpleName());
         };
     }
 

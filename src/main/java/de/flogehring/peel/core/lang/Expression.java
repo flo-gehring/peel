@@ -63,6 +63,10 @@ public sealed interface Expression {
 
     }
 
+    record Return(Expression value) implements Expression {
+
+    }
+
     private static void assertNotEmpty(String s) {
         assert s != null;
         assert !s.isEmpty();
