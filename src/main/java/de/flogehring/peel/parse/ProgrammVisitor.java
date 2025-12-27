@@ -313,10 +313,10 @@ class ProgrammVisitor implements de.flogehring.peel.antlr.PeelVisitor<ParsablePr
 
     @Override
     public ParsableProgramm visitForEachStatement(de.flogehring.peel.antlr.PeelParser.ForEachStatementContext ctx) {
+        Expression expr = ctx.expr().accept(this).toExpr();
         beginScope();
         String varName = ctx.getChild(2).getText();
         initVar(varName);
-        Expression expr = ctx.expr().accept(this).toExpr();
         setInitialized(varName);
         Expression.Block body = (Expression.Block) ctx.block().accept(this).toExpr();
         endScope();

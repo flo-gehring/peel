@@ -316,9 +316,7 @@ public class SimpleRuntime implements Runtime {
                             arguments[i].value()
                     );
                 }
-                beginnScope();
                 EvaluatedExpression.EvaluatedBlock evaluatedBlock = evaluateBlock(callable.getBody().codeElements());
-                endScope();
                 endScope();
                 return evaluatedBlock.value();
             }
