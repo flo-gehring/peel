@@ -85,8 +85,10 @@ public sealed interface EvaluatedExpression {
                     ).value();
         }
 
-        public record Iteration(EvaluatedExpression condition, Optional<EvaluatedBlock> evaluatedBlock) {
-
+        public record Iteration(
+                EvaluatedExpression condition,
+                Optional<EvaluatedBlock> evaluatedBlock
+        ) {
         }
     }
 
@@ -105,7 +107,6 @@ public sealed interface EvaluatedExpression {
             List<EvaluatedExpression> elements,
             PeelValue.Collection.List value
     ) implements EvaluatedExpression {
-
     }
 
     record EvaluatedBlock(List<EvaluatedExpression> content) implements EvaluatedExpression {
@@ -124,6 +125,4 @@ public sealed interface EvaluatedExpression {
             return content.getLast().value();
         }
     }
-
-
 }

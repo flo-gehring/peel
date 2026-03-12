@@ -81,6 +81,7 @@ block
 
 expr
     : 'if' '(' expr ')' block ('else' 'if' '(' expr ')' block)* ('else' block)?  # ifExpr
+    | expr arguments # functionCallExpr
     | expr '||' expr       # logicalOrExpr
     | expr '&&' expr       # logicalAndExpr
     | expr '==' expr       # eqExpr
@@ -90,7 +91,6 @@ expr
     | expr ('+' | '-') expr # addSubExpr
     | '[' expr ? (',' expr)* ','? ']'              # listExpr
     | nonTernaryExpr '?' nonTernaryExpr ':' nonTernaryExpr # ternaryExpr
-    | expr arguments # functionCallExpr
     | 'fun' parameters block # lambdaExpr
     | '(' expr ')'         # parenExpr
     | IDENT                # varExpr

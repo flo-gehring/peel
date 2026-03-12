@@ -90,25 +90,50 @@ public class FunctionTest {
         );
     }
 
-    @Test
-    @Timeout(10)
-    void recursive() {
-        runProgrammAndExpect(
-                """
-                        fun fib(n) {
-                            if (n == 1) {
-                                return 1;
-                            } else if (n == 2) {
-                                return 1;
-                            } else {
-                                return fib(n -1) + fib(n -2);
-                            }
-                        } 
-                        fib(5);
-                        """,
-                integer(6)
-        );
+    @Nested
+    class Recursion {
 
+        @Test
+        @Timeout(10)
+        void recursive() {
+            runProgrammAndExpect(
+                    """
+                            fun fib(n) {
+                                if (n == 1) {
+                                    return 1;
+                                } else if (n == 2) {
+                                    return 1;
+                                } else {
+                                    return fib(n -1) + fib(n -2);
+                                }
+                            }
+                            fib(5);
+                            """,
+                    integer(6)
+            );
+        }
+
+        @Test
+        @Timeout(10)
+        void recursiveWithOuterScope() {
+            runProgrammAndExpect(
+                    """
+                            var endCondition1 = 1;
+                            var endCondition2 = 2;
+                            fun fib(n) {
+                                if (n == endCondition1) {
+                                    return 1;
+                                } else if (n == endCondition2) {
+                                    return 1;
+                                } else {
+                                    return fib(n -1) + fib(n -2);
+                                }
+                            }
+                            fib(5);
+                            """,
+                    integer(6)
+            );
+        }
     }
 
     @Nested
@@ -151,13 +176,12 @@ public class FunctionTest {
                     """
                             var list = [];
                             for (i in [1,2,3,4]) {
-                                list = list + fun(x) { x + i};
+                                list = list + fun(x) { x + i;};
                             }
                             var s = 0;
                             for (f in list) {
                                 s = s + f(1);
                             }
-                            
                             """,
                     integer(14)
             );

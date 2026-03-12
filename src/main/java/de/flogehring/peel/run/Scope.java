@@ -20,7 +20,6 @@ public class Scope {
         this.functions = functions;
     }
 
-
     public static Scope empty() {
         return new Scope(new HashMap<>(), new HashMap<>());
     }

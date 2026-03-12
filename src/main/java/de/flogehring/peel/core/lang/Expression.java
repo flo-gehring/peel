@@ -19,12 +19,10 @@ public sealed interface Expression {
     ) implements Expression {
 
         public record ConditionalExecution(Expression condition, Expression then) {
-
         }
     }
 
     record ListLiteral(List<Expression> elements) implements Expression {
-
     }
 
     record Literal(PeelValue value) implements Expression {
@@ -52,19 +50,16 @@ public sealed interface Expression {
         }
     }
 
-    record FunctionCall(Expression functionName, List<Expression> arguments) implements Expression {
+    record FunctionCall(Expression callee, List<Expression> arguments) implements Expression {
     }
 
     record WhileLoop(Expression condition, Block body) implements Expression {
-
     }
 
     record ForEachLoop(String varName, Expression list, Block body) implements Expression {
-
     }
 
     record Return(Expression value) implements Expression {
-
     }
 
     private static void assertNotEmpty(String s) {

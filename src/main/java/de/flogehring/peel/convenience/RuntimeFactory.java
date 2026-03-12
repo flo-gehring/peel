@@ -196,12 +196,14 @@ public class RuntimeFactory {
                 (lhs, rhs) -> switch (lhs) {
                     case PeelValue.Collection cLhs -> switch (rhs) {
                         case PeelValue.Collection cRhs -> addCollections(cLhs, cRhs);
-                        case Primitives pRhs -> addCollectionAndPrimitive(
+                        case Primitives pRhs -> addCollectionAnd(
                                 cLhs,
                                 pRhs
                         );
-                        case PeelCallable _ ->
-                                throw new NoFunctionFoundException("Can't add Collections and Callables");
+                        case PeelCallable cRhs -> addCollectionAnd(
+                                cLhs,
+                                cRhs
+                        );
                     };
                     case Primitives primitiveLhs -> switch (rhs) {
                         case PeelValue.Collection _, PeelCallable _ -> throw new NoFunctionFoundException(
@@ -219,7 +221,7 @@ public class RuntimeFactory {
         );
     }
 
-    private static PeelValue addCollectionAndPrimitive(PeelValue.Collection cLhs, Primitives pRhs) {
+    private static <T extends PeelValue> PeelValue addCollectionAnd(PeelValue.Collection cLhs, T pRhs) {
         if (cLhs instanceof PeelValue.Collection.List(List<PeelValue> list)) {
             return new PeelValue.Collection.List(
                     Stream.concat(list.stream(), Stream.of(pRhs)).toList()
