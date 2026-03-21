@@ -23,23 +23,18 @@ import static de.flogehring.peel.core.values.PeelValue.Collection.peelList;
 public class Evaluator {
 
     private EvaluationEnvironment environment;
-    private final Expression expression;
 
-    public Evaluator(EvaluationEnvironment environment, Expression expression) {
+    public Evaluator(EvaluationEnvironment environment) {
         this.environment = environment;
-        this.expression = expression;
     }
 
-    EvaluatedExpression evaluate() {
-        return getEvaluatedProgram();
-    }
-
-    private EvaluatedExpression getEvaluatedProgram() {
+    EvaluatedExpression evaluate(Expression expression) {
         beginnScope();
         EvaluatedExpression result = evaluateExpr(expression);
         endScope();
         return result;
     }
+
 
     private EvaluatedExpression evaluateExpr(Expression expression) {
         return switch (expression) {

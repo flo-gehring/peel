@@ -31,13 +31,14 @@ public class SimpleRuntime implements Runtime {
 
     @Override
     public EvaluatedProgram run(Program program) {
-        EvaluatedExpression evaluate = new Evaluator(new EvaluationEnvironment(
+        EvaluationEnvironment environment = new EvaluationEnvironment(
                 global,
                 Optional.empty(),
                 new ArrayList<>()
-        ), program.programm()).evaluate();
-
-        EvaluatedExpression.EvaluatedBlock block = (EvaluatedExpression.EvaluatedBlock) evaluate;
+        );
+        Evaluator evaluator = new Evaluator(environment);
+        EvaluatedExpression evaluated = evaluator.evaluate(program.programm());
+        EvaluatedExpression.EvaluatedBlock block = (EvaluatedExpression.EvaluatedBlock) evaluated;
         return new EvaluatedProgram(block.content());
     }
 }
