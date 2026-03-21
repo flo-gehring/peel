@@ -11,9 +11,19 @@ public sealed interface EvaluatedExpression {
 
     PeelValue value();
 
+    static Literal peelLiteral(PeelValue value) {
+        return new Literal(value);
+    }
+
     record Literal(
             PeelValue peelValue
     ) implements EvaluatedExpression {
+
+        @Override
+        public String toString() {
+            return peelValue.toString();
+        }
+
         @Override
         public PeelValue value() {
             return peelValue;
@@ -39,6 +49,11 @@ public sealed interface EvaluatedExpression {
             String name,
             PeelValue value
     ) implements EvaluatedExpression {
+
+        @Override
+        public String toString() {
+            return name + " <-> " + value.toString();
+        }
     }
 
     record FunctionCall(
@@ -46,6 +61,11 @@ public sealed interface EvaluatedExpression {
             PeelValue value,
             List<EvaluatedExpression> arguments
     ) implements EvaluatedExpression {
+
+        @Override
+        public String toString() {
+            return value.toString() + " <-> `" + name + "`(" + String.join(", ", arguments.stream().map(EvaluatedExpression::toString).toList()) + ")";
+        }
 
     }
 

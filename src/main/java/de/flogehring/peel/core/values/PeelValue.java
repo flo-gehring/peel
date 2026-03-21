@@ -22,10 +22,26 @@ public sealed interface PeelValue permits Primitives, PeelValue.Collection, Peel
 
     sealed interface Collection extends PeelValue {
 
+        static List peelList(java.util.List<PeelValue> list) {
+            return new List(list);
+        }
+
+        static Map peelMap(java.util.Map<Primitives, PeelValue> map) {
+            return new Map(map);
+        }
+
         record Map(java.util.Map<Primitives, PeelValue> map) implements Collection {
+            @Override
+            public String toString() {
+                return "{" + String.join(", ", map.entrySet().stream().map(entry -> entry.getKey().toString() + ": " + entry.getValue().toString()) + "}");
+            }
         }
 
         record List(java.util.List<PeelValue> list) implements Collection {
+            @Override
+            public String toString() {
+                return "[" + String.join(", ", list.stream().map(PeelValue::toString).toList()) + "]";
+            }
         }
     }
 }

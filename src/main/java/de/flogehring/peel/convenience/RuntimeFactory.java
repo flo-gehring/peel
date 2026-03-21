@@ -6,6 +6,7 @@ import de.flogehring.peel.core.values.Number;
 import de.flogehring.peel.run.SimpleRuntime;
 import de.flogehring.peel.run.exceptions.NoFunctionFoundException;
 import de.flogehring.peel.run.exceptions.PeelException;
+import lombok.extern.java.Log;
 
 import java.math.BigDecimal;
 import java.util.Collections;
@@ -16,6 +17,7 @@ import java.util.stream.Stream;
 import static de.flogehring.peel.convenience.FunctionFactory.binary;
 import static de.flogehring.peel.run.SimpleRuntime.empty;
 
+@Log
 public class RuntimeFactory {
 
     private RuntimeFactory() {
@@ -186,7 +188,11 @@ public class RuntimeFactory {
     private static Function comparison() {
         return binary(
                 "==",
-                (lhs, rhs) -> PeelValue.bool(lhs.equals(rhs))
+                (lhs, rhs) -> {
+                    PeelValue result = PeelValue.bool(lhs.equals(rhs));
+                    // System.out.println(MessageFormat.format("{0} == {1} <=> {2}", lhs, rhs, result));
+                    return result;
+                }
         );
     }
 

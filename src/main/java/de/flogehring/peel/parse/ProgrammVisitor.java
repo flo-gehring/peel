@@ -112,14 +112,12 @@ class ProgrammVisitor implements de.flogehring.peel.antlr.PeelVisitor<ParsablePr
         functionDepth--;
         endScope();
         return new ParsableProgramm.ParsableCodeElement(
-                new Expression.Assignment(
-                        name,
-                        new Expression.Literal(
-                                PeelCallable.userDefinedFunction(
-                                        name,
-                                        parameters,
-                                        expr
-                                )),
+                new Expression.FunctionDeclaration(
+                        PeelCallable.userDefinedFunction(
+                                name,
+                                parameters,
+                                expr
+                        ),
                         0
                 )
         );

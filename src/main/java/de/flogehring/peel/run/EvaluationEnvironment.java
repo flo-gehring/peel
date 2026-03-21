@@ -3,7 +3,9 @@ package de.flogehring.peel.run;
 import de.flogehring.peel.core.eval.Function;
 import de.flogehring.peel.core.lang.Expression;
 import de.flogehring.peel.core.values.PeelValue;
+import de.flogehring.peel.run.exceptions.PeelException;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 
@@ -28,7 +30,15 @@ public class EvaluationEnvironment {
     }
 
     private Scope getScopeBy(int scopeOffset) {
-        return scopes.get(getScopeIndexBy(scopeOffset));
+        int scopeIndex = getScopeIndexBy(scopeOffset);
+        if (scopeIndex >= 0) {
+            return scopes.get(scopeIndex);
+        } else {
+            EvaluationEnvironment parentEnv = parent.orElseThrow(
+                    () -> new PeelException("Can't resolve Variable, no Parent scope")
+            );
+            return parentEnv.getScopeBy(scopeOffset - scopes.size());
+        }
     }
 
     PeelValue getVar(Expression.VariableName varName) {
@@ -68,11 +78,46 @@ public class EvaluationEnvironment {
         if (scopeOffset == -1) {
             return global.getVar(name);
         } else {
-            return getScopeBy(scopeOffset).getVar(name);
+            Scope scopeBy = getScopeBy(scopeOffset);
+            if (scopeBy.hasVar(name)) {
+                return scopeBy.getVar(name);
+            } else if (parent.isPresent()) { // TODO This can solved more efficiently
+                // Potentially in Recursive Call
+                return tryFindVarMovingUp(name, getScopeIndexBy(scopeOffset));
+            } else {
+                throw new PeelException("Undefined Var with name {0}", name);
+            }
+        }
+    }
+
+    private PeelValue tryFindVarMovingUp(String name, int lowerScopeBound) {
+        for (int i = lowerScopeBound; i >= 0; --i) {
+            Scope scope = scopes.get(i);
+            if (scope.hasVar(name)) {
+                return scope.getVar(name);
+            }
+        }
+        if (parent.isPresent()) {
+            EvaluationEnvironment evaluationEnvironment = parent.get();
+            return evaluationEnvironment.tryFindVarMovingUp(name, evaluationEnvironment.scopes.size() - 1);
+        } else {
+            throw new PeelException("Undefined Var with name {0}", name);
         }
     }
 
     public List<Function> getFunction(String operator) {
         return global.getFunction(operator);
+    }
+
+    public void putFunction(Function callable) {
+        global.register(callable);
+    }
+
+    public EvaluationEnvironment spawnChild() {
+        return new EvaluationEnvironment(
+                global,
+                Optional.of(this),
+                new ArrayList<>()
+        );
     }
 }

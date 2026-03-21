@@ -3,6 +3,8 @@ package de.flogehring.peel.run;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.Timeout;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.CsvSource;
 
 import static de.flogehring.peel.core.values.PeelValue.integer;
 import static de.flogehring.peel.run.TestHelpers.runProgrammAndExpect;
@@ -93,11 +95,19 @@ public class FunctionTest {
     @Nested
     class Recursion {
 
-        @Test
+        @ParameterizedTest
         @Timeout(10)
-        void recursive() {
+        @CsvSource(value = {
+                "1,1",
+                "2,1",
+                "3,2",
+                "4,3",
+                "5,5",
+                "6,8"
+        })
+        void recursive(int n, int expected) {
             runProgrammAndExpect(
-                    """
+                    String.format("""
                             fun fib(n) {
                                 if (n == 1) {
                                     return 1;
@@ -107,9 +117,10 @@ public class FunctionTest {
                                     return fib(n -1) + fib(n -2);
                                 }
                             }
-                            fib(5);
-                            """,
-                    integer(6)
+                            fib(%d);
+                            """, n
+                    ),
+                    integer(expected)
             );
         }
 
@@ -131,7 +142,7 @@ public class FunctionTest {
                             }
                             fib(5);
                             """,
-                    integer(6)
+                    integer(5)
             );
         }
     }
