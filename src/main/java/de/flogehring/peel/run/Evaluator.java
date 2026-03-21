@@ -3,9 +3,7 @@ package de.flogehring.peel.run;
 import de.flogehring.peel.core.eval.EvaluatedExpression;
 import de.flogehring.peel.core.eval.Function;
 import de.flogehring.peel.core.lang.Expression;
-import de.flogehring.peel.core.values.Bool;
-import de.flogehring.peel.core.values.PeelCallable;
-import de.flogehring.peel.core.values.PeelValue;
+import de.flogehring.peel.core.values.*;
 import de.flogehring.peel.run.exceptions.MultipleFunctionsFoundException;
 import de.flogehring.peel.run.exceptions.NoFunctionFoundException;
 import de.flogehring.peel.run.exceptions.PeelException;
@@ -35,13 +33,12 @@ public class Evaluator {
         return result;
     }
 
-
     private EvaluatedExpression evaluateExpr(Expression expression) {
         return switch (expression) {
             case Expression.BinaryOperator operator -> evaluateOperator(
                     operator
             );
-            case Expression.Literal(var value) -> new EvaluatedExpression.Literal(value);
+            case Expression.Literal(var value) -> getLiteral(value);
             case Expression.VariableName varName -> resolveVariable(varName);
             case Expression.FunctionCall functionCall -> evaluateFunction(functionCall);
             case Expression.Assignment(var name, var assignedExpr, int scopeOffset) ->
@@ -59,6 +56,16 @@ public class Evaluator {
                     evaluateExpr(expr)
             );
             case Expression.FunctionDeclaration(var callable, var offset) -> declareFunction(callable, offset);
+        };
+    }
+
+    private EvaluatedExpression getLiteral(PeelValue value) {
+        return switch (value) {
+            case PeelCallable peelCallable -> new EvaluatedExpression.Closure(
+                    new PeelClosure(peelCallable.getName(), peelCallable.getParameters(), peelCallable.getBody(), environment.copy()),
+                    environment.copy()
+            );
+            case PeelValue.Collection _, Primitives _ -> new EvaluatedExpression.Literal(value);
         };
     }
 
@@ -80,13 +87,13 @@ public class Evaluator {
     ) {
         EvaluatedExpression value;
         value = evaluateExpr(expression);
-        environment.put(
-                new Expression.VariableName(name, scopeOffset),
-                value.value()
-        );
-        return new EvaluatedExpression.Assignment(
-                name, value
-        );
+        Expression.VariableName varName = new Expression.VariableName(name, scopeOffset);
+        if (value instanceof EvaluatedExpression.Closure(PeelCallable callable, EvaluationEnvironment closedOver)) {
+            environment.putFunction(varName, new PeelCodeFunction(callable, closedOver));
+        } else {
+            environment.put(varName, value.value());
+        }
+        return new EvaluatedExpression.Assignment(name, value);
     }
 
     private EvaluatedExpression.IfStatement evaluateIfStatement(List<Expression.IfElseStatement.ConditionalExecution> elseIfs, Optional<Expression> elseBlock) {
@@ -120,7 +127,7 @@ public class Evaluator {
         ));
     }
 
-    private EvaluatedExpression.EvaluatedBlock evaluateBlock(List<Expression> expressions) {
+    EvaluatedExpression.EvaluatedBlock evaluateBlock(List<Expression> expressions) {
         beginnScope();
         List<EvaluatedExpression> blockStatements = expressions
                 .stream()
@@ -245,7 +252,9 @@ public class Evaluator {
     private List<Function> getMatchingFunctions(Expression.FunctionCall functionCall) {
         return switch (functionCall.callee()) {
             case Expression.VariableName variableName -> {
-                if (environment.isFunction(variableName)) {
+                if (environment.isLocalFunction(variableName)) {
+                    yield environment.getLocalFunction(variableName);
+                } else if (environment.isGlobalFunction(variableName)) {
                     yield environment.getFunction(variableName);
                 } else if (environment.isVar(variableName)) {
                     PeelValue value = environment.getVar(variableName);
@@ -262,8 +271,16 @@ public class Evaluator {
                  Expression.Literal _,
                  Expression.UnaryPrefixOperator _,
                  Expression.WhileLoop _ -> {
-                PeelValue val = evaluateExpr(functionCall.callee()).value();
-                yield getFunctionFromPeelValue(val);
+                EvaluatedExpression e = evaluateExpr(functionCall.callee());
+                if (e instanceof EvaluatedExpression.Closure(
+                        PeelCallable callable, EvaluationEnvironment environment1
+                )) {
+                    yield List.of(new PeelCodeFunction(
+                            callable,
+                            environment1
+                    ));
+                }
+                yield getFunctionFromPeelValue(e.value());
             }
             case Expression.ListLiteral _, Expression.Return _ ->
                     throw new PeelException("Can't call function on " + functionCall.callee().getClass().getSimpleName());
@@ -273,6 +290,12 @@ public class Evaluator {
     }
 
     private List<Function> getFunctionFromPeelValue(PeelValue val) {
+        if (val instanceof PeelClosure closure) {
+            return List.of(new PeelCodeFunction(
+                    closure,
+                    closure.getEvaluationEnvironment()
+            ));
+        }
         if (val instanceof PeelCallable callable) {
             return List.of(getFunctionFrom(callable));
         } else {
@@ -281,31 +304,10 @@ public class Evaluator {
     }
 
     private Function getFunctionFrom(PeelCallable callable) {
-        return new Function() {
-            @Override
-            public String name() {
-                return callable.getName();
-            }
-
-            @Override
-            public int arity() {
-                return callable.getParameters().size();
-            }
-
-            @Override
-            public PeelValue run(EvaluatedExpression... arguments) {
-                beginnScope();
-                for (int i = 0; i < callable.getParameters().size(); ++i) {
-                    environment.put(
-                            new Expression.VariableName(callable.getParameters().get(i), 0),
-                            arguments[i].value()
-                    );
-                }
-                EvaluatedExpression.EvaluatedBlock evaluatedBlock = evaluateBlock(callable.getBody().codeElements());
-                endScope();
-                return evaluatedBlock.value();
-            }
-        };
+        return new PeelCodeFunction(
+                callable,
+                environment.copy()
+        );
     }
 
     private EvaluatedExpression evaluateOperator(Expression.BinaryOperator operator) {

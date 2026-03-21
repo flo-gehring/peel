@@ -25,6 +25,14 @@ public class EvaluationEnvironment {
         getScopeBy(varName.scopeOffset()).putVar(varName.name(), value);
     }
 
+    public EvaluationEnvironment copy() {
+        return new EvaluationEnvironment(
+                global,
+                parent,
+                new ArrayList<>(scopes)
+        );
+    }
+
     private int getScopeIndexBy(int scopeOffset) {
         return scopes.size() - 1 - scopeOffset;
     }
@@ -45,7 +53,7 @@ public class EvaluationEnvironment {
         return getVar(varName.name(), varName.scopeOffset());
     }
 
-    boolean isFunction(Expression.VariableName name) {
+    boolean isGlobalFunction(Expression.VariableName name) {
         return !global.getFunction(name.name()).isEmpty();
     }
 
@@ -113,11 +121,23 @@ public class EvaluationEnvironment {
         global.register(callable);
     }
 
+    public void putFunction(Expression.VariableName varName, Function function) {
+        getScopeBy(varName.scopeOffset()).register(varName.name(), function);
+    }
+
     public EvaluationEnvironment spawnChild() {
         return new EvaluationEnvironment(
                 global,
                 Optional.of(this),
                 new ArrayList<>()
         );
+    }
+
+    public List<Function> getLocalFunction(Expression.VariableName variableName) {
+        return getScopeBy(variableName.scopeOffset()).getFunction(variableName.name());
+    }
+
+    public boolean isLocalFunction(Expression.VariableName variableName) {
+        return getScopeBy(variableName.scopeOffset()).hasFunction(variableName);
     }
 }

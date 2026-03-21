@@ -2,6 +2,7 @@ package de.flogehring.peel.run;
 
 import de.flogehring.peel.core.eval.Function;
 import de.flogehring.peel.core.eval.Variable;
+import de.flogehring.peel.core.lang.Expression;
 import de.flogehring.peel.core.values.PeelValue;
 import de.flogehring.peel.run.exceptions.UndefinedVarException;
 
@@ -25,10 +26,19 @@ public class Scope {
     }
 
     public void register(Function f) {
-        functions.merge(f.name(), new ArrayList<>(List.of(f)), (lhs, rhs) -> Stream.concat(
+        String name = f.name();
+        registerFunction(f, name);
+    }
+
+    private void registerFunction(Function f, String name) {
+        functions.merge(name, new ArrayList<>(List.of(f)), (lhs, rhs) -> Stream.concat(
                 lhs.stream(),
                 rhs.stream()
         ).toList());
+    }
+
+    public void register(String name, Function f) {
+        registerFunction(f, name);
     }
 
     public void register(Variable v) {
@@ -51,5 +61,9 @@ public class Scope {
 
     public List<Function> getFunction(String s) {
         return functions.getOrDefault(s, List.of());
+    }
+
+    public boolean hasFunction(Expression.VariableName variableName) {
+        return functions.containsKey(variableName.name());
     }
 }
