@@ -102,9 +102,7 @@ public class Evaluator {
             EvaluatedExpression evaluatedCondition = evaluateExpr(cond.condition());
             endScope();
             if (requireBool(evaluatedCondition)) {
-                beginnScope();
                 EvaluatedExpression executedBlock = evaluateExpr(cond.then());
-                endScope();
                 return new EvaluatedExpression.IfStatement(
                         evaluatedCondition,
                         executedBlock
@@ -113,9 +111,7 @@ public class Evaluator {
         }
         return elseBlock.map(
                 block -> {
-                    beginnScope();
                     EvaluatedExpression evaluatedBlock = evaluateExpr(block);
-                    endScope();
                     return new EvaluatedExpression.IfStatement(
                             EvaluatedExpression.EvaluatedBlock.empty(),
                             evaluatedBlock

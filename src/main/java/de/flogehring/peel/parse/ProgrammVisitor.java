@@ -220,7 +220,6 @@ class ProgrammVisitor implements de.flogehring.peel.antlr.PeelVisitor<ParsablePr
                         0
                 )
         );
-
     }
 
     private boolean alreadyInScope(String varName) {
@@ -276,12 +275,8 @@ class ProgrammVisitor implements de.flogehring.peel.antlr.PeelVisitor<ParsablePr
         beginScope();
         Expression ifExpr = ctx.getChild(0).accept(this).toExpr();
         endScope();
-        beginScope();
         Expression thenExpr = ctx.getChild(2).accept(this).toExpr();
-        endScope();
-        beginScope();
         Expression elseExpr = ctx.getChild(4).accept(this).toExpr();
-        endScope();
         Expression.IfElseStatement codeElement = new Expression.IfElseStatement(
                 List.of(
                         new ConditionalExecution(
@@ -345,9 +340,7 @@ class ProgrammVisitor implements de.flogehring.peel.antlr.PeelVisitor<ParsablePr
             beginScope();
             Expression ifClause = ifClauses.get(i).accept(this).toExpr();
             endScope();
-            beginScope();
             Expression thenExpr = blocks.get(i).accept(this).toExpr();
-            endScope();
             conditionals.add(
                     new ConditionalExecution(
                             ifClause,
@@ -357,11 +350,9 @@ class ProgrammVisitor implements de.flogehring.peel.antlr.PeelVisitor<ParsablePr
         }
         Optional<Expression> elseBlock = Optional.empty();
         if (blocks.size() > ifClauses.size()) {
-            beginScope();
             elseBlock = Optional.of(
                     blocks.getLast().accept(this).toExpr()
             );
-            endScope();
         }
         return new ParsableProgramm.ParsableCodeElement(
                 new Expression.IfElseStatement(
@@ -415,9 +406,7 @@ class ProgrammVisitor implements de.flogehring.peel.antlr.PeelVisitor<ParsablePr
             beginScope();
             Expression ifClause = ifClauses.get(i).accept(this).toExpr();
             endScope();
-            beginScope();
             Expression thenBlock = thenBlocks.get(i).accept(this).toExpr();
-            endScope();
             conditionals.add(
                     new ConditionalExecution(
                             ifClause,
@@ -427,11 +416,9 @@ class ProgrammVisitor implements de.flogehring.peel.antlr.PeelVisitor<ParsablePr
         }
         Optional<Expression> elseBlock = Optional.empty();
         if (thenBlocks.size() > ifClauses.size()) {
-            beginScope();
             elseBlock = Optional.of(
                     thenBlocks.getLast().accept(this).toExpr()
             );
-            endScope();
         }
         return new ParsableProgramm.ParsableCodeElement(
                 new Expression.IfElseStatement(
