@@ -90,29 +90,12 @@ expr
     | expr ('*' | '/') expr # mulDivExpr
     | expr ('+' | '-') expr # addSubExpr
     | '[' expr ? (',' expr)* ','? ']'              # listExpr
-    | nonTernaryExpr '?' nonTernaryExpr ':' nonTernaryExpr # ternaryExpr
+    | expr '?' expr ':' expr # ternaryExpr
     | 'fun' parameters block # lambdaExpr
     | '(' expr ')'         # parenExpr
     | IDENT                # varExpr
     | NUMBER               # numberExpr
     ;
-
-nonTernaryExpr
-    : 'if' '(' nonTernaryExpr ')' block ('else' 'if' '(' nonTernaryExpr ')' block)* ('else' block)?  # nonTernaryIfExpr
-    | nonTernaryExpr '||' nonTernaryExpr       # nonTernaryLogicalOrExpr
-    | '[' nonTernaryExpr ? (',' nonTernaryExpr )* ','? ']'              # nonTernaryListExpr
-    | nonTernaryExpr '&&' nonTernaryExpr       # nonTernaryLogicalAndExpr
-    | nonTernaryExpr '==' nonTernaryExpr       # nonTernaryEqExpr
-    | nonTernaryExpr '^' nonTernaryExpr        # nonTernaryXorExpr
-    | '!' nonTernaryExpr             # nonTernaryNotExpr
-    | nonTernaryExpr ('*' | '/') nonTernaryExpr # nonTernaryMulDivExpr
-    | nonTernaryExpr ('+' | '-') nonTernaryExpr # nonTernaryAddSubExpr
-    | '(' nonTernaryExpr ')'         # nonTernaryParenExpr
-    | nonTernaryExpr arguments                # nonTernaryfunctionCallExpr
-    | IDENT                # nonTernaryVarExpr
-    | NUMBER               # nonTernaryNumberExpr
-    ;
-
 
 arguments:
     '(' (expr (',' expr)*)?')'

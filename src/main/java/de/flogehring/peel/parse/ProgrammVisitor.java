@@ -161,16 +161,6 @@ class ProgrammVisitor implements de.flogehring.peel.antlr.PeelVisitor<ParsablePr
     }
 
     @Override
-    public ParsableProgramm visitNonTernaryfunctionCallExpr(PeelParser.NonTernaryfunctionCallExprContext ctx) {
-        return new ParsableProgramm.ParsableCodeElement(
-                new Expression.FunctionCall(
-                        ctx.nonTernaryExpr().accept(this).toExpr(),
-                        visitArguments(ctx.arguments()).arguments()
-                )
-        );
-    }
-
-    @Override
     public ParsableProgramm.ParsableArguments visitArguments(PeelParser.ArgumentsContext ctx) {
         return new ParsableProgramm.ParsableArguments(
                 ctx.expr()
@@ -576,15 +566,6 @@ class ProgrammVisitor implements de.flogehring.peel.antlr.PeelVisitor<ParsablePr
     }
 
     @Override
-    public ParsableProgramm visitNonTernaryListExpr(de.flogehring.peel.antlr.PeelParser.NonTernaryListExprContext ctx) {
-        return new ParsableProgramm.ParsableCodeElement(
-                new Expression.ListLiteral(
-                        ctx.nonTernaryExpr().stream().map(exprCtx -> exprCtx.accept(this).toExpr()).toList()
-                )
-        );
-    }
-
-    @Override
     public ParsableProgramm visitTerminal(TerminalNode node) {
         return node.getChild(0).accept(this);
     }
@@ -602,135 +583,5 @@ class ProgrammVisitor implements de.flogehring.peel.antlr.PeelVisitor<ParsablePr
     @Override
     public ParsableProgramm visitParenExpr(de.flogehring.peel.antlr.PeelParser.ParenExprContext ctx) {
         return ctx.expr().accept(this);
-    }
-
-    // NonTernary expression visitors - delegate to the same logic as regular expressions
-    @Override
-    public ParsableProgramm visitNonTernaryIfExpr(de.flogehring.peel.antlr.PeelParser.NonTernaryIfExprContext ctx) {
-        var ifClauses = ctx.nonTernaryExpr();
-        var thenBlocks = ctx.block();
-        List<ConditionalExecution> conditionals = new ArrayList<>();
-        for (int i = 0; i < ifClauses.size(); ++i) {
-            beginScope();
-            Expression ifClause = ifClauses.get(i).accept(this).toExpr();
-            endScope();
-            beginScope();
-            Expression thenBlock = thenBlocks.get(i).accept(this).toExpr();
-            endScope();
-            conditionals.add(
-                    new ConditionalExecution(
-                            ifClause,
-                            thenBlock
-                    )
-            );
-        }
-        Optional<Expression> elseBlock = Optional.empty();
-        if (thenBlocks.size() > ifClauses.size()) {
-            beginScope();
-            elseBlock = Optional.of(
-                    thenBlocks.getLast().accept(this).toExpr()
-            );
-            endScope();
-        }
-        return new ParsableProgramm.ParsableCodeElement(
-                new Expression.IfElseStatement(
-                        conditionals,
-                        elseBlock
-                )
-        );
-    }
-
-    @Override
-    public ParsableProgramm visitNonTernaryLogicalOrExpr(de.flogehring.peel.antlr.PeelParser.NonTernaryLogicalOrExprContext ctx) {
-        return new ParsableProgramm.ParsableCodeElement(
-                ExpressionFactoryMethods.expr(
-                        ctx.nonTernaryExpr(0).accept(this).toExpr(),
-                        "||",
-                        ctx.nonTernaryExpr(1).accept(this).toExpr()
-                )
-        );
-    }
-
-    @Override
-    public ParsableProgramm visitNonTernaryLogicalAndExpr(de.flogehring.peel.antlr.PeelParser.NonTernaryLogicalAndExprContext ctx) {
-        return new ParsableProgramm.ParsableCodeElement(
-                ExpressionFactoryMethods.expr(
-                        ctx.nonTernaryExpr(0).accept(this).toExpr(),
-                        "&&",
-                        ctx.nonTernaryExpr(1).accept(this).toExpr()
-                )
-        );
-    }
-
-    @Override
-    public ParsableProgramm visitNonTernaryEqExpr(de.flogehring.peel.antlr.PeelParser.NonTernaryEqExprContext ctx) {
-        return new ParsableProgramm.ParsableCodeElement(
-                ExpressionFactoryMethods.expr(
-                        ctx.nonTernaryExpr(0).accept(this).toExpr(),
-                        "==",
-                        ctx.nonTernaryExpr(1).accept(this).toExpr()
-                )
-        );
-    }
-
-    @Override
-    public ParsableProgramm visitNonTernaryXorExpr(de.flogehring.peel.antlr.PeelParser.NonTernaryXorExprContext ctx) {
-        return new ParsableProgramm.ParsableCodeElement(
-                ExpressionFactoryMethods.expr(
-                        ctx.nonTernaryExpr(0).accept(this).toExpr(),
-                        "^",
-                        ctx.nonTernaryExpr(1).accept(this).toExpr()
-                )
-        );
-    }
-
-    @Override
-    public ParsableProgramm visitNonTernaryNotExpr(de.flogehring.peel.antlr.PeelParser.NonTernaryNotExprContext ctx) {
-        return new ParsableProgramm.ParsableCodeElement(
-                ctx.accept(this).toExpr() // TODO not operator
-        );
-    }
-
-    @Override
-    public ParsableProgramm visitNonTernaryMulDivExpr(de.flogehring.peel.antlr.PeelParser.NonTernaryMulDivExprContext ctx) {
-        return new ParsableProgramm.ParsableCodeElement(
-                ExpressionFactoryMethods.expr(
-                        ctx.nonTernaryExpr(0).accept(this).toExpr(),
-                        ctx.getChild(1).getText(),
-                        ctx.nonTernaryExpr(1).accept(this).toExpr()
-                )
-        );
-    }
-
-    @Override
-    public ParsableProgramm visitNonTernaryAddSubExpr(de.flogehring.peel.antlr.PeelParser.NonTernaryAddSubExprContext ctx) {
-        return new ParsableProgramm.ParsableCodeElement(
-                ExpressionFactoryMethods.expr(
-                        ctx.nonTernaryExpr(0).accept(this).toExpr(),
-                        ctx.getChild(1).getText(),
-                        ctx.nonTernaryExpr(1).accept(this).toExpr()
-                )
-        );
-    }
-
-    @Override
-    public ParsableProgramm visitNonTernaryParenExpr(de.flogehring.peel.antlr.PeelParser.NonTernaryParenExprContext ctx) {
-        return ctx.nonTernaryExpr().accept(this);
-    }
-
-    @Override
-    public ParsableProgramm visitNonTernaryVarExpr(de.flogehring.peel.antlr.PeelParser.NonTernaryVarExprContext ctx) {
-        String varName = ctx.getText();
-        int scopeOffset = checkIfVarIsInitialized(varName);
-        return new ParsableProgramm.ParsableCodeElement(
-                ExpressionFactoryMethods.var(varName, scopeOffset)
-        );
-    }
-
-    @Override
-    public ParsableProgramm visitNonTernaryNumberExpr(de.flogehring.peel.antlr.PeelParser.NonTernaryNumberExprContext ctx) {
-        return new ParsableProgramm.ParsableCodeElement(
-                ExpressionFactoryMethods.integer(Integer.valueOf(ctx.NUMBER().getText()))
-        );
     }
 }

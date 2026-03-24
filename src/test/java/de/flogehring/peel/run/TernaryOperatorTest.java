@@ -1,13 +1,11 @@
 package de.flogehring.peel.run;
 
 import de.flogehring.peel.core.values.PeelValue;
-import de.flogehring.peel.parse.PeelGrammar;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 
 import static de.flogehring.peel.core.values.PeelValue.integer;
 import static de.flogehring.peel.run.TestHelpers.runProgrammAndExpect;
-import static org.assertj.core.api.AssertionsForClassTypes.assertThatExceptionOfType;
 
 public class TernaryOperatorTest {
 
@@ -23,13 +21,6 @@ public class TernaryOperatorTest {
         runProgrammAndExpect("1 == 2 ? 2: 3;",
                 PeelValue.integer(3)
         );
-    }
-
-    @Test
-    void directNestedTernaryInTrueBranchIsForbidden() {
-        // Direct nesting without parentheses is forbidden
-        assertThatExceptionOfType(Exception.class)
-                .isThrownBy(() -> PeelGrammar.parse("var x = 1 == 1 ? 2 == 2 ? 100 : 200 : 300;"));
     }
 
     @Test
