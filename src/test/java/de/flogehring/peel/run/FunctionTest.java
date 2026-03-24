@@ -145,6 +145,29 @@ public class FunctionTest {
                     integer(5)
             );
         }
+
+        @Test
+        @Timeout(10)
+        void mutuallyRecursive() {
+            runProgrammAndExpect(
+                    """
+                            var ONE = 1;
+                            fun minus1(a) {
+                                a - ONE;
+                            }
+                            
+                            fun factorial(a) {
+                                if (a == ONE) {
+                                    return ONE;
+                                }
+                                a * factorial(minus1(a))
+                            }
+                            var a = 3;
+                            factorial(a) + a;
+                            """,
+                    integer(9)
+            );
+        }
     }
 
     @Nested
