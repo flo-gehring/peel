@@ -148,7 +148,7 @@ public class FunctionTest {
 
         @Test
         @Timeout(10)
-        void mutuallyRecursive() {
+        void anotherTest() {
             runProgrammAndExpect(
                     """
                             var ONE = 1;
@@ -166,6 +166,34 @@ public class FunctionTest {
                             factorial(a) + a;
                             """,
                     integer(9)
+            );
+        }
+
+        @Test
+        @Timeout(10)
+        void mutualRecursiveFactorial() {
+            runProgrammAndExpect(
+                    """
+                            var f1 = fun() {};
+                            var f2 = fun() {};
+                            
+                            f1 = fun(x) {
+                             if (x==1) {
+                                return x;
+                             }
+                              x * f2(x -1);
+                            };
+                            
+                            f2 = fun(x) {
+                             if (x==1) {
+                                return x;
+                             }
+                              x * f1(x -1);
+                            };
+                            var x =5;
+                            f1(5);
+                            """,
+                    integer(120)
             );
         }
     }
@@ -208,6 +236,29 @@ public class FunctionTest {
         void loopVariablesArePreserved() {
             runProgrammAndExpect(
                     """
+                            var list = [];
+                            for (i in [1,2,3,4]) {
+                                list = list + fun(x) { x + i;};
+                            }
+                            var s = 0;
+                            for (f in list) {
+                                s = s + f(1);
+                            }
+                            """,
+                    integer(14)
+            );
+        }
+
+        @Test
+        void closuresPlusRecursion() {
+            runProgrammAndExpect(
+                    """
+                            var f1;
+                            {
+                                var x = 3;
+                                f1 = fun(y) { 3 + y };
+                            
+                            }
                             var list = [];
                             for (i in [1,2,3,4]) {
                                 list = list + fun(x) { x + i;};
