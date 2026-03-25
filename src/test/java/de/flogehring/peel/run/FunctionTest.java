@@ -314,9 +314,9 @@ public class FunctionTest {
                                 };
                             }
                             var x = 5;
-                            f(10);
+                            f1(10);
                             """,
-                    integer(45)
+                    integer(52)
             );
         }
     }

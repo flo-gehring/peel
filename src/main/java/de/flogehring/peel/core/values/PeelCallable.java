@@ -6,7 +6,7 @@ import lombok.Getter;
 import java.util.List;
 
 @Getter
-public sealed class PeelCallable implements PeelValue permits PeelClosure {
+public sealed class PeelCallable implements PeelValue permits PeelClosure, FunctionReference {
 
     private final String name;
     private final List<String> parameters;

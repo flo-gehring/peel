@@ -9,23 +9,56 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 
+// TODO Should Peel Closure Values hold the Reference to the evaluation environment?
 public class EvaluationEnvironment {
 
     private final Scope global;
     private final Optional<EvaluationEnvironment> parent;
     private final List<Scope> scopes;
 
-    public EvaluationEnvironment(Scope global, Optional<EvaluationEnvironment> parent, List<Scope> scopes) {
+    public EvaluationEnvironment(
+            Scope global,
+            Optional<EvaluationEnvironment> parent,
+            List<Scope> scopes
+    ) {
         this.global = global;
         this.parent = parent;
         this.scopes = scopes;
     }
 
-    public void put(Expression.VariableName varName, PeelValue value) {
+    void enterScope() {
+        scopes.add(Scope.empty());
+    }
+
+    void exitScope() {
+        scopes.removeLast();
+    }
+
+    void put(Expression.VariableName varName, PeelValue value) {
         getScopeBy(varName.scopeOffset()).putVar(varName.name(), value);
     }
 
-    public EvaluationEnvironment copy() {
+    void putFunction(Expression.VariableName varName, Function function) {
+        getScopeBy(varName.scopeOffset()).register(varName.name(), function);
+    }
+
+    List<Function> getFunction(Expression.VariableName varName) {
+        return getScopeBy(varName.scopeOffset()).getFunction(varName.name());
+    }
+
+    boolean isFunction(Expression.VariableName varName) {
+        return getScopeBy(varName.scopeOffset()).hasFunction(varName);
+    }
+
+    PeelValue getVar(Expression.VariableName varName) {
+        return getVar(varName.name(), varName.scopeOffset());
+    }
+
+    List<Function> getOperator(String operator) {
+        return global.getFunction(operator);
+    }
+
+    EvaluationEnvironment copy() {
         return new EvaluationEnvironment(
                 global,
                 parent,
@@ -38,6 +71,9 @@ public class EvaluationEnvironment {
     }
 
     private Scope getScopeBy(int scopeOffset) {
+        if (scopeOffset == -1) {
+            return global;
+        }
         int scopeIndex = getScopeIndexBy(scopeOffset);
         if (scopeIndex >= 0) {
             return scopes.get(scopeIndex);
@@ -47,39 +83,6 @@ public class EvaluationEnvironment {
             );
             return parentEnv.getScopeBy(scopeOffset - scopes.size());
         }
-    }
-
-    PeelValue getVar(Expression.VariableName varName) {
-        return getVar(varName.name(), varName.scopeOffset());
-    }
-
-    boolean isGlobalFunction(Expression.VariableName name) {
-        return !global.getFunction(name.name()).isEmpty();
-    }
-
-    boolean isVar(Expression.VariableName variableName) {
-        var name = variableName.name();
-        var scopeOffset = variableName.scopeOffset();
-        if (scopeOffset == -1) {
-            return global.hasVar(name);
-        } else {
-            return getScopeBy(scopeOffset).hasVar(name);
-        }
-
-    }
-
-    List<Function> getFunction(Expression.VariableName varName) {
-        var name = varName.name();
-        var offset = varName.scopeOffset();
-        return global.getFunction(name);
-    }
-
-    void enterScope() {
-        scopes.add(Scope.empty());
-    }
-
-    void exitScope() {
-        scopes.removeLast();
     }
 
     private PeelValue getVar(String name, int scopeOffset) {
@@ -113,31 +116,11 @@ public class EvaluationEnvironment {
         }
     }
 
-    public List<Function> getFunction(String operator) {
-        return global.getFunction(operator);
-    }
-
-    public void putFunction(Function callable) {
-        global.register(callable);
-    }
-
-    public void putFunction(Expression.VariableName varName, Function function) {
-        getScopeBy(varName.scopeOffset()).register(varName.name(), function);
-    }
-
     public EvaluationEnvironment spawnChild() {
         return new EvaluationEnvironment(
                 global,
                 Optional.of(this),
                 new ArrayList<>()
         );
-    }
-
-    public List<Function> getLocalFunction(Expression.VariableName variableName) {
-        return getScopeBy(variableName.scopeOffset()).getFunction(variableName.name());
-    }
-
-    public boolean isLocalFunction(Expression.VariableName variableName) {
-        return getScopeBy(variableName.scopeOffset()).hasFunction(variableName);
     }
 }

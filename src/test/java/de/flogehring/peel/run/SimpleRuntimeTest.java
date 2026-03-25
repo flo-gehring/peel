@@ -106,7 +106,7 @@ public class SimpleRuntimeTest {
     void functionCall() {
         Program p = new Program(List.of(
                 new Expression.FunctionCall(
-                        new Expression.VariableName("count", 0),
+                        new Expression.VariableName("count", -1),
                         List.of(new Expression.Literal(new Text("hello")),
                                 new Expression.Literal(new Text("l"))
                         )))

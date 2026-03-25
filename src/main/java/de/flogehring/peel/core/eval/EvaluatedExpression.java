@@ -1,9 +1,7 @@
 package de.flogehring.peel.core.eval;
 
 import de.flogehring.peel.core.values.None;
-import de.flogehring.peel.core.values.PeelCallable;
 import de.flogehring.peel.core.values.PeelValue;
-import de.flogehring.peel.run.EvaluationEnvironment;
 import de.flogehring.peel.run.exceptions.PeelException;
 
 import java.util.List;
@@ -29,16 +27,6 @@ public sealed interface EvaluatedExpression {
         @Override
         public PeelValue value() {
             return peelValue;
-        }
-    }
-
-    record Closure( // TODO Closure can be removed because i introduced the closure value
-                    PeelCallable callable,
-                    EvaluationEnvironment environment
-    ) implements EvaluatedExpression {
-        @Override
-        public PeelValue value() {
-            return callable;
         }
     }
 

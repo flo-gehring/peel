@@ -1,6 +1,6 @@
 # Epic 4: First-Class Functions
 
-**Status**: Not Started
+**Status**: Started
 **Dependencies**: Epic 3 (Lexical Scoping) - absolutely requires scope chain for closures
 **Goal**: Add user-defined functions as first-class values with closure support.
 
