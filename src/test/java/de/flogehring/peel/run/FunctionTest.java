@@ -230,6 +230,56 @@ public class FunctionTest {
     }
 
     @Nested
+    class HigherOrderFunctions {
+
+        @Test
+        void globalFunctionAsArgument() {
+            runProgrammAndExpect(
+                    """
+                            fun double(x) {
+                                x * 2;
+                            }
+                            fun apply(f, x) {
+                                f(x);
+                            }
+                            apply(double, 3);
+                            """,
+                    integer(6)
+            );
+        }
+
+        @Test
+        void variableAsArgument() {
+            runProgrammAndExpect(
+                    """
+                            var double = fun (x) {
+                                x * 2;
+                            };
+                            fun apply(f, x) {
+                                f(x);
+                            }
+                            apply(double, 3);
+                            """,
+                    integer(6)
+            );
+        }
+
+        @Test
+        void lambdaAsArgument() {
+            runProgrammAndExpect(
+                    """
+                            fun apply(f, x) {
+                                f(x);
+                            }
+                            apply(fun(x) { x * 2; }, 3);
+                            """,
+                    integer(6)
+            );
+        }
+
+    }
+
+    @Nested
     class Closures {
 
         @Test
@@ -253,22 +303,20 @@ public class FunctionTest {
         void closuresPlusRecursion() {
             runProgrammAndExpect(
                     """
-                            var f1;
-                            {
+                            var f1 = fun() {};
+                            if (1==1) {
                                 var x = 3;
-                                f1 = fun(y) { 3 + y };
-                            
+                                f1 = fun(y) {
+                                    if (y == x) {
+                                        return x;
+                                    }
+                                    return y + f1(y -1);
+                                };
                             }
-                            var list = [];
-                            for (i in [1,2,3,4]) {
-                                list = list + fun(x) { x + i;};
-                            }
-                            var s = 0;
-                            for (f in list) {
-                                s = s + f(1);
-                            }
+                            var x = 5;
+                            f(10);
                             """,
-                    integer(14)
+                    integer(45)
             );
         }
     }

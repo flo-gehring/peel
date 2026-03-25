@@ -39,7 +39,6 @@ parameters
 
 // TODO Clean up grammar wrinkles and inconsistencies.
 // -> IfStatement vs if Expr.
-// ternary vs nonTernary
 // Everything is a statement
 // Missing features
 // Strings should be possible.
