@@ -25,10 +25,7 @@ public class TernaryOperatorTest {
 
     @Test
     void ternaryPreventsDirectNestingInBranches() {
-        // The grammar prevents ternary operators in the condition and branches
-        // by using nonTernaryExpr. This catches most nesting cases.
-        // However, without explicit parens, some edge cases with operator
-        // precedence might still parse in unexpected ways.
+
         runProgrammAndExpect("var x = 1 == 1 ? 5 : 10;", PeelValue.integer(5));
     }
 

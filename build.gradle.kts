@@ -2,7 +2,6 @@ plugins {
     id("java")
     antlr
     jacoco
-    id("io.freefair.lombok") version "9.1.0"
 }
 
 group = "de.flo-gehring"
@@ -20,7 +19,12 @@ dependencies {
     implementation("org.antlr:antlr4-runtime:4.13.1")
     testImplementation(platform("org.junit:junit-bom:5.10.0"))
     testImplementation("org.junit.jupiter:junit-jupiter")
-    testImplementation("org.assertj:assertj-core:3.11.1")
+    testImplementation("org.assertj:assertj-core:3.27.7")
+    compileOnly("org.projectlombok:lombok:1.18.44")
+    annotationProcessor("org.projectlombok:lombok:1.18.44")
+
+    testCompileOnly("org.projectlombok:lombok:1.18.44")
+    testAnnotationProcessor("org.projectlombok:lombok:1.18.44")
 }
 
 java {

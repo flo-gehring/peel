@@ -82,7 +82,6 @@ class ProgrammVisitor implements de.flogehring.peel.antlr.PeelVisitor<ParsablePr
             );
         }
 
-
         boolean inScope(String s) {
             return content.stream().anyMatch(
                     var -> var.s().equals(s)

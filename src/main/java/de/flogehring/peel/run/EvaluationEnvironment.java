@@ -16,11 +16,7 @@ public class EvaluationEnvironment {
     private final Optional<EvaluationEnvironment> parent;
     private final List<Scope> scopes;
 
-    public EvaluationEnvironment(
-            Scope global,
-            Optional<EvaluationEnvironment> parent,
-            List<Scope> scopes
-    ) {
+    public EvaluationEnvironment(Scope global, Optional<EvaluationEnvironment> parent, List<Scope> scopes) {
         this.global = global;
         this.parent = parent;
         this.scopes = scopes;
