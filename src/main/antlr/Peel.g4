@@ -1,11 +1,6 @@
 grammar Peel;
 
 
-@header {
-    package de.flogehring.peel.antlr;
-}
-
-
 @visitor::header {
     package de.flogehring.peel.antlr;
 }
@@ -21,16 +16,36 @@ program
 
 statement
     : declaration
+    | functionDeclaration
     | assignment
     | ifStatement
+    | returnStatement
     | expr ';'
     | whileStatement
     | forEachStatement
     ;
 
 declaration
- : 'var' IDENT '=' expr? ';'
+ : 'var' IDENT ('=' expr)? ';'
  ;
+
+functionDeclaration
+    : 'fun' IDENT parameters block
+    ;
+
+parameters
+    : '(' (IDENT (',' IDENT)*)? ')'
+    ;
+
+// TODO Clean up grammar wrinkles and inconsistencies.
+// -> IfStatement vs if Expr.
+// Everything is a statement
+// Missing features
+// Strings should be possible.
+// boolean values
+// map literals
+// map accessors
+
 
 assignment
     : IDENT '=' expr ';'
@@ -48,6 +63,10 @@ forEachStatement
     : 'for' '(' IDENT 'in' expr ')' block
     ;
 
+returnStatement
+    : 'return' expr? ';'
+    ;
+
 block
     : '{' statement* '}'
     | statement
@@ -61,6 +80,7 @@ block
 
 expr
     : 'if' '(' expr ')' block ('else' 'if' '(' expr ')' block)* ('else' block)?  # ifExpr
+    | expr arguments # functionCallExpr
     | expr '||' expr       # logicalOrExpr
     | expr '&&' expr       # logicalAndExpr
     | expr '==' expr       # eqExpr
@@ -69,26 +89,15 @@ expr
     | expr ('*' | '/') expr # mulDivExpr
     | expr ('+' | '-') expr # addSubExpr
     | '[' expr ? (',' expr)* ','? ']'              # listExpr
-    | nonTernaryExpr '?' nonTernaryExpr ':' nonTernaryExpr # ternaryExpr
+    | expr '?' expr ':' expr # ternaryExpr
+    | 'fun' parameters block # lambdaExpr
     | '(' expr ')'         # parenExpr
     | IDENT                # varExpr
     | NUMBER               # numberExpr
-
     ;
 
-nonTernaryExpr
-    : 'if' '(' nonTernaryExpr ')' block ('else' 'if' '(' nonTernaryExpr ')' block)* ('else' block)?  # nonTernaryIfExpr
-    | nonTernaryExpr '||' nonTernaryExpr       # nonTernaryLogicalOrExpr
-    | '[' nonTernaryExpr ? (',' nonTernaryExpr )* ','? ']'              # nonTernaryListExpr
-    | nonTernaryExpr '&&' nonTernaryExpr       # nonTernaryLogicalAndExpr
-    | nonTernaryExpr '==' nonTernaryExpr       # nonTernaryEqExpr
-    | nonTernaryExpr '^' nonTernaryExpr        # nonTernaryXorExpr
-    | '!' nonTernaryExpr             # nonTernaryNotExpr
-    | nonTernaryExpr ('*' | '/') nonTernaryExpr # nonTernaryMulDivExpr
-    | nonTernaryExpr ('+' | '-') nonTernaryExpr # nonTernaryAddSubExpr
-    | '(' nonTernaryExpr ')'         # nonTernaryParenExpr
-    | IDENT                # nonTernaryVarExpr
-    | NUMBER               # nonTernaryNumberExpr
+arguments:
+    '(' (expr (',' expr)*)?')'
     ;
 
 // ----------------------

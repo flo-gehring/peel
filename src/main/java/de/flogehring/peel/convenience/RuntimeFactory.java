@@ -6,15 +6,18 @@ import de.flogehring.peel.core.values.Number;
 import de.flogehring.peel.run.SimpleRuntime;
 import de.flogehring.peel.run.exceptions.NoFunctionFoundException;
 import de.flogehring.peel.run.exceptions.PeelException;
+import lombok.extern.java.Log;
 
 import java.math.BigDecimal;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.List;
 import java.util.stream.Stream;
 
 import static de.flogehring.peel.convenience.FunctionFactory.binary;
 import static de.flogehring.peel.run.SimpleRuntime.empty;
 
+@Log
 public class RuntimeFactory {
 
     private RuntimeFactory() {
@@ -78,12 +81,13 @@ public class RuntimeFactory {
                 (lhs, rhs) -> switch (lhs) {
                     case PeelValue.Collection cLhs -> switch (rhs) {
                         case PeelValue.Collection cRhs -> subCollection(cLhs, cRhs);
-                        case Primitives _ -> throw new NoFunctionFoundException(
+                        case PeelCallable _, Primitives _ -> throw new NoFunctionFoundException(
                                 "Can't add Collection and Primitive Value"
                         );
+
                     };
                     case Primitives primitiveLhs -> switch (rhs) {
-                        case PeelValue.Collection _ -> throw new NoFunctionFoundException(
+                        case PeelValue.Collection _, PeelCallable _ -> throw new NoFunctionFoundException(
                                 "Can't add Primitive and Collection"
                         );
                         case Primitives primitiveRhs -> subPrimitives(
@@ -91,6 +95,9 @@ public class RuntimeFactory {
                                 primitiveRhs
                         );
                     };
+                    case PeelCallable _ -> throw new NoFunctionFoundException(
+                            "Can't add Callables"
+                    );
                 }
         );
     }
@@ -191,21 +198,41 @@ public class RuntimeFactory {
                 (lhs, rhs) -> switch (lhs) {
                     case PeelValue.Collection cLhs -> switch (rhs) {
                         case PeelValue.Collection cRhs -> addCollections(cLhs, cRhs);
-                        case Primitives _ -> throw new NoFunctionFoundException(
-                                "Can't add Collection and Primitive Value"
+                        case Primitives pRhs -> addCollectionAnd(
+                                cLhs,
+                                pRhs
+                        );
+                        case PeelCallable cRhs -> addCollectionAnd(
+                                cLhs,
+                                cRhs
                         );
                     };
                     case Primitives primitiveLhs -> switch (rhs) {
-                        case PeelValue.Collection _ -> throw new NoFunctionFoundException(
-                                "Can't add Primitive and Collection"
+                        case PeelValue.Collection _, PeelCallable _ -> throw new NoFunctionFoundException(
+                                "Can't add Primitive and " + rhs.getClass().getSimpleName()
                         );
                         case Primitives primitiveRhs -> addPrimitives(
                                 primitiveLhs,
                                 primitiveRhs
                         );
                     };
+                    case PeelCallable _ -> throw new NoFunctionFoundException(
+                            "Can't add Callables"
+                    );
                 }
         );
+    }
+
+    private static <T extends PeelValue> PeelValue addCollectionAnd(PeelValue.Collection cLhs, T pRhs) {
+        if (cLhs instanceof PeelValue.Collection.List(List<PeelValue> list)) {
+            return new PeelValue.Collection.List(
+                    Stream.concat(list.stream(), Stream.of(pRhs)).toList()
+            );
+        } else {
+            throw new PeelException(
+                    "Can't add Map and Primitive value"
+            );
+        }
     }
 
     private static PeelValue addPrimitives(

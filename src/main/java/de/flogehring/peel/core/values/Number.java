@@ -7,6 +7,12 @@ public sealed interface Number extends Primitives {
     BigDecimal numberValue();
 
     record Integer(java.lang.Integer value) implements Number {
+
+        @Override
+        public String toString() {
+            return String.valueOf(value);
+        }
+
         @Override
         public BigDecimal numberValue() {
             return BigDecimal.valueOf(value.doubleValue());

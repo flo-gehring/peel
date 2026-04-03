@@ -32,7 +32,7 @@ to documents for customers or regulators.
 - ✅ Variables and assignments
 - ✅ Control flow (if/else, loops)
 - ✅ Lexical scoping
-- 🚧 First-class functions
+- ✅ First-class functions
 - 🚧 Extensible runtime architecture
 - 🚧 JSON output format
 
@@ -49,13 +49,6 @@ See [`docs/product/`](docs/product/) for detailed epic planning.
 # Run tests
 ./gradlew test
 ```
-
-## Documentation
-
-- **[CLAUDE.md](CLAUDE.md)** - Architecture overview and development guide
-- **[docs/product/](docs/product/)** - MVP epic planning (Epics 1-6)
-- **[docs/product/backlog/](docs/product/backlog/)** - Post-MVP features and roadmap
-- **[src/main/antlr/Peel.g4](src/main/antlr/Peel.g4)** - Grammar specification
 
 ## Requirements
 
@@ -84,5 +77,4 @@ See [`docs/product/`](docs/product/) for detailed epic planning.
 - HTML output formatter
 - Partial evaluation on errors (debugging)
 
-See [docs/product/backlog/](docs/product/backlog/) for full roadmap.
 

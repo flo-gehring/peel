@@ -1,5 +1,6 @@
 package de.flogehring.peel.core.lang;
 
+import de.flogehring.peel.core.values.PeelFunctionDefinition;
 import de.flogehring.peel.core.values.PeelValue;
 
 import java.util.List;
@@ -13,6 +14,8 @@ public sealed interface Expression {
     record Assignment(String variableName, Expression assignment, int scopeOffset) implements Expression {
     }
 
+    record FunctionDeclaration(PeelFunctionDefinition callable, int scopeOffset) implements Expression {
+    }
 
     record IfElseStatement(
             List<ConditionalExecution> conditionals,
@@ -20,12 +23,10 @@ public sealed interface Expression {
     ) implements Expression {
 
         public record ConditionalExecution(Expression condition, Expression then) {
-
         }
     }
 
     record ListLiteral(List<Expression> elements) implements Expression {
-
     }
 
     record Literal(PeelValue value) implements Expression {
@@ -53,18 +54,16 @@ public sealed interface Expression {
         }
     }
 
-    record FunctionCall(String functionName, List<Expression> arguments) implements Expression {
-        public FunctionCall {
-            Expression.assertNotEmpty(functionName);
-        }
+    record FunctionCall(Expression callee, List<Expression> arguments) implements Expression {
     }
 
     record WhileLoop(Expression condition, Block body) implements Expression {
-
     }
 
     record ForEachLoop(String varName, Expression list, Block body) implements Expression {
+    }
 
+    record Return(Expression value) implements Expression {
     }
 
     private static void assertNotEmpty(String s) {

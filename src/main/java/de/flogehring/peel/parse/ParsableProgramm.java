@@ -34,6 +34,20 @@ sealed interface ParsableProgramm {
         }
     }
 
+    record ParsableArguments(List<Expression> arguments) implements ParsableProgramm {
+        @Override
+        public Expression toExpr() {
+            throw new PeelException("Parsable Arguments .toExpression called");
+        }
+    }
+
+    record ParsableParameters(List<String> parameters) implements ParsableProgramm {
+        @Override
+        public Expression toExpr() {
+            throw new PeelException("Parsing error");
+        }
+    }
+
     record ParsableCodeElement(Expression codeElement) implements ParsableProgramm {
         @Override
         public Expression toExpr() {

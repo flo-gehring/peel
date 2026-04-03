@@ -7,7 +7,8 @@ plugins {
 group = "de.flo-gehring"
 version = "1.0-SNAPSHOT"
 
-val generatedAntlrDir = layout.buildDirectory.dir("generated-src/antlr/main/")
+val generatedAntlrSrcRoot = layout.buildDirectory.dir("generated-src/antlr/main")
+val generatedAntlrPackageDir = generatedAntlrSrcRoot.map { it.dir("de/flogehring/peel/antlr") }
 
 repositories {
     mavenCentral()
@@ -18,7 +19,12 @@ dependencies {
     implementation("org.antlr:antlr4-runtime:4.13.1")
     testImplementation(platform("org.junit:junit-bom:5.10.0"))
     testImplementation("org.junit.jupiter:junit-jupiter")
-    testImplementation("org.assertj:assertj-core:3.11.1")
+    testImplementation("org.assertj:assertj-core:3.27.7")
+    compileOnly("org.projectlombok:lombok:1.18.44")
+    annotationProcessor("org.projectlombok:lombok:1.18.44")
+
+    testCompileOnly("org.projectlombok:lombok:1.18.44")
+    testAnnotationProcessor("org.projectlombok:lombok:1.18.44")
 }
 
 java {
@@ -29,19 +35,20 @@ java {
 
 // Modern Gradle: configure ANTLR task using named<GenerateGrammarSource>
 tasks.named<AntlrTask>("generateGrammarSource") {
-    outputDirectory = generatedAntlrDir.get().asFile
+    outputDirectory = generatedAntlrPackageDir.get().asFile
     maxHeapSize = "64m"
 
     arguments.addAll(
         listOf(
             "-visitor",
-            "-long-messages"
+            "-long-messages",
+            "-package", "de.flogehring.peel.antlr"
         )
     )
 }
 
 sourceSets.named("main") {
-    java.srcDir(generatedAntlrDir)
+    java.srcDir(generatedAntlrSrcRoot)
 }
 
 tasks.named("compileJava") {
