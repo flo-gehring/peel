@@ -1,22 +1,20 @@
 package de.flogehring.peel.core.values;
 
 import de.flogehring.peel.core.eval.Function;
-import de.flogehring.peel.core.lang.Expression;
+import lombok.Getter;
 
 import java.util.List;
-import java.util.stream.IntStream;
 
-public final class FunctionReference extends PeelCallable {
+@Getter
+public final class FunctionReference implements PeelCallable {
 
-    public static FunctionReference of(Function f) {
-        return new FunctionReference(
-                f.name(),
-                IntStream.range(0, f.arity()).mapToObj(i -> "arg" + i).toList(),
-                new Expression.Block(List.of())
-        );
+    private final List<Function> functions;
+
+    private FunctionReference(List<Function> functions) {
+        this.functions = functions;
     }
 
-    private FunctionReference(String name, List<String> parameters, Expression.Block body) {
-        super(name, parameters, body);
+    public static FunctionReference of(List<Function> functions) {
+        return new FunctionReference(functions);
     }
 }

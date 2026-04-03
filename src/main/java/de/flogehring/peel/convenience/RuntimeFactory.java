@@ -188,11 +188,7 @@ public class RuntimeFactory {
     private static Function comparison() {
         return binary(
                 "==",
-                (lhs, rhs) -> {
-                    PeelValue result = PeelValue.bool(lhs.equals(rhs));
-                    // System.out.println(MessageFormat.format("{0} == {1} <=> {2}", lhs, rhs, result));
-                    return result;
-                }
+                (lhs, rhs) -> PeelValue.bool(lhs.equals(rhs))
         );
     }
 

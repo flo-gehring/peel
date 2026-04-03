@@ -3,15 +3,15 @@ package de.flogehring.peel.run;
 import de.flogehring.peel.core.eval.EvaluatedExpression;
 import de.flogehring.peel.core.eval.Function;
 import de.flogehring.peel.core.lang.Expression;
-import de.flogehring.peel.core.values.PeelCallable;
+import de.flogehring.peel.core.values.PeelFunctionDefinition;
 import de.flogehring.peel.core.values.PeelValue;
 
 public class PeelCodeFunction implements Function {
 
-    private final PeelCallable callable;
+    private final PeelFunctionDefinition callable;
     private final EvaluationEnvironment environment;
 
-    public PeelCodeFunction(PeelCallable callable, EvaluationEnvironment environment) {
+    public PeelCodeFunction(PeelFunctionDefinition callable, EvaluationEnvironment environment) {
         this.callable = callable;
         this.environment = environment;
     }

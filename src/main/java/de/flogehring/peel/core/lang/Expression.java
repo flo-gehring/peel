@@ -1,6 +1,6 @@
 package de.flogehring.peel.core.lang;
 
-import de.flogehring.peel.core.values.PeelCallable;
+import de.flogehring.peel.core.values.PeelFunctionDefinition;
 import de.flogehring.peel.core.values.PeelValue;
 
 import java.util.List;
@@ -14,7 +14,7 @@ public sealed interface Expression {
     record Assignment(String variableName, Expression assignment, int scopeOffset) implements Expression {
     }
 
-    record FunctionDeclaration(PeelCallable callable, int scopeOffset) implements Expression {
+    record FunctionDeclaration(PeelFunctionDefinition callable, int scopeOffset) implements Expression {
     }
 
     record IfElseStatement(

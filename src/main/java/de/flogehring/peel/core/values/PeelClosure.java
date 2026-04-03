@@ -7,7 +7,7 @@ import lombok.Getter;
 import java.util.List;
 
 @Getter
-public final class PeelClosure extends PeelCallable {
+public final class PeelClosure extends PeelFunctionDefinition {
 
     private final EvaluationEnvironment evaluationEnvironment;
 
