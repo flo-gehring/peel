@@ -1,5 +1,6 @@
 package de.flogehring.peel.run;
 
+import de.flogehring.peel.parse.RedeclaredVariableException;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.Timeout;
@@ -7,89 +8,136 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
 
 import static de.flogehring.peel.core.values.PeelValue.integer;
+import static de.flogehring.peel.run.TestHelpers.expectErrorOnParse;
 import static de.flogehring.peel.run.TestHelpers.runProgrammAndExpect;
 
 public class FunctionTest {
 
-    @Test
-    void simple() {
-        runProgrammAndExpect(
-                """
-                        fun add(a,b) {
-                            a + b;
-                        }
-                        
-                        add(1,1);
-                        """,
-                integer(2)
-        );
-    }
-
-    @Test
-    void simpleWithReturn() {
-        runProgrammAndExpect(
-                """
-                        fun add(a,b) {
-                            return a + b;
-                        }
-                        add(1,2);
-                        """,
-                integer(3)
-        );
-    }
-
-    @Test
-    void sumList() {
-        runProgrammAndExpect(
-                """
-                        fun sum(l) {
-                            var s = 0;
-                            for(e in l) {
-                                s = s + e;
+    @Nested
+    class Basic {
+        @Test
+        void simple() {
+            runProgrammAndExpect(
+                    """
+                            fun add(a,b) {
+                                a + b;
                             }
-                        }
-                        sum([1,2,3,4]);
-                        """,
-                integer(10)
-        );
-    }
+                            
+                            add(1,1);
+                            """,
+                    integer(2)
+            );
+        }
 
-    @Test
-    void sumListWithVariableShadowing() {
-        runProgrammAndExpect(
-                """
-                        var s = [1,2,3,4];
-                        fun sum(l) {
-                            var s = 0;
-                            for(e in l) {
-                                s = s + e;
+        @Test
+        void simpleWithReturn() {
+            runProgrammAndExpect(
+                    """
+                            fun add(a,b) {
+                                return a + b;
                             }
-                        }
-                        sum(s);
-                        """,
-                integer(10)
-        );
-    }
+                            add(1,2);
+                            """,
+                    integer(3)
+            );
+        }
 
-    @Test
-    void returnFromLoop() {
-        runProgrammAndExpect(
-                """
-                        var s = [1,2,3,4];
-                        fun indexOf(l, s) {
-                            var i = 0;
-                            for(e in l) {
-                                if(e == s) {
-                                    return i;
+        @Test
+        void sumList() {
+            runProgrammAndExpect(
+                    """
+                            fun sum(l) {
+                                var s = 0;
+                                for(e in l) {
+                                    s = s + e;
                                 }
-                                i = i + 1;
                             }
-                            -1;
-                        }
-                        indexOf(s, 2);
-                        """,
-                integer(1)
-        );
+                            sum([1,2,3,4]);
+                            """,
+                    integer(10)
+            );
+        }
+
+        @Test
+        void sumListWithVariableShadowing() {
+            runProgrammAndExpect(
+                    """
+                            var s = [1,2,3,4];
+                            fun sum(l) {
+                                var s = 0;
+                                for(e in l) {
+                                    s = s + e;
+                                }
+                            }
+                            sum(s);
+                            """,
+                    integer(10)
+            );
+        }
+
+        @Test
+        void returnFromLoop() {
+            runProgrammAndExpect(
+                    """
+                            var s = [1,2,3,4];
+                            fun indexOf(l, s) {
+                                var i = 0;
+                                for(e in l) {
+                                    if(e == s) {
+                                        return i;
+                                    }
+                                    i = i + 1;
+                                }
+                                -1;
+                            }
+                            indexOf(s, 2);
+                            """,
+                    integer(1)
+            );
+        }
+
+        @Test
+        void definitionWithSameName() {
+
+            runProgrammAndExpect(
+                    """
+                            fun sum(a,b) {
+                                a + b;
+                            }
+                            fun sum(a,b,c) {
+                                a + b + c;
+                            }
+                            sum(1,1,1) + sum(1,1);
+                            """,
+                    integer(5)
+            );
+        }
+
+        @Test
+        void definitionOfVarAndFuncWithSameName() {
+            expectErrorOnParse(
+                    """
+                            fun sum(a,b) {
+                                a + b;
+                            }
+                            var sum = 1 + 2;
+                            sum(1,1,1) + sum(1,1);
+                            """,
+                    RedeclaredVariableException.class
+            );
+
+            expectErrorOnParse(
+                    """
+                            
+                            var sum = 1 + 2;
+                            fun sum(a,b) {
+                                a + b;
+                            }
+                            sum(1,1,1) + sum(1,1);
+                            """,
+                    RedeclaredVariableException.class
+            );
+        }
     }
 
     @Nested

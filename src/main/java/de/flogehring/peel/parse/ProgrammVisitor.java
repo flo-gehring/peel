@@ -26,21 +26,30 @@ class ProgrammVisitor implements de.flogehring.peel.antlr.PeelVisitor<ParsablePr
     }
 
     private static class VariableDeclaration {
-        String s;
+        String varName;
         boolean initialized;
+        boolean isFunction;
 
-        public VariableDeclaration(String s, boolean b) {
-            this.s = s;
-            this.initialized = b;
+        public VariableDeclaration(String varName, boolean isInitialized) {
+            this.varName = varName;
+            this.initialized = isInitialized;
+            this.isFunction = false;
+        }
+
+        public VariableDeclaration(String varName, boolean isInitialized, boolean isFunction) {
+            this.varName = varName;
+            this.initialized = isInitialized;
+            this.isFunction = isFunction;
         }
 
         String s() {
-            return s;
+            return varName;
         }
 
         boolean initialized() {
             return initialized;
         }
+
     }
 
     record Scope(Set<VariableDeclaration> content) {
@@ -55,6 +64,24 @@ class ProgrammVisitor implements de.flogehring.peel.antlr.PeelVisitor<ParsablePr
             }
             content.add(new VariableDeclaration(s, false));
         }
+
+        void addFunction(String s) {
+            boolean inScope = inScope(s);
+            if (inScope && !isFunction(s)) {
+                throw new RedeclaredVariableException("Can't  redeclare variable " + s + " as function");
+            }
+            if (!inScope) {
+                content.add(new VariableDeclaration(s, true, true));
+            }
+        }
+
+        private boolean isFunction(String var) {
+            return content.stream().anyMatch(
+                    declaration -> declaration.s().equals(var) &&
+                            declaration.isFunction
+            );
+        }
+
 
         boolean inScope(String s) {
             return content.stream().anyMatch(
@@ -98,11 +125,7 @@ class ProgrammVisitor implements de.flogehring.peel.antlr.PeelVisitor<ParsablePr
     @Override
     public ParsableProgramm visitFunctionDeclaration(PeelParser.FunctionDeclarationContext ctx) {
         String name = ctx.IDENT().getText();
-        if (alreadyInScope(name)) { // TODO this is not right, because it allows for only one function definition per name
-            throw new RedeclaredVariableException("Can't redeclare function with same scope");
-        }
-        initVar(name);
-        setInitialized(name);
+        scopes.getLast().addFunction(name);
         beginScope();
         List<String> parameters = ((ParsableProgramm.ParsableParameters) visitParameters(ctx.parameters())).parameters();
         parameters.forEach(this::initVar);
