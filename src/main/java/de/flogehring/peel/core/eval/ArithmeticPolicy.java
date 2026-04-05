@@ -11,6 +11,10 @@ public interface ArithmeticPolicy {
 
     PeelValue mul(Number lhs, Number rhs);
 
+    PeelValue mod(Number lhs, Number rhs);
+
+    PeelValue pow(Number lhs, Number rhs);
+
     PeelValue div(Number lhs, Number rhs);
 
     PeelValue negate(Number value);

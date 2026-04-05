@@ -4,12 +4,16 @@ import de.flogehring.peel.core.eval.*;
 import de.flogehring.peel.run.Scope;
 import de.flogehring.peel.run.SimpleRuntime;
 import de.flogehring.peel.run.exceptions.NumericOperatorOverrideException;
+import de.flogehring.peel.run.exceptions.ReservedOperatorOverrideException;
 
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
+import java.util.Set;
 
 public final class RuntimeBuilder {
+
+    private static final Set<String> RESERVED_LANGUAGE_OPERATORS = Set.of("&&", "||");
 
     private final List<RuntimeModule> modules = new ArrayList<>();
     private final List<Function> functions = new ArrayList<>();
@@ -87,6 +91,12 @@ public final class RuntimeBuilder {
     }
 
     private void validateOperatorOverrides(List<OperatorDef> operatorDefs) {
+        operatorDefs.stream()
+                .filter(def -> RESERVED_LANGUAGE_OPERATORS.contains(def.symbol()))
+                .findFirst()
+                .ifPresent(def -> {
+                    throw new ReservedOperatorOverrideException(def.symbol());
+                });
         if (allowNumericOperatorOverrides) {
             return;
         }

@@ -99,12 +99,47 @@ public final class ConfigurableTypedArithmeticPolicy extends TypedArithmeticPoli
         if (op == BinaryOp.DIV) {
             return divide(lhs, rhs);
         }
+        if (op == BinaryOp.MOD) {
+            return modValue(lhs, rhs);
+        }
+        if (op == BinaryOp.POW) {
+            return powValue(lhs, rhs);
+        }
         NumericKind resultKind = resolveResultKind(lhs, rhs);
         return switch (resultKind) {
             case INTEGER -> integerResult(op, lhs, rhs);
             case FLOAT -> floatResult(op, lhs, rhs);
             case DECIMAL -> decimalResult(op, lhs, rhs);
         };
+    }
+
+    private PeelValue modValue(Number lhs, Number rhs) {
+        if (isZero(rhs)) {
+            throw new ArithmeticException("Modulo by zero");
+        }
+        NumericKind resultKind = resolveResultKind(lhs, rhs);
+        return switch (resultKind) {
+            case INTEGER -> new Number.Integer(integerValue(lhs) % integerValue(rhs));
+            case FLOAT -> new Number.Float(floatValue(lhs) % floatValue(rhs));
+            case DECIMAL -> new Number.Decimal(decimalValue(lhs).remainder(decimalValue(rhs)));
+        };
+    }
+
+    private PeelValue powValue(Number lhs, Number rhs) {
+        if (lhs instanceof Number.Integer(var base) && rhs instanceof Number.Integer(var exponent) && exponent >= 0) {
+            int result = 1;
+            for (int i = 0; i < exponent; i++) {
+                result *= base;
+            }
+            return new Number.Integer(result);
+        }
+        if (configuration.decimalBackend() == ArithmeticConfiguration.DecimalBackend.JAVA_BIG_DECIMAL
+                && lhs instanceof Number.Decimal(var decimalBase)
+                && rhs instanceof Number.Integer(var integerExponent)
+                && integerExponent >= 0) {
+            return new Number.Decimal(decimalBase.pow(integerExponent));
+        }
+        return new Number.Float((float) Math.pow(floatValue(lhs), floatValue(rhs)));
     }
 
     private PeelValue divide(Number lhs, Number rhs) {
@@ -144,6 +179,8 @@ public final class ConfigurableTypedArithmeticPolicy extends TypedArithmeticPoli
             case ADD -> new Number.Integer(left + right);
             case SUB -> new Number.Integer(left - right);
             case MUL -> new Number.Integer(left * right);
+            case MOD -> throw new IllegalStateException("Integer modulo is handled separately");
+            case POW -> throw new IllegalStateException("Integer power is handled separately");
             case DIV -> throw new IllegalStateException("Integer result for division is handled separately");
         };
     }
@@ -155,6 +192,8 @@ public final class ConfigurableTypedArithmeticPolicy extends TypedArithmeticPoli
             case ADD -> new Number.Float(left + right);
             case SUB -> new Number.Float(left - right);
             case MUL -> new Number.Float(left * right);
+            case MOD -> throw new IllegalStateException("Float modulo is handled separately");
+            case POW -> throw new IllegalStateException("Float power is handled separately");
             case DIV -> throw new IllegalStateException("Float division is handled separately");
         };
     }
@@ -166,6 +205,8 @@ public final class ConfigurableTypedArithmeticPolicy extends TypedArithmeticPoli
             case ADD -> new Number.Decimal(left.add(right));
             case SUB -> new Number.Decimal(left.subtract(right));
             case MUL -> new Number.Decimal(left.multiply(right));
+            case MOD -> throw new IllegalStateException("Decimal modulo is handled separately");
+            case POW -> throw new IllegalStateException("Decimal power is handled separately");
             case DIV -> throw new IllegalStateException("Decimal division is handled separately");
         };
     }

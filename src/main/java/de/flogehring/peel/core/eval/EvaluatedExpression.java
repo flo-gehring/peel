@@ -129,6 +129,30 @@ public sealed interface EvaluatedExpression {
     ) implements EvaluatedExpression {
     }
 
+    record EvaluatedMapLiteral(
+            List<MapEntry> entries,
+            PeelValue.Collection.Map value
+    ) implements EvaluatedExpression {
+        public record MapEntry(EvaluatedExpression key, EvaluatedExpression value) {
+        }
+    }
+
+    record Selector(
+            PeelValue value,
+            EvaluatedExpression target,
+            EvaluatedExpression selector
+    ) implements EvaluatedExpression {
+    }
+
+    record LogicalBinaryOperator(
+            String operator,
+            PeelValue value,
+            EvaluatedExpression lhs,
+            Optional<EvaluatedExpression> rhs,
+            boolean shortCircuited
+    ) implements EvaluatedExpression {
+    }
+
     record EvaluatedBlock(List<EvaluatedExpression> content) implements EvaluatedExpression {
 
         private static final EvaluatedBlock EVALUATED_BLOCK = new EvaluatedBlock(List.of());

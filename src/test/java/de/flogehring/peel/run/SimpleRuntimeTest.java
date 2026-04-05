@@ -270,6 +270,48 @@ public class SimpleRuntimeTest {
         );
     }
 
+    @Test
+    void standardRuntimeBooleanLogic() {
+        Program program = new Program(List.of(
+                ExpressionFactoryMethods.expr(
+                        ExpressionFactoryMethods.expr(
+                                new Expression.UnaryPrefixOperator("!", new Expression.Literal(new Bool(false))),
+                                "&&",
+                                ExpressionFactoryMethods.expr(
+                                        new Expression.Literal(new Bool(true)),
+                                        "||",
+                                        new Expression.Literal(new Bool(false))
+                                )
+                        ),
+                        "&&",
+                        ExpressionFactoryMethods.expr(
+                                ExpressionFactoryMethods.expr(
+                                        new Expression.Literal(new Bool(true)),
+                                        "^",
+                                        new Expression.Literal(new Bool(false))
+                                ),
+                                "&&",
+                                ExpressionFactoryMethods.expr(
+                                        ExpressionFactoryMethods.expr(
+                                                ExpressionFactoryMethods.integer(1),
+                                                "!=",
+                                                ExpressionFactoryMethods.integer(2)
+                                        ),
+                                        "&&",
+                                        ExpressionFactoryMethods.expr(
+                                                ExpressionFactoryMethods.integer(1),
+                                                "==",
+                                                ExpressionFactoryMethods.integer(1)
+                                        )
+                                )
+                        )
+                )
+        ));
+
+        PeelRuntime runtime = RuntimeFactory.defaultLanguage();
+        assertThat(runtime.run(program).getLastExpression().value()).isEqualTo(PeelValue.bool(true));
+    }
+
     private static Variable integerVariable(String name, int value) {
         return Variable.of(name, integer(value));
     }

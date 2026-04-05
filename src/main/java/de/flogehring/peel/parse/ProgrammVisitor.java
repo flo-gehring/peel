@@ -4,6 +4,7 @@ import de.flogehring.peel.antlr.PeelParser;
 import de.flogehring.peel.core.lang.Expression;
 import de.flogehring.peel.core.lang.Expression.IfElseStatement.ConditionalExecution;
 import de.flogehring.peel.core.lang.ExpressionFactoryMethods;
+import de.flogehring.peel.core.values.Bool;
 import de.flogehring.peel.core.values.None;
 import de.flogehring.peel.core.values.PeelCallable;
 import org.antlr.v4.runtime.ParserRuleContext;
@@ -13,6 +14,7 @@ import org.antlr.v4.runtime.tree.ParseTree;
 import org.antlr.v4.runtime.tree.RuleNode;
 import org.antlr.v4.runtime.tree.TerminalNode;
 
+import java.math.BigDecimal;
 import java.text.MessageFormat;
 import java.util.*;
 
@@ -405,6 +407,31 @@ class ProgrammVisitor implements de.flogehring.peel.antlr.PeelVisitor<ParsablePr
         return token.getLine() + ":" + token.getCharPositionInLine();
     }
 
+    private static String unescapeStringLiteral(String raw) {
+        String quoted = raw.substring(1, raw.length() - 1);
+        StringBuilder sb = new StringBuilder(quoted.length());
+        for (int i = 0; i < quoted.length(); i++) {
+            char c = quoted.charAt(i);
+            if (c != '\\') {
+                sb.append(c);
+                continue;
+            }
+            if (i + 1 >= quoted.length()) {
+                throw new PeelParsingException("Invalid string literal escape at end of token");
+            }
+            char esc = quoted.charAt(++i);
+            switch (esc) {
+                case 'n' -> sb.append('\n');
+                case 'r' -> sb.append('\r');
+                case 't' -> sb.append('\t');
+                case '"' -> sb.append('"');
+                case '\\' -> sb.append('\\');
+                default -> throw new PeelParsingException("Unsupported escape sequence: \\" + esc);
+            }
+        }
+        return sb.toString();
+    }
+
 
     @Override
     public ParsableProgramm visitBlock(de.flogehring.peel.antlr.PeelParser.BlockContext ctx) {
@@ -477,7 +504,7 @@ class ProgrammVisitor implements de.flogehring.peel.antlr.PeelVisitor<ParsablePr
         return new ParsableProgramm.ParsableCodeElement(
                 ExpressionFactoryMethods.expr(
                         ctx.expr(0).accept(this).toExpr(),
-                        "==",
+                        ctx.getChild(1).getText(),
                         ctx.expr(1).accept(this).toExpr()
                 )
         );
@@ -518,7 +545,35 @@ class ProgrammVisitor implements de.flogehring.peel.antlr.PeelVisitor<ParsablePr
     @Override
     public ParsableProgramm visitNumberExpr(de.flogehring.peel.antlr.PeelParser.NumberExprContext ctx) {
         return new ParsableProgramm.ParsableCodeElement(
-                ExpressionFactoryMethods.integer(Integer.valueOf(ctx.NUMBER().getText()))
+                ExpressionFactoryMethods.integer(Integer.valueOf(ctx.INTEGER().getText()))
+        );
+    }
+
+    @Override
+    public ParsableProgramm visitDecimalExpr(PeelParser.DecimalExprContext ctx) {
+        return new ParsableProgramm.ParsableCodeElement(
+                ExpressionFactoryMethods.decimal(new BigDecimal(ctx.DECIMAL().getText()))
+        );
+    }
+
+    @Override
+    public ParsableProgramm visitTrueExpr(PeelParser.TrueExprContext ctx) {
+        return new ParsableProgramm.ParsableCodeElement(
+                new Expression.Literal(new Bool(true))
+        );
+    }
+
+    @Override
+    public ParsableProgramm visitFalseExpr(PeelParser.FalseExprContext ctx) {
+        return new ParsableProgramm.ParsableCodeElement(
+                new Expression.Literal(new Bool(false))
+        );
+    }
+
+    @Override
+    public ParsableProgramm visitStringExpr(PeelParser.StringExprContext ctx) {
+        return new ParsableProgramm.ParsableCodeElement(
+                ExpressionFactoryMethods.string(unescapeStringLiteral(ctx.STRING().getText()))
         );
     }
 
@@ -540,6 +595,27 @@ class ProgrammVisitor implements de.flogehring.peel.antlr.PeelVisitor<ParsablePr
                         ctx.expr(0).accept(this).toExpr(),
                         ctx.getChild(1).getText(),
                         ctx.expr(1).accept(this).toExpr()
+                )
+        );
+    }
+
+    @Override
+    public ParsableProgramm visitPowExpr(PeelParser.PowExprContext ctx) {
+        return new ParsableProgramm.ParsableCodeElement(
+                ExpressionFactoryMethods.expr(
+                        ctx.expr(0).accept(this).toExpr(),
+                        "**",
+                        ctx.expr(1).accept(this).toExpr()
+                )
+        );
+    }
+
+    @Override
+    public ParsableProgramm visitNegateExpr(PeelParser.NegateExprContext ctx) {
+        return new ParsableProgramm.ParsableCodeElement(
+                new Expression.UnaryPrefixOperator(
+                        "-",
+                        ctx.expr().accept(this).toExpr()
                 )
         );
     }
@@ -570,6 +646,33 @@ class ProgrammVisitor implements de.flogehring.peel.antlr.PeelVisitor<ParsablePr
                 new Expression.ListLiteral(
                         ctx.expr().stream().map(exprCtx -> exprCtx.accept(this).toExpr()).toList()
 
+                )
+        );
+    }
+
+    @Override
+    public ParsableProgramm visitMapExpr(PeelParser.MapExprContext ctx) {
+        List<Expression.MapLiteral.Entry> entries = new ArrayList<>();
+        List<PeelParser.ExprContext> expressions = ctx.expr();
+        for (int i = 0; i + 1 < expressions.size(); i += 2) {
+            entries.add(
+                    new Expression.MapLiteral.Entry(
+                            expressions.get(i).accept(this).toExpr(),
+                            expressions.get(i + 1).accept(this).toExpr()
+                    )
+            );
+        }
+        return new ParsableProgramm.ParsableCodeElement(
+                new Expression.MapLiteral(entries)
+        );
+    }
+
+    @Override
+    public ParsableProgramm visitSelectorExpr(PeelParser.SelectorExprContext ctx) {
+        return new ParsableProgramm.ParsableCodeElement(
+                new Expression.Selector(
+                        ctx.expr(0).accept(this).toExpr(),
+                        ctx.expr(1).accept(this).toExpr()
                 )
         );
     }

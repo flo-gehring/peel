@@ -49,6 +49,18 @@ public final class ArithmeticPolicies {
                         (lhs, rhs) -> policy.mul((Number) lhs, (Number) rhs)
                 ),
                 OperatorDef.arithmeticManaged(
+                        "%",
+                        Number.class,
+                        Number.class,
+                        (lhs, rhs) -> policy.mod((Number) lhs, (Number) rhs)
+                ),
+                OperatorDef.arithmeticManaged(
+                        "**",
+                        Number.class,
+                        Number.class,
+                        (lhs, rhs) -> policy.pow((Number) lhs, (Number) rhs)
+                ),
+                OperatorDef.arithmeticManaged(
                         "/",
                         Number.class,
                         Number.class,

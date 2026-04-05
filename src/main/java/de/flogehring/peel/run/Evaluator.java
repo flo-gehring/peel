@@ -10,9 +10,7 @@ import de.flogehring.peel.run.exceptions.NoFunctionFoundException;
 import de.flogehring.peel.run.exceptions.PeelException;
 import lombok.extern.java.Log;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Optional;
+import java.util.*;
 
 import static de.flogehring.peel.core.values.PeelValue.Collection.peelList;
 
@@ -49,6 +47,8 @@ public class Evaluator {
             case Expression.ForEachLoop(var varName, var listExpr, var block) ->
                     runForEachLoop(varName, listExpr, block);
             case Expression.ListLiteral(var list) -> evaluateListLiteral(list);
+            case Expression.MapLiteral(var entries) -> evaluateMapLiteral(entries);
+            case Expression.Selector(var target, var selector) -> evaluateSelector(target, selector);
             case Expression.Return(var expr) -> throw new ReturnValueFlow(evaluateExpr(expr));
             case Expression.FunctionDeclaration(var callable, var offset) -> declareFunction(callable, offset);
         };
@@ -137,6 +137,62 @@ public class Evaluator {
         return new EvaluatedExpression.EvaluatedListLiteral(
                 evaluated, peelList(evaluated.stream().map(EvaluatedExpression::value).toList()
         ));
+    }
+
+    private EvaluatedExpression evaluateMapLiteral(List<Expression.MapLiteral.Entry> entries) {
+        List<EvaluatedExpression.EvaluatedMapLiteral.MapEntry> evaluatedEntries = new ArrayList<>();
+        LinkedHashMap<Primitives, PeelValue> map = new LinkedHashMap<>();
+        for (Expression.MapLiteral.Entry entry : entries) {
+            EvaluatedExpression key = evaluateExpr(entry.key());
+            EvaluatedExpression value = evaluateExpr(entry.value());
+            map.put(requirePrimitive(key), value.value());
+            evaluatedEntries.add(new EvaluatedExpression.EvaluatedMapLiteral.MapEntry(key, value));
+        }
+        return new EvaluatedExpression.EvaluatedMapLiteral(
+                evaluatedEntries,
+                PeelValue.Collection.peelMap(Collections.unmodifiableMap(new LinkedHashMap<>(map)))
+        );
+    }
+
+    private EvaluatedExpression evaluateSelector(Expression target, Expression selector) {
+        EvaluatedExpression evaluatedTarget = evaluateExpr(target);
+        EvaluatedExpression evaluatedSelector = evaluateExpr(selector);
+        PeelValue selected = switch (evaluatedTarget.value()) {
+            case PeelValue.Collection.List(var list) -> selectFromList(list, evaluatedSelector.value());
+            case PeelValue.Collection.Map(var map) -> selectFromMap(map, evaluatedSelector.value());
+            default -> throw new PeelException(
+                    "Selector target must be list or map, was {0}",
+                    evaluatedTarget.value().getClass().getSimpleName()
+            );
+        };
+        return new EvaluatedExpression.Selector(selected, evaluatedTarget, evaluatedSelector);
+    }
+
+    private PeelValue selectFromList(List<PeelValue> list, PeelValue selector) {
+        if (selector instanceof de.flogehring.peel.core.values.Number.Integer(Integer index)) {
+            if (index < 0 || index >= list.size()) {
+                throw new PeelException("List index out of bounds: {0}", index);
+            }
+            return list.get(index);
+        }
+        throw new PeelException("List selector must be Integer, was {0}", selector.getClass().getSimpleName());
+    }
+
+    private PeelValue selectFromMap(Map<Primitives, PeelValue> map, PeelValue selector) {
+        if (selector instanceof Primitives primitive) {
+            if (!map.containsKey(primitive)) {
+                throw new PeelException("Map key not found: {0}", primitive);
+            }
+            return map.get(primitive);
+        }
+        throw new PeelException("Map selector must be primitive, was {0}", selector.getClass().getSimpleName());
+    }
+
+    private Primitives requirePrimitive(EvaluatedExpression expression) {
+        if (expression.value() instanceof Primitives primitive) {
+            return primitive;
+        }
+        throw new PeelException("Map key must be primitive, was {0}", expression.value().getClass().getSimpleName());
     }
 
     private EvaluatedExpression runForEachLoop(String varName, Expression listExpr, Expression.Block block) {
@@ -252,6 +308,8 @@ public class Evaluator {
                  Expression.FunctionCall _,
                  Expression.IfElseStatement _,
                  Expression.Literal _,
+                 Expression.MapLiteral _,
+                 Expression.Selector _,
                  Expression.UnaryPrefixOperator _,
                  Expression.WhileLoop _ -> {
                 EvaluatedExpression e = evaluateExpr(callee);
@@ -281,6 +339,12 @@ public class Evaluator {
     }
 
     private EvaluatedExpression evaluateOperator(Expression.BinaryOperator operator) {
+        if (operator.operator().equals("&&")) {
+            return evaluateLogicalAnd(operator.lhs(), operator.rhs());
+        }
+        if (operator.operator().equals("||")) {
+            return evaluateLogicalOr(operator.lhs(), operator.rhs());
+        }
         EvaluatedExpression lhs = evaluateExpr(operator.lhs());
         EvaluatedExpression rhs = evaluateExpr(operator.rhs());
         List<OperatorDef> candidates = environment.getOperator(operator.operator());
@@ -289,6 +353,48 @@ public class Evaluator {
                 operator.operator(),
                 value,
                 List.of(lhs, rhs)
+        );
+    }
+
+    private EvaluatedExpression evaluateLogicalAnd(Expression lhsExpression, Expression rhsExpression) {
+        EvaluatedExpression lhs = evaluateExpr(lhsExpression);
+        if (!requireBool(lhs)) {
+            return new EvaluatedExpression.LogicalBinaryOperator(
+                    "&&",
+                    PeelValue.bool(false),
+                    lhs,
+                    Optional.empty(),
+                    true
+            );
+        }
+        EvaluatedExpression rhs = evaluateExpr(rhsExpression);
+        return new EvaluatedExpression.LogicalBinaryOperator(
+                "&&",
+                PeelValue.bool(requireBool(rhs)),
+                lhs,
+                Optional.of(rhs),
+                false
+        );
+    }
+
+    private EvaluatedExpression evaluateLogicalOr(Expression lhsExpression, Expression rhsExpression) {
+        EvaluatedExpression lhs = evaluateExpr(lhsExpression);
+        if (requireBool(lhs)) {
+            return new EvaluatedExpression.LogicalBinaryOperator(
+                    "||",
+                    PeelValue.bool(true),
+                    lhs,
+                    Optional.empty(),
+                    true
+            );
+        }
+        EvaluatedExpression rhs = evaluateExpr(rhsExpression);
+        return new EvaluatedExpression.LogicalBinaryOperator(
+                "||",
+                PeelValue.bool(requireBool(rhs)),
+                lhs,
+                Optional.of(rhs),
+                false
         );
     }
 

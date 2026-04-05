@@ -63,6 +63,18 @@ final class StandardRuntimeModule {
                             (lhs, rhs) -> PeelValue.bool(lhs.equals(rhs))
                     ),
                     OperatorDef.typed(
+                            "!=",
+                            PeelValue.class,
+                            PeelValue.class,
+                            (lhs, rhs) -> PeelValue.bool(!lhs.equals(rhs))
+                    ),
+                    OperatorDef.typed(
+                            "^",
+                            Bool.class,
+                            Bool.class,
+                            (lhs, rhs) -> PeelValue.bool(((Bool) lhs).value() ^ ((Bool) rhs).value())
+                    ),
+                    OperatorDef.typed(
                             "!",
                             Bool.class,
                             value -> PeelValue.bool(!((Bool) value).value())

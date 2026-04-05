@@ -9,6 +9,8 @@ public abstract class TypedArithmeticPolicy implements ArithmeticPolicy {
         ADD,
         SUB,
         MUL,
+        MOD,
+        POW,
         DIV
     }
 
@@ -29,6 +31,16 @@ public abstract class TypedArithmeticPolicy implements ArithmeticPolicy {
     @Override
     public final PeelValue mul(Number lhs, Number rhs) {
         return dispatch(BinaryOp.MUL, lhs, rhs);
+    }
+
+    @Override
+    public final PeelValue mod(Number lhs, Number rhs) {
+        return dispatch(BinaryOp.MOD, lhs, rhs);
+    }
+
+    @Override
+    public final PeelValue pow(Number lhs, Number rhs) {
+        return dispatch(BinaryOp.POW, lhs, rhs);
     }
 
     @Override

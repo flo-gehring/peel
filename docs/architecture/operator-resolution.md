@@ -87,6 +87,18 @@ This does not break ties; it only makes error output stable.
 - No compatible operator: `NoFunctionFoundException`
 - Multiple equally specific compatible operators: `AmbiguousOperatorException`
 
+## Special Language Operators
+
+`&&` and `||` are special language-level operators with short-circuit semantics:
+
+- They are evaluated directly in `src/main/java/de/flogehring/peel/run/Evaluator.java`.
+- They do not rely on the normal typed operator resolution pipeline for parsed expressions.
+- Right-hand side evaluation is conditional (`&&` skips RHS when LHS is `false`; `||` skips RHS when LHS is `true`).
+
+Because of this contract, overriding these symbols via `RuntimeBuilder` is blocked at build time.
+Attempting to register `&&` or `||` through modules or explicit operator registrations throws
+`ReservedOperatorOverrideException`.
+
 ## Numeric Override Validation at Build Time
 
 `RuntimeBuilder` enforces a guardrail for numeric operator overrides:

@@ -6,10 +6,12 @@ import de.flogehring.peel.core.eval.RuntimeModule;
 import de.flogehring.peel.core.eval.Variable;
 import de.flogehring.peel.core.lang.ExpressionFactoryMethods;
 import de.flogehring.peel.core.lang.Program;
+import de.flogehring.peel.core.values.Bool;
 import de.flogehring.peel.core.values.Number;
 import de.flogehring.peel.core.values.PeelValue;
 import de.flogehring.peel.core.values.Text;
 import de.flogehring.peel.run.exceptions.NumericOperatorOverrideException;
+import de.flogehring.peel.run.exceptions.ReservedOperatorOverrideException;
 import org.junit.jupiter.api.Test;
 
 import java.util.List;
@@ -76,5 +78,68 @@ class RuntimeBuilderTest {
         ));
 
         assertThat(runtime.run(p).getLastExpression().value()).isEqualTo(PeelValue.integer(999));
+    }
+
+    @Test
+    void overridingShortCircuitAndIsBlocked() {
+        assertThatExceptionOfType(ReservedOperatorOverrideException.class).isThrownBy(
+                () -> RuntimeBuilder.standardLanguage()
+                        .withOperator(OperatorDef.typed(
+                                "&&",
+                                Bool.class,
+                                Bool.class,
+                                (lhs, rhs) -> PeelValue.bool(true)
+                        ))
+                        .build()
+        );
+    }
+
+    @Test
+    void overridingShortCircuitOrIsBlocked() {
+        assertThatExceptionOfType(ReservedOperatorOverrideException.class).isThrownBy(
+                () -> RuntimeBuilder.standardLanguage()
+                        .withOperator(OperatorDef.typed(
+                                "||",
+                                Bool.class,
+                                Bool.class,
+                                (lhs, rhs) -> PeelValue.bool(true)
+                        ))
+                        .build()
+        );
+    }
+
+    @Test
+    void moduleCannotContributeReservedShortCircuitOperator() {
+        RuntimeModule module = RuntimeModule.of(
+                List.of(),
+                List.of(),
+                List.of(OperatorDef.typed(
+                        "&&",
+                        Bool.class,
+                        Bool.class,
+                        (lhs, rhs) -> PeelValue.bool(true)
+                ))
+        );
+
+        assertThatExceptionOfType(ReservedOperatorOverrideException.class).isThrownBy(
+                () -> RuntimeBuilder.standardLanguage()
+                        .withModule(module)
+                        .build()
+        );
+    }
+
+    @Test
+    void numericOverrideFlagDoesNotAllowReservedShortCircuitOverrides() {
+        assertThatExceptionOfType(ReservedOperatorOverrideException.class).isThrownBy(
+                () -> RuntimeBuilder.standardLanguage()
+                        .allowNumericOperatorOverrides()
+                        .withOperator(OperatorDef.typed(
+                                "&&",
+                                Bool.class,
+                                Bool.class,
+                                (lhs, rhs) -> PeelValue.bool(true)
+                        ))
+                        .build()
+        );
     }
 }

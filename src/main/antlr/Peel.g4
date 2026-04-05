@@ -80,20 +80,28 @@ block
 
 expr
     : 'if' '(' expr ')' block ('else' 'if' '(' expr ')' block)* ('else' block)?  # ifExpr
-    | expr arguments # functionCallExpr
-    | expr '||' expr       # logicalOrExpr
-    | expr '&&' expr       # logicalAndExpr
-    | expr '==' expr       # eqExpr
-    | expr '^' expr        # xorExpr
     | '!' expr             # notExpr
-    | expr ('*' | '/') expr # mulDivExpr
-    | expr ('+' | '-') expr # addSubExpr
     | '[' expr ? (',' expr)* ','? ']'              # listExpr
-    | expr '?' expr ':' expr # ternaryExpr
+    | '{' (expr ':' expr (',' expr ':' expr)*)? ','? '}' # mapExpr
     | 'fun' parameters block # lambdaExpr
     | '(' expr ')'         # parenExpr
+    | 'True'               # trueExpr
+    | 'False'              # falseExpr
+    | STRING               # stringExpr
+    | DECIMAL              # decimalExpr
+    | INTEGER              # numberExpr
     | IDENT                # varExpr
-    | NUMBER               # numberExpr
+    | expr arguments       # functionCallExpr
+    | expr '[' expr ']'    # selectorExpr
+    | <assoc=right> expr '**' expr # powExpr
+    | '-' expr             # negateExpr
+    | expr ('*' | '/' | '%') expr # mulDivExpr
+    | expr ('+' | '-') expr # addSubExpr
+    | expr ('==' | '!=') expr       # eqExpr
+    | expr '&&' expr       # logicalAndExpr
+    | expr '^' expr        # xorExpr
+    | expr '||' expr       # logicalOrExpr
+    | <assoc=right> expr '?' expr ':' expr # ternaryExpr
     ;
 
 arguments:
@@ -108,8 +116,16 @@ IDENT
     : [a-zA-Z_][a-zA-Z0-9_]*
     ;
 
-NUMBER
-    : [0-9]+ ('.' [0-9]+)?
+DECIMAL
+    : [0-9]+ '.' [0-9]+
+    ;
+
+INTEGER
+    : [0-9]+
+    ;
+
+STRING
+    : '"' ( '\\' ["\\nrt] | ~["\\\r\n] )* '"'
     ;
 
 WS

@@ -29,7 +29,7 @@ class OperatorResolverTest {
         PeelValue value = resolver.resolveAndApply(
                 "!",
                 PeelValue.bool(true),
-                List.of(OperatorDef.typed("!", de.flogehring.peel.core.values.Bool.class, arg -> PeelValue.bool(false)))
+                List.of(OperatorDef.typed("!", de.flogehring.peel.core.values.Bool.class, _ -> PeelValue.bool(false)))
         );
         assertThat(value).isEqualTo(PeelValue.bool(false));
     }
@@ -47,7 +47,7 @@ class OperatorResolverTest {
                 "~",
                 PeelValue.text("a"),
                 PeelValue.text("b"),
-                List.of(OperatorDef.typed("~", Text.class, Text.class, (lhs, rhs) -> PeelValue.text("ok")))
+                List.of(OperatorDef.typed("~", Text.class, Text.class, (_, _) -> PeelValue.text("ok")))
         );
         assertThat(value).isEqualTo(PeelValue.text("ok"));
     }
@@ -59,8 +59,8 @@ class OperatorResolverTest {
                 new Number.Integer(1),
                 new Number.Integer(2),
                 List.of(
-                        OperatorDef.typed("~", Number.class, Number.class, (lhs, rhs) -> PeelValue.text("generic")),
-                        OperatorDef.typed("~", Number.Integer.class, Number.Integer.class, (lhs, rhs) -> PeelValue.text("specific"))
+                        OperatorDef.typed("~", Number.class, Number.class, (_, _) -> PeelValue.text("generic")),
+                        OperatorDef.typed("~", Number.Integer.class, Number.Integer.class, (_, _) -> PeelValue.text("specific"))
                 )
         );
         assertThat(value).isEqualTo(PeelValue.text("specific"));
@@ -74,8 +74,8 @@ class OperatorResolverTest {
                         new Number.Integer(1),
                         new Number.Integer(2),
                         List.of(
-                                OperatorDef.typed("~", Number.class, Number.Integer.class, (lhs, rhs) -> PeelValue.text("a")),
-                                OperatorDef.typed("~", Number.Integer.class, Number.class, (lhs, rhs) -> PeelValue.text("b"))
+                                OperatorDef.typed("~", Number.class, Number.Integer.class, (_, _) -> PeelValue.text("a")),
+                                OperatorDef.typed("~", Number.Integer.class, Number.class, (_, _) -> PeelValue.text("b"))
                         )
                 )
         );
@@ -87,8 +87,8 @@ class OperatorResolverTest {
                 "-",
                 new Number.Integer(5),
                 List.of(
-                        OperatorDef.typed("-", Number.class, arg -> PeelValue.text("generic")),
-                        OperatorDef.typed("-", Number.Integer.class, arg -> PeelValue.text("specific"))
+                        OperatorDef.typed("-", Number.class, _ -> PeelValue.text("generic")),
+                        OperatorDef.typed("-", Number.Integer.class, _ -> PeelValue.text("specific"))
                 )
         );
         assertThat(value).isEqualTo(PeelValue.text("specific"));
@@ -101,8 +101,8 @@ class OperatorResolverTest {
                         "u",
                         new Number.Integer(5),
                         List.of(
-                                OperatorDef.typed("u", Number.class, arg -> PeelValue.text("a")),
-                                OperatorDef.typed("u", Number.class, arg -> PeelValue.text("b"))
+                                OperatorDef.typed("u", Number.class, _ -> PeelValue.text("a")),
+                                OperatorDef.typed("u", Number.class, _ -> PeelValue.text("b"))
                         )
                 )
         );
