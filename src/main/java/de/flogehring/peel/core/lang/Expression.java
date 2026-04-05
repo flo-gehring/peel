@@ -29,6 +29,14 @@ public sealed interface Expression {
     record ListLiteral(List<Expression> elements) implements Expression {
     }
 
+    record MapLiteral(List<Entry> entries) implements Expression {
+        public record Entry(Expression key, Expression value) {
+        }
+    }
+
+    record Selector(Expression target, Expression selector) implements Expression {
+    }
+
     record Literal(PeelValue value) implements Expression {
     }
 

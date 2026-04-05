@@ -1,6 +1,7 @@
 package de.flogehring.peel.run;
 
 import de.flogehring.peel.core.eval.Function;
+import de.flogehring.peel.core.eval.OperatorDef;
 import de.flogehring.peel.core.lang.Expression;
 import de.flogehring.peel.core.values.PeelValue;
 import de.flogehring.peel.run.exceptions.PeelException;
@@ -50,8 +51,8 @@ public class EvaluationEnvironment {
         return getVar(varName.name(), varName.scopeOffset());
     }
 
-    List<Function> getOperator(String operator) {
-        return global.getFunction(operator);
+    List<OperatorDef> getOperator(String operator) {
+        return global.getOperators(operator);
     }
 
     EvaluationEnvironment copy() {

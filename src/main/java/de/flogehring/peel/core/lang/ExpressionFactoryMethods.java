@@ -3,6 +3,8 @@ package de.flogehring.peel.core.lang;
 import de.flogehring.peel.core.values.Number;
 import de.flogehring.peel.core.values.Text;
 
+import java.math.BigDecimal;
+
 public class ExpressionFactoryMethods {
 
     private ExpressionFactoryMethods() {
@@ -16,6 +18,10 @@ public class ExpressionFactoryMethods {
     public static Expression.Literal integer(Integer literal) {
 
         return new Expression.Literal(new Number.Integer(literal));
+    }
+
+    public static Expression.Literal decimal(BigDecimal literal) {
+        return new Expression.Literal(new Number.Decimal(literal));
     }
 
     public static Expression.Literal string(String s) {
