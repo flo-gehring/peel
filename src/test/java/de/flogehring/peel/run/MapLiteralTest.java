@@ -50,7 +50,7 @@ class MapLiteralTest {
                         var m = {1: 10, True: 20, "x": 30};
                         m;
                         """,
-                PeelValue.Collection.peelMap(Map.<Primitives, PeelValue>of(
+                PeelValue.Collection.peelMap(Map.of(
                         PeelValue.integer(1), PeelValue.integer(10),
                         (Primitives) PeelValue.bool(true), PeelValue.integer(20),
                         PeelValue.text("x"), PeelValue.integer(30)

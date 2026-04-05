@@ -3,6 +3,7 @@ package de.flogehring.peel.parse;
 import de.flogehring.peel.core.lang.Expression;
 import de.flogehring.peel.core.lang.Program;
 import de.flogehring.peel.core.values.Number;
+import de.flogehring.peel.core.values.PeelValue;
 import org.junit.jupiter.api.Test;
 
 import java.math.BigDecimal;
@@ -70,6 +71,34 @@ public class PeelGrammarTest {
                         ))
                 )
         );
+    }
+
+    @Test
+    void stringLiteralMapSelector() {
+        Program parse = PeelGrammar.parse("""
+                {
+                    "1": 1,
+                    "2":2
+                }["1"]
+                """);
+        assertThat(parse).isEqualTo(
+                new Program(
+                        new Expression.Block(
+                                List.of(
+                                        new Expression.Selector(
+                                                new Expression.MapLiteral(
+                                                        List.of(
+                                                                new Expression.MapLiteral.Entry(string("1"), new Expression.Literal(PeelValue.integer(1))),
+                                                                new Expression.MapLiteral.Entry(string("2"), new Expression.Literal(PeelValue.integer(2)))
+                                                        )
+                                                ),
+                                                string("1")
+                                        )
+                                )
+                        )
+                )
+        );
+
     }
 
     @Test
