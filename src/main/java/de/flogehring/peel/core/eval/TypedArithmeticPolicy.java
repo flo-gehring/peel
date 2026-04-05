@@ -43,29 +43,29 @@ public abstract class TypedArithmeticPolicy implements ArithmeticPolicy {
 
     private PeelValue dispatch(BinaryOp op, Number lhs, Number rhs) {
         return switch (lhs) {
-            case Number.Integer(var ignoredLhs) -> switch (rhs) {
-                case Number.Integer(var ignoredRhs) -> on(op, (Number.Integer) lhs, (Number.Integer) rhs);
-                case Number.Float(var ignoredRhs) -> on(op, (Number.Integer) lhs, (Number.Float) rhs);
-                case Number.Decimal(var ignoredRhs) -> on(op, (Number.Integer) lhs, (Number.Decimal) rhs);
+            case Number.Integer _ -> switch (rhs) {
+                case Number.Integer _ -> on(op, (Number.Integer) lhs, (Number.Integer) rhs);
+                case Number.Float _ -> on(op, (Number.Integer) lhs, (Number.Float) rhs);
+                case Number.Decimal _ -> on(op, (Number.Integer) lhs, (Number.Decimal) rhs);
             };
-            case Number.Float(var ignoredLhs) -> switch (rhs) {
-                case Number.Integer(var ignoredRhs) -> on(op, (Number.Float) lhs, (Number.Integer) rhs);
-                case Number.Float(var ignoredRhs) -> on(op, (Number.Float) lhs, (Number.Float) rhs);
-                case Number.Decimal(var ignoredRhs) -> on(op, (Number.Float) lhs, (Number.Decimal) rhs);
+            case Number.Float _ -> switch (rhs) {
+                case Number.Integer _ -> on(op, (Number.Float) lhs, (Number.Integer) rhs);
+                case Number.Float _ -> on(op, (Number.Float) lhs, (Number.Float) rhs);
+                case Number.Decimal _ -> on(op, (Number.Float) lhs, (Number.Decimal) rhs);
             };
-            case Number.Decimal(var ignoredLhs) -> switch (rhs) {
-                case Number.Integer(var ignoredRhs) -> on(op, (Number.Decimal) lhs, (Number.Integer) rhs);
-                case Number.Float(var ignoredRhs) -> on(op, (Number.Decimal) lhs, (Number.Float) rhs);
-                case Number.Decimal(var ignoredRhs) -> on(op, (Number.Decimal) lhs, (Number.Decimal) rhs);
+            case Number.Decimal _ -> switch (rhs) {
+                case Number.Integer _ -> on(op, (Number.Decimal) lhs, (Number.Integer) rhs);
+                case Number.Float _ -> on(op, (Number.Decimal) lhs, (Number.Float) rhs);
+                case Number.Decimal _ -> on(op, (Number.Decimal) lhs, (Number.Decimal) rhs);
             };
         };
     }
 
     private PeelValue dispatch(UnaryOp op, Number value) {
         return switch (value) {
-            case Number.Integer(var ignored) -> on(op, (Number.Integer) value);
-            case Number.Float(var ignored) -> on(op, (Number.Float) value);
-            case Number.Decimal(var ignored) -> on(op, (Number.Decimal) value);
+            case Number.Integer _ -> on(op, (Number.Integer) value);
+            case Number.Float _ -> on(op, (Number.Float) value);
+            case Number.Decimal _ -> on(op, (Number.Decimal) value);
         };
     }
 

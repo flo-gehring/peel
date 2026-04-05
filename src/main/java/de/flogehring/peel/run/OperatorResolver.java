@@ -5,7 +5,8 @@ import de.flogehring.peel.core.values.PeelValue;
 import de.flogehring.peel.run.exceptions.AmbiguousOperatorException;
 import de.flogehring.peel.run.exceptions.NoFunctionFoundException;
 
-import java.util.*;
+import java.util.Comparator;
+import java.util.List;
 
 final class OperatorResolver {
 
@@ -44,65 +45,37 @@ final class OperatorResolver {
     }
 
     private List<OperatorDef> getBestMatches(PeelValue argument, List<OperatorDef> matchingCandidates) {
+        PeelValueKind actualKind = PeelValueKind.fromValue(argument);
         int bestScore = matchingCandidates.stream()
-                .mapToInt(candidate -> typeDistance(argument.getClass(), candidate.lhsType()))
+                .mapToInt(candidate -> typeDistance(actualKind, PeelValueKind.fromDeclaredType(candidate.lhsType())))
                 .max()
                 .orElseThrow();
         return matchingCandidates.stream()
-                .filter(candidate -> typeDistance(argument.getClass(), candidate.lhsType()) == bestScore)
+                .filter(candidate -> typeDistance(actualKind, PeelValueKind.fromDeclaredType(candidate.lhsType())) == bestScore)
                 .sorted(Comparator.comparing(def -> def.lhsType().getName()))
                 .toList();
     }
 
     private List<OperatorDef> getBestMatches(PeelValue lhs, PeelValue rhs, List<OperatorDef> matchingCandidates) {
+        PeelValueKind lhsKind = PeelValueKind.fromValue(lhs);
+        PeelValueKind rhsKind = PeelValueKind.fromValue(rhs);
         int bestScore = matchingCandidates.stream()
-                .mapToInt(candidate -> score(candidate, lhs, rhs))
+                .mapToInt(candidate -> score(candidate, lhsKind, rhsKind))
                 .max()
                 .orElseThrow();
         return matchingCandidates.stream()
-                .filter(candidate -> score(candidate, lhs, rhs) == bestScore)
+                .filter(candidate -> score(candidate, lhsKind, rhsKind) == bestScore)
                 .sorted(Comparator.comparing(def -> def.lhsType().getName() + "|" + def.rhsType().getName()))
                 .toList();
     }
 
-    private int score(OperatorDef candidate, PeelValue lhs, PeelValue rhs) {
-        return typeDistance(lhs.getClass(), candidate.lhsType()) + typeDistance(rhs.getClass(), candidate.rhsType());
+    private int score(OperatorDef candidate, PeelValueKind lhs, PeelValueKind rhs) {
+        PeelValueKind declaredLhs = PeelValueKind.fromDeclaredType(candidate.lhsType());
+        PeelValueKind declaredRhs = PeelValueKind.fromDeclaredType(candidate.rhsType());
+        return typeDistance(lhs, declaredLhs) + typeDistance(rhs, declaredRhs);
     }
 
-    private int typeDistance(Class<?> actual, Class<?> declared) {
-        if (!declared.isAssignableFrom(actual)) {
-            return Integer.MIN_VALUE;
-        }
-        if (actual == declared) {
-            return 10_000;
-        }
-        int distance = minTypeDistance(actual, declared);
-        return 10_000 - distance;
-    }
-
-    private int minTypeDistance(Class<?> actual, Class<?> declared) {
-        record Node(Class<?> type, int distance) {
-        }
-
-        ArrayDeque<Node> queue = new ArrayDeque<>();
-        Set<Class<?>> visited = new HashSet<>();
-        queue.add(new Node(actual, 0));
-        while (!queue.isEmpty()) {
-            Node current = queue.removeFirst();
-            if (!visited.add(current.type())) {
-                continue;
-            }
-            if (current.type() == declared) {
-                return current.distance();
-            }
-            Class<?> superClass = current.type().getSuperclass();
-            if (superClass != null) {
-                queue.add(new Node(superClass, current.distance() + 1));
-            }
-            for (Class<?> implementedInterface : current.type().getInterfaces()) {
-                queue.add(new Node(implementedInterface, current.distance() + 1));
-            }
-        }
-        return Integer.MAX_VALUE / 4;
+    private int typeDistance(PeelValueKind actual, PeelValueKind declared) {
+        return declared.distance(actual);
     }
 }

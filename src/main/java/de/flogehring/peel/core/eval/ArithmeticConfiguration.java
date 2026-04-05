@@ -116,9 +116,9 @@ public final class ArithmeticConfiguration {
         public Builder roundOnDivision(RoundingMode mode) {
             Objects.requireNonNull(mode, "mode");
             this.divisionRule = switch (divisionRule) {
-                case DivisionRule.CastInt ignored -> DivisionRule.castInt(mode);
-                case DivisionRule.DecimalResult(var scale, var ignored) -> DivisionRule.decimal(scale, mode);
-                case DivisionRule.KeepFloat ignored -> throw new IllegalStateException(
+                case DivisionRule.CastInt _ -> DivisionRule.castInt(mode);
+                case DivisionRule.DecimalResult(var scale, var _) -> DivisionRule.decimal(scale, mode);
+                case DivisionRule.KeepFloat _ -> throw new IllegalStateException(
                         "roundOnDivision can only be used with castInt or decimal division"
                 );
             };
@@ -130,11 +130,11 @@ public final class ArithmeticConfiguration {
                 throw new IllegalArgumentException("division scale must be >= 0");
             }
             this.divisionRule = switch (divisionRule) {
-                case DivisionRule.DecimalResult(var ignoredScale, var mode) -> DivisionRule.decimal(scale, mode);
-                case DivisionRule.CastInt ignored -> throw new IllegalStateException(
+                case DivisionRule.DecimalResult(var _, var mode) -> DivisionRule.decimal(scale, mode);
+                case DivisionRule.CastInt _ -> throw new IllegalStateException(
                         "divisionScale can only be used with decimal division"
                 );
-                case DivisionRule.KeepFloat ignored -> throw new IllegalStateException(
+                case DivisionRule.KeepFloat _ -> throw new IllegalStateException(
                         "divisionScale can only be used with decimal division"
                 );
             };
@@ -167,7 +167,7 @@ public final class ArithmeticConfiguration {
                         "FLOAT_NAN division by zero policy requires keepFloat division rule"
                 );
             }
-            if (divisionRule instanceof DivisionRule.DecimalResult(var scale, var ignoredMode) && scale < 0) {
+            if (divisionRule instanceof DivisionRule.DecimalResult(var scale, var _) && scale < 0) {
                 throw new IllegalArgumentException("division scale must be >= 0");
             }
         }

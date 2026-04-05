@@ -1,7 +1,7 @@
 package de.flogehring;
 
 import de.flogehring.peel.convenience.RuntimeFactory;
-import de.flogehring.peel.core.eval.Runtime;
+import de.flogehring.peel.core.eval.PeelRuntime;
 import de.flogehring.peel.core.lang.Expression;
 import de.flogehring.peel.core.lang.ExpressionFactoryMethods;
 import de.flogehring.peel.core.lang.Program;
@@ -20,7 +20,7 @@ public class Main {
                 ExpressionFactoryMethods.assign("y", ExpressionFactoryMethods.integer(1)),
                 ExpressionFactoryMethods.expr(ExpressionFactoryMethods.var("x"), "+", ExpressionFactoryMethods.var("y"))
         )));
-        Runtime runtime = RuntimeFactory.defaultLanguage();
+        PeelRuntime runtime = RuntimeFactory.defaultLanguage();
         System.out.println(runtime.run(p));
         Program parse = PeelGrammar.parse("""
                  a = 1 + 2

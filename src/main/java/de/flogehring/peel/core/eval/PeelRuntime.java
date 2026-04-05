@@ -2,7 +2,7 @@ package de.flogehring.peel.core.eval;
 
 import de.flogehring.peel.core.lang.Program;
 
-public interface Runtime {
+public interface PeelRuntime {
 
     EvaluatedProgram run(Program program);
 

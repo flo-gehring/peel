@@ -1,8 +1,8 @@
 package de.flogehring.peel.run;
 
+import de.flogehring.peel.convenience.RuntimeBuilder;
 import de.flogehring.peel.convenience.RuntimeFactory;
 import de.flogehring.peel.core.eval.*;
-import de.flogehring.peel.core.eval.Runtime;
 import de.flogehring.peel.core.lang.Expression;
 import de.flogehring.peel.core.lang.ExpressionFactoryMethods;
 import de.flogehring.peel.core.lang.Program;
@@ -26,10 +26,6 @@ import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
 
 public class SimpleRuntimeTest {
 
-    private static SimpleRuntime newMutableRuntime() {
-        return (SimpleRuntime) RuntimeFactory.defaultLanguage();
-    }
-
     @Test
     void simple() {
         Program p = new Program(
@@ -42,7 +38,7 @@ public class SimpleRuntimeTest {
                                 ExpressionFactoryMethods.var("y", 0)
                         )
                 )));
-        Runtime runtime = RuntimeFactory.defaultLanguage();
+        PeelRuntime runtime = RuntimeFactory.defaultLanguage();
         PeelValue value = runtime.run(p).getLastExpression().value();
         Assertions.assertEquals(PeelValue.integer(2), value);
     }
@@ -54,66 +50,69 @@ public class SimpleRuntimeTest {
                 ExpressionFactoryMethods.assign("y", ExpressionFactoryMethods.string("1"), 0),
                 ExpressionFactoryMethods.expr(ExpressionFactoryMethods.var("x", 0), "+", ExpressionFactoryMethods.var("y", 0))
         ));
-        Runtime runtime = RuntimeFactory.defaultLanguage();
+        PeelRuntime runtime = RuntimeFactory.defaultLanguage();
         PeelValue value = runtime.run(p).getLastExpression().value();
         Assertions.assertEquals(text("11"), value);
     }
 
     @Test
-    void registerVariables() {
+    void registerVariablesViaBuilder() {
         Program p = new Program(List.of(
                 ExpressionFactoryMethods.expr(ExpressionFactoryMethods.var("x"), "+", ExpressionFactoryMethods.var("y"))
         ));
-        SimpleRuntime runtime = newMutableRuntime();
-        runtime.register(getVariable("x", "1"));
-        runtime.register(getVariable("y", "2"));
+        PeelRuntime runtime = RuntimeBuilder.standardLanguage()
+                .withVariable(getVariable("x", "1"))
+                .withVariable(getVariable("y", "2"))
+                .build();
         PeelValue value = runtime.run(p).getLastExpression().value();
         Assertions.assertEquals(text("12"), value);
     }
 
     @Test
-    void registerOperator() {
-        SimpleRuntime runtime = newMutableRuntime();
-        runtime.register(OperatorDef.typed(
-                "µ",
-                Text.class,
-                Number.Integer.class,
-                (lhs, rhs) -> new Text(((Text) lhs).value().repeat(((Number.Integer) rhs).value()))
-        ));
+    void registerOperatorViaBuilder() {
+        PeelRuntime runtime = RuntimeBuilder.standardLanguage()
+                .withOperator(OperatorDef.typed(
+                        "µ",
+                        Text.class,
+                        Number.Integer.class,
+                        (lhs, rhs) -> new Text(((Text) lhs).value().repeat(((Number.Integer) rhs).value()))
+                ))
+                .withVariable(getVariable("x", "Echo!"))
+                .withVariable(integerVariable("y", 2))
+                .build();
+
         Program p = new Program(List.of(
                 ExpressionFactoryMethods.expr(ExpressionFactoryMethods.var("x"), "µ", ExpressionFactoryMethods.var("y"))
         ));
-        runtime.register(getVariable("x", "Echo!"));
-        runtime.register(integerVariable("y", 2));
+
         assertThat(runtime.run(p).getLastExpression().value()).isEqualTo(text("Echo!Echo!"));
     }
 
     @Test
     void binaryFunctionIsNotImplicitOperator() {
-        SimpleRuntime runtime = newMutableRuntime();
-        runtime.register(new Function() {
-            @Override
-            public String name() {
-                return "µ";
-            }
+        PeelRuntime runtime = RuntimeBuilder.standardLanguage()
+                .withFunction(new Function() {
+                    @Override
+                    public String name() {
+                        return "µ";
+                    }
 
-            @Override
-            public int arity() {
-                return 2;
-            }
+                    @Override
+                    public int arity() {
+                        return 2;
+                    }
 
-            @Override
-            public PeelValue run(EvaluatedExpression... arguments) {
-                EvaluatedExpression argumentLhs = arguments[0];
-                EvaluatedExpression argumentRhs = arguments[1];
-                String lhs = ((Text) argumentLhs.value()).value();
-                int rhs = ((Number.Integer) argumentRhs.value()).value();
-                return new Text(lhs.repeat(rhs));
-            }
-        });
+                    @Override
+                    public PeelValue run(EvaluatedExpression... arguments) {
+                        String lhs = ((Text) arguments[0].value()).value();
+                        int rhs = ((Number.Integer) arguments[1].value()).value();
+                        return new Text(lhs.repeat(rhs));
+                    }
+                })
+                .withVariable(getVariable("x", "Echo!"))
+                .withVariable(integerVariable("y", 2))
+                .build();
 
-        runtime.register(getVariable("x", "Echo!"));
-        runtime.register(integerVariable("y", 2));
         Program p = new Program(List.of(
                 ExpressionFactoryMethods.expr(ExpressionFactoryMethods.var("x"), "µ", ExpressionFactoryMethods.var("y"))
         ));
@@ -136,30 +135,30 @@ public class SimpleRuntimeTest {
     }
 
     @Test
-    void multipleOperatorDefinitions() {
-        SimpleRuntime runtime = newMutableRuntime();
-        runtime.register(new Function() {
-            @Override
-            public String name() {
-                return "+";
-            }
+    void functionNamedLikeOperatorDoesNotAffectOperatorResolution() {
+        PeelRuntime runtime = RuntimeBuilder.standardLanguage()
+                .withFunction(new Function() {
+                    @Override
+                    public String name() {
+                        return "+";
+                    }
 
-            @Override
-            public int arity() {
-                return 2;
-            }
+                    @Override
+                    public int arity() {
+                        return 2;
+                    }
 
-            @Override
-            public PeelValue run(EvaluatedExpression... arguments) {
-                EvaluatedExpression argumentLhs = arguments[0];
-                EvaluatedExpression argumentRhs = arguments[1];
-                Number.Integer lhs = (Number.Integer) argumentLhs.value();
-                Number.Integer rhs = (Number.Integer) argumentRhs.value();
-                return new Number.Integer(lhs.numberValue().add(rhs.numberValue()).intValue());
-            }
-        });
-        runtime.register(integerVariable("y", 2));
-        runtime.register(integerVariable("x", 1));
+                    @Override
+                    public PeelValue run(EvaluatedExpression... arguments) {
+                        Number.Integer lhs = (Number.Integer) arguments[0].value();
+                        Number.Integer rhs = (Number.Integer) arguments[1].value();
+                        return new Number.Integer(lhs.numberValue().add(rhs.numberValue()).intValue());
+                    }
+                })
+                .withVariable(integerVariable("y", 2))
+                .withVariable(integerVariable("x", 1))
+                .build();
+
         Program p = new Program(List.of(
                 ExpressionFactoryMethods.expr(ExpressionFactoryMethods.var("x"), "+", ExpressionFactoryMethods.var("y"))
         ));
@@ -168,21 +167,22 @@ public class SimpleRuntimeTest {
 
     @Test
     void ambiguousTypedOperatorDefinitions() {
-        SimpleRuntime runtime = newMutableRuntime();
-        runtime.register(OperatorDef.typed(
-                "~",
-                PeelValue.class,
-                PeelValue.class,
-                (lhs, rhs) -> text("a")
-        ));
-        runtime.register(OperatorDef.typed(
-                "~",
-                PeelValue.class,
-                PeelValue.class,
-                (lhs, rhs) -> text("b")
-        ));
-        runtime.register(integerVariable("x", 1));
-        runtime.register(integerVariable("y", 2));
+        PeelRuntime runtime = RuntimeBuilder.standardLanguage()
+                .withOperator(OperatorDef.typed(
+                        "~",
+                        PeelValue.class,
+                        PeelValue.class,
+                        (lhs, rhs) -> text("a")
+                ))
+                .withOperator(OperatorDef.typed(
+                        "~",
+                        PeelValue.class,
+                        PeelValue.class,
+                        (lhs, rhs) -> text("b")
+                ))
+                .withVariable(integerVariable("x", 1))
+                .withVariable(integerVariable("y", 2))
+                .build();
         Program p = new Program(List.of(
                 ExpressionFactoryMethods.expr(ExpressionFactoryMethods.var("x"), "~", ExpressionFactoryMethods.var("y"))
         ));
@@ -193,7 +193,7 @@ public class SimpleRuntimeTest {
 
     @Test
     void noFunctionDefinitions() {
-        Runtime runtime = RuntimeFactory.defaultLanguage();
+        PeelRuntime runtime = RuntimeFactory.defaultLanguage();
         Program p = new Program(List.of(
                 ExpressionFactoryMethods.expr(ExpressionFactoryMethods.var("x"), "+", ExpressionFactoryMethods.var("y"))
         ));
@@ -210,7 +210,7 @@ public class SimpleRuntimeTest {
 
     @Test
     void requestBindingsAreAvailablePerRun() {
-        Runtime runtime = RuntimeFactory.defaultLanguage();
+        PeelRuntime runtime = RuntimeFactory.defaultLanguage();
         Program program = new Program(List.of(
                 ExpressionFactoryMethods.expr(ExpressionFactoryMethods.var("x"), "+", ExpressionFactoryMethods.var("y"))
         ));
@@ -228,7 +228,7 @@ public class SimpleRuntimeTest {
 
     @Test
     void requestBindingsDoNotLeakAcrossRuns() {
-        Runtime runtime = RuntimeFactory.defaultLanguage();
+        PeelRuntime runtime = RuntimeFactory.defaultLanguage();
         Program program = new Program(List.of(
                 ExpressionFactoryMethods.var("x")
         ));
@@ -243,9 +243,23 @@ public class SimpleRuntimeTest {
     }
 
     @Test
+    void requestBindingsRemainRequiredInSubsequentRuns() {
+        PeelRuntime runtime = RuntimeBuilder.standardLanguage()
+                .withVariable(Variable.of("global", text("g")))
+                .build();
+        Program program = new Program(List.of(ExpressionFactoryMethods.var("x")));
+
+        EvaluatedProgram first = runtime.run(program, RequestBindings.of(Variable.of("x", text("present"))));
+        assertThat(first.getLastExpression().value()).isEqualTo(text("present"));
+
+        assertThatExceptionOfType(UndefinedVarException.class).isThrownBy(() -> runtime.run(program));
+    }
+
+    @Test
     void requestBindingConflictingWithGlobalVariableThrows() {
-        SimpleRuntime runtime = newMutableRuntime();
-        runtime.register(Variable.of("userId", text("global-user")));
+        PeelRuntime runtime = RuntimeBuilder.standardLanguage()
+                .withVariable(Variable.of("userId", text("global-user")))
+                .build();
         Program program = new Program(List.of(ExpressionFactoryMethods.var("userId")));
 
         assertThatExceptionOfType(DuplicateRequestBindingException.class).isThrownBy(
@@ -256,38 +270,11 @@ public class SimpleRuntimeTest {
         );
     }
 
-
-    private static Variable integerVariable(
-            String name,
-            int value
-    ) {
-        return new Variable() {
-            @Override
-            public String name() {
-                return name;
-            }
-
-            @Override
-            public PeelValue value() {
-                return integer(value);
-            }
-        };
+    private static Variable integerVariable(String name, int value) {
+        return Variable.of(name, integer(value));
     }
 
-    private static Variable getVariable(
-            final String name,
-            final String value
-    ) {
-        return new Variable() {
-            @Override
-            public String name() {
-                return name;
-            }
-
-            @Override
-            public PeelValue value() {
-                return new Text(value);
-            }
-        };
+    private static Variable getVariable(final String name, final String value) {
+        return Variable.of(name, new Text(value));
     }
 }

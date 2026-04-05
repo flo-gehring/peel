@@ -1,47 +1,27 @@
 package de.flogehring.peel.run;
 
-import de.flogehring.peel.core.eval.*;
-import de.flogehring.peel.core.eval.Runtime;
+import de.flogehring.peel.core.eval.EvaluatedExpression;
+import de.flogehring.peel.core.eval.EvaluatedProgram;
+import de.flogehring.peel.core.eval.PeelRuntime;
+import de.flogehring.peel.core.eval.RequestBindings;
 import de.flogehring.peel.core.lang.Program;
 import de.flogehring.peel.core.values.PeelValue;
 import de.flogehring.peel.run.exceptions.DuplicateRequestBindingException;
-import de.flogehring.peel.run.exceptions.NumericOperatorOverrideException;
 
 import java.util.ArrayList;
 import java.util.Map;
 import java.util.Optional;
 
-public class SimpleRuntime implements Runtime {
+public class SimpleRuntime implements PeelRuntime {
 
     private final Scope global;
-    private final boolean allowNumericOperatorOverrides;
 
-    public static SimpleRuntime empty() {
-        return new SimpleRuntime(Scope.empty(), false);
-    }
-
-    public static SimpleRuntime empty(boolean allowNumericOperatorOverrides) {
-        return new SimpleRuntime(Scope.empty(), allowNumericOperatorOverrides);
-    }
-
-    private SimpleRuntime(Scope global, boolean allowNumericOperatorOverrides) {
+    private SimpleRuntime(Scope global) {
         this.global = global;
-        this.allowNumericOperatorOverrides = allowNumericOperatorOverrides;
     }
 
-    public void register(Variable v) {
-        global.register(v);
-    }
-
-    public void register(Function f) {
-        global.register(f);
-    }
-
-    public void register(OperatorDef operatorDef) {
-        if (operatorDef.acceptsNumericPair() && !allowNumericOperatorOverrides && !operatorDef.isArithmeticManaged()) {
-            throw new NumericOperatorOverrideException(operatorDef.symbol());
-        }
-        global.register(operatorDef);
+    public static PeelRuntime fromGlobalScope(Scope global) {
+        return new SimpleRuntime(global.copy());
     }
 
     @Override

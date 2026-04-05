@@ -4,7 +4,6 @@ import de.flogehring.peel.core.eval.ArithmeticConfiguration;
 import de.flogehring.peel.core.eval.ArithmeticPolicy;
 import de.flogehring.peel.core.eval.OperatorDef;
 import de.flogehring.peel.core.values.Number;
-import de.flogehring.peel.run.SimpleRuntime;
 
 import java.util.List;
 
@@ -29,8 +28,8 @@ public final class ArithmeticPolicies {
         return ArithmeticConfiguration.init();
     }
 
-    public static void registerOperators(SimpleRuntime runtime, ArithmeticPolicy policy) {
-        List<OperatorDef> operators = List.of(
+    public static List<OperatorDef> operatorDefinitions(ArithmeticPolicy policy) {
+        return List.of(
                 OperatorDef.arithmeticManaged(
                         "+",
                         Number.class,
@@ -61,6 +60,5 @@ public final class ArithmeticPolicies {
                         value -> policy.negate((Number) value)
                 )
         );
-        operators.forEach(runtime::register);
     }
 }

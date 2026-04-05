@@ -30,6 +30,18 @@ public class Scope {
         return new Scope(new HashMap<>(), new HashMap<>(), new HashMap<>());
     }
 
+    public static Scope from(
+            List<Variable> variables,
+            List<Function> functions,
+            List<OperatorDef> operators
+    ) {
+        Scope scope = empty();
+        variables.forEach(scope::register);
+        functions.forEach(scope::register);
+        operators.forEach(scope::register);
+        return scope;
+    }
+
     public Scope copy() {
         HashMap<String, PeelValue> variableCopy = new HashMap<>(variables);
         HashMap<String, List<Function>> functionCopy = new HashMap<>();

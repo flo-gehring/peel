@@ -2,7 +2,7 @@ package de.flogehring.peel.run;
 
 import de.flogehring.peel.convenience.RuntimeFactory;
 import de.flogehring.peel.core.eval.EvaluatedProgram;
-import de.flogehring.peel.core.eval.Runtime;
+import de.flogehring.peel.core.eval.PeelRuntime;
 import de.flogehring.peel.core.lang.Program;
 import de.flogehring.peel.core.values.None;
 import de.flogehring.peel.core.values.Number;
@@ -24,7 +24,7 @@ public class IfExpressionTest {
 
         @Test
         void numberComparison() {
-            Runtime simpleRuntime = RuntimeFactory.defaultLanguage();
+            PeelRuntime simpleRuntime = RuntimeFactory.defaultLanguage();
             Program parse = PeelGrammar.parse(
                     """
                             if(0 == 1) {
@@ -40,7 +40,7 @@ public class IfExpressionTest {
 
         @Test
         void varComparison() {
-            Runtime simpleRuntime = RuntimeFactory.defaultLanguage();
+            PeelRuntime simpleRuntime = RuntimeFactory.defaultLanguage();
             Program parse = PeelGrammar.parse(
                     """
                             var x = 1;
@@ -120,7 +120,7 @@ public class IfExpressionTest {
                             var x = 1;
                         }
                     """);
-            Runtime runtime = RuntimeFactory.defaultLanguage();
+            PeelRuntime runtime = RuntimeFactory.defaultLanguage();
             assertThatExceptionOfType(PeelException.class)
                     .isThrownBy(() -> runtime.run(program))
                     .withMessageContaining("condition must be Bool");

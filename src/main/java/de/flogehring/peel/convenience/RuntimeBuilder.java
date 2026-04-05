@@ -1,8 +1,9 @@
 package de.flogehring.peel.convenience;
 
 import de.flogehring.peel.core.eval.*;
-import de.flogehring.peel.core.eval.Runtime;
+import de.flogehring.peel.run.Scope;
 import de.flogehring.peel.run.SimpleRuntime;
+import de.flogehring.peel.run.exceptions.NumericOperatorOverrideException;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -62,18 +63,38 @@ public final class RuntimeBuilder {
         return this;
     }
 
-    public Runtime build() {
+    public PeelRuntime build() {
         ArithmeticPolicy resolvedPolicy = arithmeticPolicy == null ? ArithmeticPolicies.standard() : arithmeticPolicy;
-        SimpleRuntime runtime = SimpleRuntime.empty(allowNumericOperatorOverrides);
-        ArithmeticPolicies.registerOperators(runtime, resolvedPolicy);
+        List<Variable> allVariables = new ArrayList<>();
+        List<Function> allFunctions = new ArrayList<>();
+        List<OperatorDef> allOperators = new ArrayList<>();
+
         modules.forEach(module -> {
-            module.variables().forEach(runtime::register);
-            module.functions().forEach(runtime::register);
-            module.operators().forEach(runtime::register);
+            allVariables.addAll(module.variables());
+            allFunctions.addAll(module.functions());
+            allOperators.addAll(module.operators());
         });
-        variables.forEach(runtime::register);
-        functions.forEach(runtime::register);
-        operators.forEach(runtime::register);
-        return runtime;
+
+        allVariables.addAll(variables);
+        allFunctions.addAll(functions);
+
+        allOperators.addAll(ArithmeticPolicies.operatorDefinitions(resolvedPolicy));
+        allOperators.addAll(operators);
+        validateOperatorOverrides(allOperators);
+
+        Scope globalScope = Scope.from(allVariables, allFunctions, allOperators);
+        return SimpleRuntime.fromGlobalScope(globalScope);
+    }
+
+    private void validateOperatorOverrides(List<OperatorDef> operatorDefs) {
+        if (allowNumericOperatorOverrides) {
+            return;
+        }
+        operatorDefs.stream()
+                .filter(def -> def.acceptsNumericPair() && !def.isArithmeticManaged())
+                .findFirst()
+                .ifPresent(def -> {
+                    throw new NumericOperatorOverrideException(def.symbol());
+                });
     }
 }

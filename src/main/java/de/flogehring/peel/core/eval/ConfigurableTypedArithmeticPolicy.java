@@ -115,7 +115,7 @@ public final class ConfigurableTypedArithmeticPolicy extends TypedArithmeticPoli
             };
         }
         return switch (configuration.divisionRule()) {
-            case ArithmeticConfiguration.DivisionRule.KeepFloat ignored ->
+            case ArithmeticConfiguration.DivisionRule.KeepFloat _ ->
                     new Number.Float(floatValue(lhs) / floatValue(rhs));
             case ArithmeticConfiguration.DivisionRule.CastInt(var roundingMode) -> {
                 BigDecimal quotient = decimalValue(lhs).divide(decimalValue(rhs), DIVISION_CONTEXT);
@@ -210,9 +210,9 @@ public final class ConfigurableTypedArithmeticPolicy extends TypedArithmeticPoli
 
     private NumericKind kindOf(Number value) {
         return switch (value) {
-            case Number.Integer ignored -> NumericKind.INTEGER;
-            case Number.Float ignored -> NumericKind.FLOAT;
-            case Number.Decimal ignored ->
+            case Number.Integer _ -> NumericKind.INTEGER;
+            case Number.Float _ -> NumericKind.FLOAT;
+            case Number.Decimal _ ->
                     configuration.decimalBackend() == ArithmeticConfiguration.DecimalBackend.FLOAT
                             ? NumericKind.FLOAT
                             : NumericKind.DECIMAL;
