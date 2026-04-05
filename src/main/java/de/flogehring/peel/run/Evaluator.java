@@ -2,6 +2,7 @@ package de.flogehring.peel.run;
 
 import de.flogehring.peel.core.eval.EvaluatedExpression;
 import de.flogehring.peel.core.eval.Function;
+import de.flogehring.peel.core.eval.OperatorDef;
 import de.flogehring.peel.core.lang.Expression;
 import de.flogehring.peel.core.values.*;
 import de.flogehring.peel.run.exceptions.MultipleFunctionsFoundException;
@@ -11,7 +12,6 @@ import lombok.extern.java.Log;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Objects;
 import java.util.Optional;
 
 import static de.flogehring.peel.core.values.PeelValue.Collection.peelList;
@@ -20,9 +20,11 @@ import static de.flogehring.peel.core.values.PeelValue.Collection.peelList;
 public class Evaluator {
 
     private EvaluationEnvironment environment;
+    private final OperatorResolver operatorResolver;
 
     public Evaluator(EvaluationEnvironment environment) {
         this.environment = environment;
+        this.operatorResolver = new OperatorResolver();
     }
 
     EvaluatedExpression evaluate(Expression expression) {
@@ -173,13 +175,12 @@ public class Evaluator {
     }
 
     private EvaluatedExpression evaluateUnary(String operator, Expression argument) {
-        if (!Objects.equals(operator, "!")) {
-            throw new PeelException("Currently only the Unary-Not is supported");
-        }
         EvaluatedExpression expression = evaluateExpr(argument);
+        List<OperatorDef> candidates = environment.getOperator(operator);
+        PeelValue value = operatorResolver.resolveAndApply(operator, expression.value(), candidates);
         return new EvaluatedExpression.UnaryPrefixOperator(
                 operator,
-                PeelValue.bool(!requireBool(expression)),
+                value,
                 expression
         );
     }
@@ -280,19 +281,13 @@ public class Evaluator {
     }
 
     private EvaluatedExpression evaluateOperator(Expression.BinaryOperator operator) {
-        // TODO add Special Support for Operators
-        List<Function> matchingName = environment.getOperator(operator.operator());
-        List<Expression> parameters = List.of(operator.lhs(), operator.rhs());
-        Function f = requireOneFunction(
-                matchingName,
-                getNoFunctionFoundException(operator.operator(), parameters),
-                getMultipleFunctionsFoundException(operator.operator(), matchingName)
-        );
         EvaluatedExpression lhs = evaluateExpr(operator.lhs());
         EvaluatedExpression rhs = evaluateExpr(operator.rhs());
+        List<OperatorDef> candidates = environment.getOperator(operator.operator());
+        PeelValue value = operatorResolver.resolveAndApply(operator.operator(), lhs.value(), rhs.value(), candidates);
         return new EvaluatedExpression.FunctionCall(
                 operator.operator(),
-                f.run(lhs, rhs),
+                value,
                 List.of(lhs, rhs)
         );
     }
