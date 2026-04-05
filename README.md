@@ -33,7 +33,7 @@ to documents for customers or regulators.
 - ✅ Control flow (if/else, loops)
 - ✅ Lexical scoping
 - ✅ First-class functions
-- 🚧 Extensible runtime architecture
+- ✅ Extensible runtime architecture
 - 🚧 JSON output format
 
 See [`docs/product/`](docs/product/) for detailed epic planning.
