@@ -6,6 +6,7 @@ import de.flogehring.peel.core.eval.RuntimeModule;
 import de.flogehring.peel.core.eval.Variable;
 import de.flogehring.peel.core.lang.ExpressionFactoryMethods;
 import de.flogehring.peel.core.lang.Program;
+import de.flogehring.peel.core.trace.TraceValueMapper;
 import de.flogehring.peel.core.values.Bool;
 import de.flogehring.peel.core.values.Number;
 import de.flogehring.peel.core.values.PeelValue;
@@ -42,7 +43,7 @@ class RuntimeBuilderTest {
                 ExpressionFactoryMethods.expr(ExpressionFactoryMethods.var("x"), "~", ExpressionFactoryMethods.var("y"))
         ));
 
-        assertThat(runtime.run(p).getLastExpression().value()).isEqualTo(PeelValue.text("ab"));
+        assertThat(runtime.run(p).result()).isEqualTo(TraceValueMapper.fromPeelValue(PeelValue.text("ab")));
     }
 
     @Test
@@ -77,7 +78,7 @@ class RuntimeBuilderTest {
                 ExpressionFactoryMethods.expr(ExpressionFactoryMethods.var("x"), "~", ExpressionFactoryMethods.var("y"))
         ));
 
-        assertThat(runtime.run(p).getLastExpression().value()).isEqualTo(PeelValue.integer(999));
+        assertThat(runtime.run(p).result()).isEqualTo(TraceValueMapper.fromPeelValue(PeelValue.integer(999)));
     }
 
     @Test

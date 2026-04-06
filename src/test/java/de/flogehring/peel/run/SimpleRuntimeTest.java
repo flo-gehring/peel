@@ -6,6 +6,8 @@ import de.flogehring.peel.core.eval.*;
 import de.flogehring.peel.core.lang.Expression;
 import de.flogehring.peel.core.lang.ExpressionFactoryMethods;
 import de.flogehring.peel.core.lang.Program;
+import de.flogehring.peel.core.trace.TraceProgram;
+import de.flogehring.peel.core.trace.TraceValueMapper;
 import de.flogehring.peel.core.values.Bool;
 import de.flogehring.peel.core.values.Number;
 import de.flogehring.peel.core.values.PeelValue;
@@ -39,8 +41,7 @@ public class SimpleRuntimeTest {
                         )
                 )));
         PeelRuntime runtime = RuntimeFactory.defaultLanguage();
-        PeelValue value = runtime.run(p).getLastExpression().value();
-        Assertions.assertEquals(PeelValue.integer(2), value);
+        Assertions.assertEquals(TraceValueMapper.fromPeelValue(PeelValue.integer(2)), runtime.run(p).result());
     }
 
     @Test
@@ -51,8 +52,7 @@ public class SimpleRuntimeTest {
                 ExpressionFactoryMethods.expr(ExpressionFactoryMethods.var("x", 0), "+", ExpressionFactoryMethods.var("y", 0))
         ));
         PeelRuntime runtime = RuntimeFactory.defaultLanguage();
-        PeelValue value = runtime.run(p).getLastExpression().value();
-        Assertions.assertEquals(text("11"), value);
+        Assertions.assertEquals(TraceValueMapper.fromPeelValue(text("11")), runtime.run(p).result());
     }
 
     @Test
@@ -64,8 +64,7 @@ public class SimpleRuntimeTest {
                 .withVariable(getVariable("x", "1"))
                 .withVariable(getVariable("y", "2"))
                 .build();
-        PeelValue value = runtime.run(p).getLastExpression().value();
-        Assertions.assertEquals(text("12"), value);
+        Assertions.assertEquals(TraceValueMapper.fromPeelValue(text("12")), runtime.run(p).result());
     }
 
     @Test
@@ -85,7 +84,7 @@ public class SimpleRuntimeTest {
                 ExpressionFactoryMethods.expr(ExpressionFactoryMethods.var("x"), "µ", ExpressionFactoryMethods.var("y"))
         ));
 
-        assertThat(runtime.run(p).getLastExpression().value()).isEqualTo(text("Echo!Echo!"));
+        assertThat(runtime.run(p).result()).isEqualTo(TraceValueMapper.fromPeelValue(text("Echo!Echo!")));
     }
 
     @Test
@@ -103,9 +102,9 @@ public class SimpleRuntimeTest {
                     }
 
                     @Override
-                    public PeelValue run(EvaluatedExpression... arguments) {
-                        String lhs = ((Text) arguments[0].value()).value();
-                        int rhs = ((Number.Integer) arguments[1].value()).value();
+                    public PeelValue run(PeelValue... arguments) {
+                        String lhs = ((Text) arguments[0]).value();
+                        int rhs = ((Number.Integer) arguments[1]).value();
                         return new Text(lhs.repeat(rhs));
                     }
                 })
@@ -129,9 +128,8 @@ public class SimpleRuntimeTest {
                                 new Expression.Literal(new Text("l"))
                         )))
         );
-        EvaluatedProgram evaluatedProgram = RuntimeFactory.defaultLanguage().run(p);
-        PeelValue value = evaluatedProgram.getLastExpression().value();
-        assertThat(value).isEqualTo(integer(2));
+        TraceProgram evaluatedProgram = RuntimeFactory.defaultLanguage().run(p);
+        assertThat(evaluatedProgram.result()).isEqualTo(TraceValueMapper.fromPeelValue(integer(2)));
     }
 
     @Test
@@ -149,9 +147,9 @@ public class SimpleRuntimeTest {
                     }
 
                     @Override
-                    public PeelValue run(EvaluatedExpression... arguments) {
-                        Number.Integer lhs = (Number.Integer) arguments[0].value();
-                        Number.Integer rhs = (Number.Integer) arguments[1].value();
+                    public PeelValue run(PeelValue... arguments) {
+                        Number.Integer lhs = (Number.Integer) arguments[0];
+                        Number.Integer rhs = (Number.Integer) arguments[1];
                         return new Number.Integer(lhs.numberValue().add(rhs.numberValue()).intValue());
                     }
                 })
@@ -162,7 +160,7 @@ public class SimpleRuntimeTest {
         Program p = new Program(List.of(
                 ExpressionFactoryMethods.expr(ExpressionFactoryMethods.var("x"), "+", ExpressionFactoryMethods.var("y"))
         ));
-        assertThat(runtime.run(p).getLastExpression().value()).isEqualTo(integer(3));
+        assertThat(runtime.run(p).result()).isEqualTo(TraceValueMapper.fromPeelValue(integer(3)));
     }
 
     @Test
@@ -215,7 +213,7 @@ public class SimpleRuntimeTest {
                 ExpressionFactoryMethods.expr(ExpressionFactoryMethods.var("x"), "+", ExpressionFactoryMethods.var("y"))
         ));
 
-        EvaluatedProgram run = runtime.run(
+        TraceProgram run = runtime.run(
                 program,
                 RequestBindings.of(
                         Variable.of("x", text("hello")),
@@ -223,7 +221,7 @@ public class SimpleRuntimeTest {
                 )
         );
 
-        assertThat(run.getLastExpression().value()).isEqualTo(text("helloworld"));
+        assertThat(run.result()).isEqualTo(TraceValueMapper.fromPeelValue(text("helloworld")));
     }
 
     @Test
@@ -233,11 +231,11 @@ public class SimpleRuntimeTest {
                 ExpressionFactoryMethods.var("x")
         ));
 
-        EvaluatedProgram first = runtime.run(
+        TraceProgram first = runtime.run(
                 program,
                 RequestBindings.of(Variable.of("x", text("first")))
         );
-        assertThat(first.getLastExpression().value()).isEqualTo(text("first"));
+        assertThat(first.result()).isEqualTo(TraceValueMapper.fromPeelValue(text("first")));
 
         assertThatExceptionOfType(UndefinedVarException.class).isThrownBy(() -> runtime.run(program));
     }
@@ -249,8 +247,8 @@ public class SimpleRuntimeTest {
                 .build();
         Program program = new Program(List.of(ExpressionFactoryMethods.var("x")));
 
-        EvaluatedProgram first = runtime.run(program, RequestBindings.of(Variable.of("x", text("present"))));
-        assertThat(first.getLastExpression().value()).isEqualTo(text("present"));
+        TraceProgram first = runtime.run(program, RequestBindings.of(Variable.of("x", text("present"))));
+        assertThat(first.result()).isEqualTo(TraceValueMapper.fromPeelValue(text("present")));
 
         assertThatExceptionOfType(UndefinedVarException.class).isThrownBy(() -> runtime.run(program));
     }
@@ -309,7 +307,7 @@ public class SimpleRuntimeTest {
         ));
 
         PeelRuntime runtime = RuntimeFactory.defaultLanguage();
-        assertThat(runtime.run(program).getLastExpression().value()).isEqualTo(PeelValue.bool(true));
+        assertThat(runtime.run(program).result()).isEqualTo(TraceValueMapper.fromPeelValue(PeelValue.bool(true)));
     }
 
     private static Variable integerVariable(String name, int value) {

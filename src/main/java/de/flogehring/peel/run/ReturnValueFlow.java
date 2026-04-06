@@ -1,14 +1,14 @@
 package de.flogehring.peel.run;
 
-import de.flogehring.peel.core.eval.EvaluatedExpression;
+import de.flogehring.peel.core.values.PeelValue;
 import lombok.Getter;
 
 public class ReturnValueFlow extends RuntimeException {
     @Getter
-    private final EvaluatedExpression expr;
+    private final PeelValue value;
 
-    public ReturnValueFlow(EvaluatedExpression expression) {
+    public ReturnValueFlow(PeelValue value) {
         super("");
-        expr = expression;
+        this.value = value;
     }
 }

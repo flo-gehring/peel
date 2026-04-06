@@ -1,9 +1,9 @@
 package de.flogehring.peel.run;
 
 import de.flogehring.peel.convenience.RuntimeFactory;
-import de.flogehring.peel.core.eval.EvaluatedProgram;
 import de.flogehring.peel.core.eval.PeelRuntime;
 import de.flogehring.peel.core.lang.Program;
+import de.flogehring.peel.core.trace.TraceProgram;
 import de.flogehring.peel.core.values.PeelValue;
 import de.flogehring.peel.parse.PeelGrammar;
 
@@ -18,8 +18,8 @@ public class TestHelpers {
     public static void runProgrammAndExpect(String text, PeelValue expected) {
         Program program = PeelGrammar.parse(text);
         PeelRuntime runtime = RuntimeFactory.defaultLanguage();
-        EvaluatedProgram evaluated = runtime.run(program);
-        assertThat(evaluated.getLastExpression().value()).isEqualTo(expected);
+        TraceProgram trace = runtime.run(program);
+        assertThat(de.flogehring.peel.core.trace.TraceValueMapper.toPeelValue(trace.result())).isEqualTo(expected);
     }
 
     public static void expectErrorOnRun(

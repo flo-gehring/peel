@@ -2,10 +2,11 @@ package de.flogehring.peel.run;
 
 import de.flogehring.peel.convenience.RuntimeBuilder;
 import de.flogehring.peel.core.eval.ArithmeticPolicy;
-import de.flogehring.peel.core.eval.EvaluatedProgram;
 import de.flogehring.peel.core.eval.OperatorDef;
 import de.flogehring.peel.core.eval.PeelRuntime;
 import de.flogehring.peel.core.lang.Program;
+import de.flogehring.peel.core.trace.TraceProgram;
+import de.flogehring.peel.core.trace.TraceValueMapper;
 import de.flogehring.peel.core.values.Number;
 import de.flogehring.peel.core.values.PeelValue;
 import de.flogehring.peel.core.values.Text;
@@ -26,11 +27,11 @@ public class ExtensibilityTest {
 
     private static void runProgrammAndExpect(PeelRuntime runtime, String text, PeelValue expected) {
         Program program = PeelGrammar.parse(text);
-        EvaluatedProgram evaluated = runtime.run(program);
-        assertThat(evaluated.getLastExpression().value()).isEqualTo(expected);
+        TraceProgram trace = runtime.run(program);
+        assertThat(trace.result()).isEqualTo(TraceValueMapper.fromPeelValue(expected));
     }
 
-    private static EvaluatedProgram runProgramm(PeelRuntime runtime, String text) {
+    private static TraceProgram runProgramm(PeelRuntime runtime, String text) {
         Program program = PeelGrammar.parse(text);
         return runtime.run(program);
     }
@@ -134,12 +135,12 @@ public class ExtensibilityTest {
                 .withFunction(new SimpleFunction(
                         "pigLatinWord",
                         1,
-                        arguments -> pigLatinWord(arguments[0].value())
+                        arguments -> pigLatinWord(arguments[0])
                 ))
                 .withFunction(new SimpleFunction(
                         "pigLatinSentence",
                         1,
-                        arguments -> pigLatinSentence(arguments[0].value())
+                        arguments -> pigLatinSentence(arguments[0])
                 ))
                 .build();
 
