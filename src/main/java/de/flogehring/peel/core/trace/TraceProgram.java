@@ -7,10 +7,4 @@ public record TraceProgram(
         TraceValue result
 ) {
 
-    public static TraceProgram fromExpressions(List<TraceExpression> expressions) {
-        if (expressions.isEmpty()) {
-            return new TraceProgram(expressions, TraceValue.none());
-        }
-        return new TraceProgram(expressions, expressions.getLast().value());
-    }
 }

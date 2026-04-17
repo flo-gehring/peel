@@ -72,9 +72,12 @@ public sealed interface TraceExpression permits
 
     record IfStatement(
             List<TraceExpression> conditions,
-            TraceExpression executedBlock,
-            TraceValue value
+            TraceExpression executedBlock
     ) implements TraceExpression {
+        @Override
+        public TraceValue value() {
+            return executedBlock != null ? executedBlock.value() : new TraceValue.NoneValue();
+        }
     }
 
     record WhileLoop(List<Iteration> iterations, TraceValue value) implements TraceExpression {
@@ -85,8 +88,13 @@ public sealed interface TraceExpression permits
         }
     }
 
-    record ForEachLoop(List<Iteration> iterations, TraceValue value) implements TraceExpression {
-        public record Iteration(TraceValue itemValue, Block body) {
+    record ForEachLoop(List<Iteration> iterations) implements TraceExpression {
+        public record Iteration(Block body) {
+        }
+
+        @Override
+        public TraceValue value() {
+            return iterations.isEmpty() ? new TraceValue.NoneValue() : iterations.getLast().body().value();
         }
     }
 
@@ -97,10 +105,21 @@ public sealed interface TraceExpression permits
     }
 
     record MapLiteral(
-            List<MapEntry> entries,
-            TraceValue value
+            List<MapEntry> entries
     ) implements TraceExpression {
         public record MapEntry(TraceExpression key, TraceExpression value) {
+        }
+
+        @Override
+        public TraceValue value() {
+            return new TraceValue.MapValue(
+                    entries.stream().map(
+                            entry -> new TraceValue.MapValue.MapEntry(
+                                    entry.key.value(),
+                                    entry.value.value()
+                            )
+                    ).toList()
+            );
         }
     }
 

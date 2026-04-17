@@ -6,8 +6,8 @@ import de.flogehring.peel.core.trace.TraceExpression;
 import de.flogehring.peel.core.trace.TraceValueMapper;
 import de.flogehring.peel.core.values.PeelFunctionDefinition;
 import de.flogehring.peel.core.values.PeelValue;
-import de.flogehring.peel.run.trace.SingleTraceExpressionRecorder;
-import de.flogehring.peel.run.trace.TraceSubRecorder;
+import de.flogehring.peel.run.trace.BlockTraceRecorder;
+import de.flogehring.peel.run.trace.FunctionCallRecorder;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -33,18 +33,22 @@ public class PeelCodeFunction implements Function {
     }
 
     @Override
+    public List<String> argNames() {
+        return callable.getParameters();
+    }
+
+    @Override
     public PeelValue run(PeelValue... arguments) {
         EvaluationEnvironment e = environment.spawnChild();
         e.enterScope();
         for (int i = 0; i < callable.getParameters().size(); ++i) {
             e.put(new Expression.VariableName(callable.getParameters().get(i), 0), arguments[i]);
         }
-        TraceSubRecorder bodyRecorder = new TraceSubRecorder();
-        return new Evaluator(e).evaluateBlock(callable.getBody().codeElements(), bodyRecorder);
+        return new Evaluator(e).evaluateBlock(callable.getBody().codeElements(), new BlockTraceRecorder());
     }
 
     @Override
-    public PeelValue runWithTrace(SingleTraceExpressionRecorder functionCallRecorder, PeelValue... arguments) {
+    public PeelValue runWithTrace(FunctionCallRecorder functionCallRecorder, PeelValue... arguments) {
         EvaluationEnvironment e = environment.spawnChild();
         e.enterScope();
         // TODO add parameter bindings
@@ -57,8 +61,6 @@ public class PeelCodeFunction implements Function {
                     new TraceExpression.Literal(TraceValueMapper.fromPeelValue(arguments[i]))
             ));
         }
-        TraceSubRecorder traceSubRecorder = new TraceSubRecorder();
-        functionCallRecorder.append(traceSubRecorder);
-        return new Evaluator(e).evaluateBlock(callable.getBody().codeElements(), traceSubRecorder);
+        return new Evaluator(e).evaluateBlock(callable.getBody().codeElements(), functionCallRecorder.functionBody());
     }
 }

@@ -8,7 +8,7 @@ import de.flogehring.peel.core.trace.TraceProgram;
 import de.flogehring.peel.core.trace.TraceValueMapper;
 import de.flogehring.peel.core.values.PeelValue;
 import de.flogehring.peel.run.exceptions.DuplicateRequestBindingException;
-import de.flogehring.peel.run.trace.TraceSubRecorder;
+import de.flogehring.peel.run.trace.ExpressionRecorder;
 
 import java.util.ArrayList;
 import java.util.Map;
@@ -40,12 +40,12 @@ public class SimpleRuntime implements PeelRuntime {
                 Optional.empty(),
                 new ArrayList<>()
         );
-        TraceSubRecorder traceSubRecorder = new TraceSubRecorder();
         Evaluator evaluator = new Evaluator(environment);
-        PeelValue result = evaluator.evaluate(program.programm(), traceSubRecorder);
+        ExpressionRecorder expressionRecorder = new ExpressionRecorder();
+        PeelValue result = evaluator.evaluate(program.programm(), expressionRecorder);
         return new TraceProgram(
                 // TODO hier das doppelt geschatelte raus
-                ((TraceExpression.Block) traceSubRecorder.toBlock().content().getFirst()).content(),
+                ((TraceExpression.Block) expressionRecorder.traceExpression()).content(),
                 TraceValueMapper.fromPeelValue(result)
         );
     }

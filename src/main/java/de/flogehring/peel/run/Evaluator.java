@@ -3,27 +3,19 @@ package de.flogehring.peel.run;
 import de.flogehring.peel.core.eval.Function;
 import de.flogehring.peel.core.eval.OperatorDef;
 import de.flogehring.peel.core.lang.Expression;
-import de.flogehring.peel.core.trace.TraceExpression;
 import de.flogehring.peel.core.trace.TraceValue;
 import de.flogehring.peel.core.trace.TraceValueMapper;
 import de.flogehring.peel.core.values.*;
 import de.flogehring.peel.run.exceptions.MultipleFunctionsFoundException;
 import de.flogehring.peel.run.exceptions.NoFunctionFoundException;
 import de.flogehring.peel.run.exceptions.PeelException;
-import de.flogehring.peel.run.trace.SingleTraceExpressionRecorder;
-import de.flogehring.peel.run.trace.TraceRecorder;
-import de.flogehring.peel.run.trace.TraceSubRecorder;
-import lombok.extern.java.Log;
+import de.flogehring.peel.run.trace.*;
 
 import java.util.*;
 
 import static de.flogehring.peel.core.values.PeelValue.Collection.peelList;
 
-@Log
 public class Evaluator {
-
-    record BlockExecution(PeelValue value, TraceExpression.Block trace) {
-    }
 
     private EvaluationEnvironment environment;
     private final OperatorResolver operatorResolver;
@@ -33,47 +25,48 @@ public class Evaluator {
         this.operatorResolver = new OperatorResolver();
     }
 
-    PeelValue evaluate(Expression expression, TraceSubRecorder traceSubRecorder) {
+    PeelValue evaluate(Expression expression, ExpressionRecorder expressionRecorder) {
         beginnScope();
-        PeelValue result = evaluateExpr(expression, traceSubRecorder);
+        PeelValue result = evaluateExpr(expression, expressionRecorder);
         endScope();
         return result;
     }
 
-    private PeelValue evaluateExpr(Expression expression, TraceRecorder recorder) {
+    private PeelValue evaluateExpr(Expression expression, ExpressionRecorder recorder) {
         return switch (expression) {
-            case Expression.BinaryOperator operator -> evaluateOperator(operator, recorder);
-            case Expression.Literal(var value) -> getLiteral(value, recorder);
-            case Expression.VariableName varName -> resolveVariable(varName, recorder);
-            case Expression.FunctionCall functionCall -> evaluateFunction(functionCall, recorder);
+            case Expression.BinaryOperator operator -> evaluateOperator(operator, recorder.recordBinary());
+            case Expression.Literal(var value) -> getLiteral(value, recorder.literalRecorder());
+            case Expression.VariableName varName -> resolveVariable(varName, recorder.recordVarName());
+            case Expression.FunctionCall functionCall -> evaluateFunction(functionCall, recorder.recordFunctionCall());
             case Expression.Assignment(var name, var assignedExpr, int scopeOffset) ->
-                    evaluateAssignment(name, assignedExpr, scopeOffset, recorder);
-            case Expression.Block(var expressions) -> evaluateBlock(expressions, recorder);
+                    evaluateAssignment(name, assignedExpr, scopeOffset, recorder.recordAssignment());
+            case Expression.Block(var expressions) -> evaluateBlock(expressions, recorder.recordBlock());
             case Expression.IfElseStatement(var elseIfs, var elseBlock) ->
-                    evaluateIfStatement(elseIfs, elseBlock, recorder);
-            case Expression.WhileLoop(var condition, var block) -> runLoop(condition, block, recorder);
+                    evaluateIfStatement(elseIfs, elseBlock, recorder.recordElseIf());
+            case Expression.WhileLoop(var condition, var block) ->
+                    runLoop(condition, block, recorder.recordWhileLoop());
             case Expression.UnaryPrefixOperator(var operator, var argument) ->
-                    evaluateUnary(operator, argument, recorder);
+                    evaluateUnary(operator, argument, recorder.recordUnary());
             case Expression.ForEachLoop(var varName, var listExpr, var block) ->
-                    runForEachLoop(varName, listExpr, block, recorder);
-            case Expression.ListLiteral(var list) -> evaluateListLiteral(list, recorder);
-            case Expression.MapLiteral(var entries) -> evaluateMapLiteral(entries, recorder);
-            case Expression.Selector(var target, var selector) -> evaluateSelector(target, selector, recorder);
-            case Expression.Return(var expr) -> {
-                SingleTraceExpressionRecorder expressionRecorder = new SingleTraceExpressionRecorder();
-                PeelValue value = evaluateExpr(expr, expressionRecorder);
-                recorder.append(new TraceExpression.ReturnExpr(
-                        toTraceValue(value),
-                        expressionRecorder.expression()
-                ));
-                throw new ReturnValueFlow(value);
-            }
+                    runForEachLoop(varName, listExpr, block, recorder.recordForEachLoop());
+            case Expression.ListLiteral(var list) -> evaluateListLiteral(
+                    list, recorder.recordListLiteral());
+            case Expression.MapLiteral(var entries) -> evaluateMapLiteral(entries, recorder.recordMapLiteral());
+            case Expression.Selector(var target, var selector) ->
+                    evaluateSelector(target, selector, recorder.recordSelector());
+            case Expression.Return(var expr) -> evaluateReturn(expr, recorder.recordReturn());
             case Expression.FunctionDeclaration(var callable, var offset) ->
-                    declareFunction(callable, offset, recorder);
+                    declareFunction(callable, offset, recorder.recordFunctionDeclaration()
+                    );
         };
     }
 
-    private PeelValue getLiteral(PeelValue value, TraceRecorder recorder) {
+    private PeelValue evaluateReturn(Expression expr, ReturnExpressionRecorder recorder) {
+        PeelValue value = evaluateExpr(expr, recorder.getExpressionRecorder());
+        throw new ReturnValueFlow(value);
+    }
+
+    private PeelValue getLiteral(PeelValue value, LiteralRecorder recorder) {
         PeelValue enriched = switch (value) {
             case PeelCallable callable -> switch (callable) {
                 case FunctionReference _ -> value;
@@ -86,21 +79,21 @@ public class Evaluator {
             };
             case PeelValue.Collection _, Primitives _ -> value;
         };
-        recorder.append(new TraceExpression.Literal(toTraceValue(enriched)));
+        recorder.recordLiteral(enriched);
         return enriched;
     }
 
-    private PeelValue resolveVariable(Expression.VariableName varName, TraceRecorder recorder) {
+    private PeelValue resolveVariable(Expression.VariableName varName, VariableNameRecorder recorder) {
         PeelValue value = environment.isFunction(varName)
                 ? FunctionReference.of(environment.getFunction(varName))
                 : environment.getVar(varName);
-        recorder.append(new TraceExpression.VariableName(varName.name(), toTraceValue(value)));
+        recorder.recordVarName(varName.name());
+        recorder.recordValue(value);
         return value;
     }
 
     private PeelValue declareFunction(PeelFunctionDefinition callable, int offset, TraceRecorder recorder) {
         environment.putFunction(new Expression.VariableName(callable.getName(), offset), getFunctionFrom(callable));
-        recorder.append(new TraceExpression.Literal(toTraceValue(callable)));
         return callable;
     }
 
@@ -108,105 +101,71 @@ public class Evaluator {
             String name,
             Expression expression,
             int scopeOffset,
-            TraceRecorder recorder
+            AssignmentRecorder assignmentRecorder
     ) {
-        SingleTraceExpressionRecorder expressionRecorder = new SingleTraceExpressionRecorder();
-        PeelValue value = evaluateExpr(expression, expressionRecorder);
+        assignmentRecorder.setVarName(name);
+        PeelValue value = evaluateExpr(expression, assignmentRecorder.recordAssignmentExpression());
         Expression.VariableName varName = new Expression.VariableName(name, scopeOffset);
         environment.put(varName, value);
-        recorder.append(new TraceExpression.Assignment(name, expressionRecorder.expression(), toTraceValue(value)));
         return value;
     }
 
     private PeelValue evaluateIfStatement(
             List<Expression.IfElseStatement.ConditionalExecution> elseIfs,
             Optional<Expression> elseBlock,
-            TraceRecorder recorder
+            IfElseRecorder recorder
     ) {
-        List<TraceExpression> conditionTraces = new ArrayList<>();
         for (Expression.IfElseStatement.ConditionalExecution cond : elseIfs) {
             beginnScope();
-            SingleTraceExpressionRecorder conditionRecorder = new SingleTraceExpressionRecorder();
-            PeelValue conditionValue = evaluateExpr(cond.condition(), conditionRecorder);
-            conditionTraces.add(conditionRecorder.traceExpression());
+            PeelValue conditionValue = evaluateExpr(cond.condition(), recorder.nextCondition());
             endScope();
             if (requireBool(conditionValue)) {
-                SingleTraceExpressionRecorder thenRecorder = new SingleTraceExpressionRecorder();
-                PeelValue thenValue = evaluateExpr(cond.then(), thenRecorder);
-                recorder.append(new TraceExpression.IfStatement(
-                        conditionTraces,
-                        thenRecorder.expression(),
-                        toTraceValue(thenValue)
-                ));
-                return thenValue;
+                return evaluateExpr(cond.then(), recorder.recordBlock());
             }
         }
         if (elseBlock.isPresent()) {
-            SingleTraceExpressionRecorder elseRecorder = new SingleTraceExpressionRecorder();
-            PeelValue elseValue = evaluateExpr(elseBlock.get(), elseRecorder);
-            recorder.append(new TraceExpression.IfStatement(
-                    conditionTraces,
-                    elseRecorder.expression(),
-                    toTraceValue(elseValue)
-            ));
-            return elseValue;
+            return evaluateExpr(elseBlock.get(), recorder.recordElse());
         }
-        recorder.append(new TraceExpression.IfStatement(
-                conditionTraces,
-                new TraceExpression.Block(List.of()),
-                TraceValue.none()
-        ));
         return None.NONE;
     }
 
-    PeelValue evaluateBlock(List<Expression> expressions, TraceRecorder recorder) {
+    PeelValue evaluateBlock(List<Expression> expressions, BlockTraceRecorder recorder) {
         beginnScope();
-        TraceSubRecorder blockRecorder = new TraceSubRecorder();
-        recorder.append(blockRecorder);
         PeelValue lastValue = None.NONE;
         for (Expression expression : expressions) {
-            lastValue = evaluateExpr(expression, blockRecorder);
+            lastValue = evaluateExpr(expression, recorder.nextRecorder());
         }
         endScope();
         return lastValue;
     }
 
-    private PeelValue evaluateListLiteral(List<Expression> list, TraceRecorder recorder) {
+    private PeelValue evaluateListLiteral(List<Expression> list, ListLiteralRecorder recorder) {
         List<PeelValue> values = new ArrayList<>();
-        List<TraceExpression> elements = new ArrayList<>();
         for (Expression expression : list) {
-            SingleTraceExpressionRecorder elementRecorder = new SingleTraceExpressionRecorder();
-            PeelValue value = evaluateExpr(expression, elementRecorder);
+            PeelValue value = evaluateExpr(expression, recorder.subElementRecorder());
             values.add(value);
-            elements.add(elementRecorder.expression());
         }
-        PeelValue.Collection.List out = peelList(values);
-        recorder.append(new TraceExpression.ListLiteral(elements, toTraceValue(out)));
-        return out;
+        return peelList(values);
     }
 
-    private PeelValue evaluateMapLiteral(List<Expression.MapLiteral.Entry> entries, TraceRecorder recorder) {
-        List<TraceExpression.MapLiteral.MapEntry> traceEntries = new ArrayList<>();
+    private PeelValue evaluateMapLiteral(
+            List<Expression.MapLiteral.Entry> entries,
+            MapLiteralRecorder mapLiteralRecorder
+    ) {
         LinkedHashMap<Primitives, PeelValue> map = new LinkedHashMap<>();
         for (Expression.MapLiteral.Entry entry : entries) {
-            SingleTraceExpressionRecorder keyRecorder = new SingleTraceExpressionRecorder();
-            PeelValue keyValue = evaluateExpr(entry.key(), keyRecorder);
-            SingleTraceExpressionRecorder valueRecorder = new SingleTraceExpressionRecorder();
-            PeelValue value = evaluateExpr(entry.value(), valueRecorder);
+            MapLiteralRecorder.KeyValueRecorder recorder = mapLiteralRecorder.nextKeyValueRecorder();
+            PeelValue keyValue = evaluateExpr(entry.key(), recorder.keyRecorder());
+            PeelValue value = evaluateExpr(entry.value(), recorder.valueRecorder());
             map.put(requirePrimitive(keyValue), value);
-            traceEntries.add(new TraceExpression.MapLiteral.MapEntry(keyRecorder.expression(), valueRecorder.expression()));
         }
-        PeelValue.Collection.Map out = PeelValue.Collection.peelMap(Collections.unmodifiableMap(new LinkedHashMap<>(map)));
-        recorder.append(new TraceExpression.MapLiteral(traceEntries, toTraceValue(out)));
-        return out;
+        return PeelValue.Collection.peelMap(Collections.unmodifiableMap(new LinkedHashMap<>(map)));
     }
 
-    private PeelValue evaluateSelector(Expression target, Expression selector, TraceRecorder recorder) {
-        SingleTraceExpressionRecorder targetRecorder = new SingleTraceExpressionRecorder();
-        PeelValue evaluatedTarget = evaluateExpr(target, targetRecorder);
-        SingleTraceExpressionRecorder selectorRecorder = new SingleTraceExpressionRecorder();
-        PeelValue evaluatedSelector = evaluateExpr(selector, selectorRecorder);
-        PeelValue selected = switch (evaluatedTarget) {
+    private PeelValue evaluateSelector(Expression target, Expression selector, SelectorRecorder recorder) {
+        PeelValue evaluatedTarget = evaluateExpr(target, recorder.targetRecorder());
+        PeelValue evaluatedSelector = evaluateExpr(selector, recorder.selectorRecorder());
+        PeelValue peelValue = switch (evaluatedTarget) {
             case PeelValue.Collection.List(var list) -> selectFromList(list, evaluatedSelector);
             case PeelValue.Collection.Map(var map) -> selectFromMap(map, evaluatedSelector);
             default -> throw new PeelException(
@@ -214,12 +173,8 @@ public class Evaluator {
                     evaluatedTarget.getClass().getSimpleName()
             );
         };
-        recorder.append(new TraceExpression.Selector(
-                toTraceValue(selected),
-                targetRecorder.expression(),
-                selectorRecorder.expression()
-        ));
-        return selected;
+        recorder.recordValue(peelValue);
+        return peelValue;
     }
 
     private PeelValue selectFromList(List<PeelValue> list, PeelValue selector) {
@@ -249,25 +204,21 @@ public class Evaluator {
         throw new PeelException("Map key must be primitive, was {0}", value.getClass().getSimpleName());
     }
 
-    private PeelValue runForEachLoop(String varName, Expression listExpr, Expression.Block block, TraceRecorder recorder) {
-        List<TraceExpression.ForEachLoop.Iteration> iterations = new ArrayList<>();
-        PeelValue.Collection.List list = requireList(evaluateExpr(listExpr, new TraceSubRecorder()));
+    private PeelValue runForEachLoop(
+            String varName,
+            Expression listExpr,
+            Expression.Block block,
+            ForEachRecorder recorder
+    ) {
+        PeelValue.Collection.List list = requireList(evaluateExpr(listExpr, recorder.listRecorder()));
         PeelValue lastBodyValue = None.NONE;
         for (PeelValue value : list.list()) {
             beginnScope();
             environment.put(new Expression.VariableName(varName, 0), value);
-            SingleTraceExpressionRecorder bodyRecorder = new SingleTraceExpressionRecorder();
-            PeelValue bodyValue = evaluateExpr(block, bodyRecorder);
-            lastBodyValue = bodyValue;
-            iterations.add(new TraceExpression.ForEachLoop.Iteration(
-                    toTraceValue(value),
-                    (TraceExpression.Block) bodyRecorder.expression()
-            ));
+            lastBodyValue = evaluateExpr(block, recorder.nextLoop());
             endScope();
         }
-        PeelValue out = iterations.isEmpty() ? None.NONE : lastBodyValue;
-        recorder.append(new TraceExpression.ForEachLoop(iterations, toTraceValue(out)));
-        return out;
+        return lastBodyValue;
     }
 
     private void beginnScope() {
@@ -285,35 +236,25 @@ public class Evaluator {
         throw new PeelException("Expected list");
     }
 
-    private PeelValue evaluateUnary(String operator, Expression argument, TraceRecorder recorder) {
-        SingleTraceExpressionRecorder argumentRecorder = new SingleTraceExpressionRecorder();
-        PeelValue expression = evaluateExpr(argument, argumentRecorder);
+    private PeelValue evaluateUnary(String operator, Expression argument, UnaryRecorder recorder) {
+        recorder.recordOperator(operator);
+        PeelValue expression = evaluateExpr(argument, recorder.recordOperand());
         List<OperatorDef> candidates = environment.getOperator(operator);
         PeelValue value = operatorResolver.resolveAndApply(operator, expression, candidates);
-        recorder.append(new TraceExpression.UnaryPrefixOperator(operator, toTraceValue(value), argumentRecorder.expression()));
+        recorder.recordValue(value);
         return value;
     }
 
-    private PeelValue runLoop(Expression condition, Expression.Block block, TraceRecorder recorder) {
-        List<TraceExpression.WhileLoop.Iteration> iterations = new ArrayList<>();
+    private PeelValue runLoop(Expression condition, Expression.Block block, WhileLoopRecorder recorder) {
         beginnScope();
-        SingleTraceExpressionRecorder conditionRecorder = new SingleTraceExpressionRecorder();
-        PeelValue conditionValue = evaluateExpr(condition, conditionRecorder);
+        PeelValue conditionValue = evaluateExpr(condition, recorder.nextCondition());
         PeelValue lastBodyValue = None.NONE;
         while (requireBool(conditionValue)) {
-            SingleTraceExpressionRecorder blockRecorder = new SingleTraceExpressionRecorder();
-            lastBodyValue = evaluateExpr(block, blockRecorder);
-            iterations.add(new TraceExpression.WhileLoop.Iteration(conditionRecorder.expression(), (TraceExpression.Block) blockRecorder.expression()));
-            conditionRecorder = new SingleTraceExpressionRecorder();
-            conditionValue = evaluateExpr(condition, conditionRecorder);
+            lastBodyValue = evaluateExpr(block, recorder.nextBody());
+            conditionValue = evaluateExpr(condition, recorder.nextCondition());
         }
-        iterations.add(new TraceExpression.WhileLoop.Iteration(conditionRecorder.expression(), null));
         endScope();
-        PeelValue out = iterations.size() == 1
-                ? None.NONE
-                : lastBodyValue;
-        recorder.append(new TraceExpression.WhileLoop(iterations, toTraceValue(out)));
-        return out;
+        return lastBodyValue;
     }
 
     private boolean requireBool(PeelValue value) {
@@ -324,43 +265,29 @@ public class Evaluator {
         }
     }
 
-    private PeelValue evaluateFunction(Expression.FunctionCall functionCall, TraceRecorder recorder) {
+    private PeelValue evaluateFunction(
+            Expression.FunctionCall functionCall,
+            FunctionCallRecorder recorder
+    ) {
         List<PeelValue> arguments = new ArrayList<>();
-        List<TraceExpression> argumentTraces = new ArrayList<>();
         for (Expression argument : functionCall.arguments()) {
-            SingleTraceExpressionRecorder argumentRecorder = new SingleTraceExpressionRecorder();
-            arguments.add(evaluateExpr(argument, argumentRecorder));
-            argumentTraces.add(argumentRecorder.expression());
+            arguments.add(evaluateExpr(argument, recorder.recordArgument()));
         }
-        Function function = resolveFunctions(functionCall, arguments);
+        Function function = resolveFunctions(functionCall, arguments, recorder);
         PeelValue result;
         EvaluationEnvironment currentEnv = environment;
         environment = currentEnv.spawnChild();
-        SingleTraceExpressionRecorder functionTrace = new SingleTraceExpressionRecorder();
         try {
-            result = function.runWithTrace(functionTrace, arguments.toArray(new PeelValue[0]));
+            result = function.runWithTrace(recorder, arguments.toArray(new PeelValue[0]));
         } catch (ReturnValueFlow returnValueFlow) {
             result = returnValueFlow.getValue();
         }
         environment = currentEnv;
-        recorder.append(new TraceExpression.FunctionCall(
-                function.name(),
-                toTraceValue(result),
-                argumentTraces,
-                Optional.of(new TraceExpression.FunctionExecutionTrace(
-                        function.name(),
-                        argumentTraces.stream().map(traceExpression -> new TraceExpression.ParameterBinding(
-                                        "n", traceExpression
-                                )
-                        ).toList(),
-                        (TraceExpression.Block) functionTrace.traceExpression()
-                ))
-        ));
         return result;
     }
 
-    private Function resolveFunctions(Expression.FunctionCall functionCall, List<PeelValue> arguments) {
-        List<Function> matchingFunctions = getMatchingFunctions(functionCall.callee());
+    private Function resolveFunctions(Expression.FunctionCall functionCall, List<PeelValue> arguments, FunctionCallRecorder recorder) {
+        List<Function> matchingFunctions = getMatchingFunctions(functionCall.callee(), recorder);
         int argumentLength = arguments.size();
         List<Function> list = matchingFunctions.stream()
                 .filter(f -> f.arity() == argumentLength)
@@ -372,9 +299,10 @@ public class Evaluator {
         );
     }
 
-    private List<Function> getMatchingFunctions(Expression callee) {
+    private List<Function> getMatchingFunctions(Expression callee, FunctionCallRecorder recorder) {
         return switch (callee) {
             case Expression.VariableName variableName -> {
+                recorder.functionFromVar(variableName);
                 if (environment.isFunction(variableName)) {
                     yield environment.getFunction(variableName);
                 } else {
@@ -392,7 +320,7 @@ public class Evaluator {
                  Expression.UnaryPrefixOperator _,
                  Expression.WhileLoop _ -> {
                 SingleTraceExpressionRecorder calleeRecorder = new SingleTraceExpressionRecorder();
-                PeelValue value = evaluateExpr(callee, calleeRecorder);
+                PeelValue value = evaluateExpr(callee, recorder.functionFromExpr());
                 yield getFunctionFromPeelValue(value);
             }
             case Expression.ListLiteral _, Expression.Return _ ->
@@ -418,77 +346,54 @@ public class Evaluator {
         return new PeelCodeFunction(callable, environment.copy());
     }
 
-    private PeelValue evaluateOperator(Expression.BinaryOperator operator, TraceRecorder recorder) {
+    private PeelValue evaluateOperator(
+            Expression.BinaryOperator operator,
+            BinaryOpRecorder recorder
+    ) {
+        recorder.setOperator(operator.operator());
         if (operator.operator().equals("&&")) {
             return evaluateLogicalAnd(operator.lhs(), operator.rhs(), recorder);
         }
         if (operator.operator().equals("||")) {
             return evaluateLogicalOr(operator.lhs(), operator.rhs(), recorder);
         }
-        SingleTraceExpressionRecorder lhsRecorder = new SingleTraceExpressionRecorder();
-        PeelValue lhs = evaluateExpr(operator.lhs(), lhsRecorder);
-        SingleTraceExpressionRecorder rhsRecorder = new SingleTraceExpressionRecorder();
-        PeelValue rhs = evaluateExpr(operator.rhs(), rhsRecorder);
+        PeelValue lhs = evaluateExpr(operator.lhs(), recorder.recordLhs());
+        PeelValue rhs = evaluateExpr(operator.rhs(), recorder.recordRhs());
         List<OperatorDef> candidates = environment.getOperator(operator.operator());
         PeelValue value = operatorResolver.resolveAndApply(operator.operator(), lhs, rhs, candidates);
-        recorder.append(new TraceExpression.BinaryOperator(
-                operator.operator(),
-                toTraceValue(value),
-                lhsRecorder.expression(),
-                rhsRecorder.expression()
-        ));
+        recorder.recordValue(value);
         return value;
     }
 
-    private PeelValue evaluateLogicalAnd(Expression lhsExpression, Expression rhsExpression, TraceRecorder recorder) {
-        SingleTraceExpressionRecorder lhsRecorder = new SingleTraceExpressionRecorder();
-        PeelValue lhs = evaluateExpr(lhsExpression, lhsRecorder);
+    private PeelValue evaluateLogicalAnd(
+            Expression lhsExpression,
+            Expression rhsExpression,
+            BinaryOpRecorder recorder
+    ) {
+        PeelValue lhs = evaluateExpr(lhsExpression, recorder.recordLhs());
         if (!requireBool(lhs)) {
-            recorder.append(new TraceExpression.LogicalBinaryOperator(
-                    "&&",
-                    new TraceValue.BoolValue(false),
-                    lhsRecorder.expression(),
-                    Optional.empty(),
-                    true
-            ));
-            return PeelValue.bool(false);
+            recorder.setShortCircuit();
+            PeelValue bool = PeelValue.bool(false);
+            recorder.recordValue(bool);
+            return bool;
         }
-        SingleTraceExpressionRecorder rhsRecorder = new SingleTraceExpressionRecorder();
-        PeelValue rhs = evaluateExpr(rhsExpression, rhsRecorder);
-        PeelValue out = PeelValue.bool(requireBool(rhs));
-        recorder.append(new TraceExpression.LogicalBinaryOperator(
-                "&&",
-                toTraceValue(out),
-                lhsRecorder.expression(),
-                Optional.of(rhsRecorder.expression()),
-                false
-        ));
-        return out;
+        PeelValue rhs = evaluateExpr(rhsExpression, recorder.recordRhs());
+        PeelValue bool = PeelValue.bool(requireBool(rhs));
+        recorder.recordValue(bool);
+        return bool;
     }
 
-    private PeelValue evaluateLogicalOr(Expression lhsExpression, Expression rhsExpression, TraceRecorder recorder) {
-        SingleTraceExpressionRecorder lhsRecorder = new SingleTraceExpressionRecorder();
-        PeelValue lhs = evaluateExpr(lhsExpression, lhsRecorder);
+    private PeelValue evaluateLogicalOr(Expression lhsExpression, Expression rhsExpression, BinaryOpRecorder recorder) {
+        PeelValue lhs = evaluateExpr(lhsExpression, recorder.recordLhs());
         if (requireBool(lhs)) {
-            recorder.append(new TraceExpression.LogicalBinaryOperator(
-                    "||",
-                    new TraceValue.BoolValue(true),
-                    lhsRecorder.expression(),
-                    Optional.empty(),
-                    true
-            ));
-            return PeelValue.bool(true);
+            recorder.setShortCircuit();
+            PeelValue bool = PeelValue.bool(true);
+            recorder.recordValue(bool);
+            return bool;
         }
-        SingleTraceExpressionRecorder rhsRecorder = new SingleTraceExpressionRecorder();
-        PeelValue rhs = evaluateExpr(rhsExpression, rhsRecorder);
+        PeelValue rhs = evaluateExpr(rhsExpression, recorder.recordRhs());
         PeelValue out = PeelValue.bool(requireBool(rhs));
-        recorder.append(new TraceExpression.LogicalBinaryOperator(
-                "||",
-                toTraceValue(out),
-                lhsRecorder.expression(),
-                Optional.of(rhsRecorder.expression()),
-                false
-        ));
+        recorder.recordValue(out);
         return out;
     }
 

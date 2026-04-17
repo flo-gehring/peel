@@ -54,7 +54,7 @@ class RuntimeBuilderTest {
                                 "~",
                                 Number.class,
                                 Number.class,
-                                (lhs, rhs) -> PeelValue.integer(0)
+                                (_, _) -> PeelValue.integer(0)
                         ))
                         .build()
         );
@@ -68,7 +68,7 @@ class RuntimeBuilderTest {
                         "~",
                         Number.class,
                         Number.class,
-                        (lhs, rhs) -> PeelValue.integer(999)
+                        (_, _) -> PeelValue.integer(999)
                 ))
                 .withVariable(Variable.of("x", PeelValue.integer(1)))
                 .withVariable(Variable.of("y", PeelValue.integer(2)))
@@ -89,7 +89,7 @@ class RuntimeBuilderTest {
                                 "&&",
                                 Bool.class,
                                 Bool.class,
-                                (lhs, rhs) -> PeelValue.bool(true)
+                                (_, _) -> PeelValue.bool(true)
                         ))
                         .build()
         );
@@ -103,7 +103,7 @@ class RuntimeBuilderTest {
                                 "||",
                                 Bool.class,
                                 Bool.class,
-                                (lhs, rhs) -> PeelValue.bool(true)
+                                (_, _) -> PeelValue.bool(true)
                         ))
                         .build()
         );
@@ -118,7 +118,7 @@ class RuntimeBuilderTest {
                         "&&",
                         Bool.class,
                         Bool.class,
-                        (lhs, rhs) -> PeelValue.bool(true)
+                        (_, _) -> PeelValue.bool(true)
                 ))
         );
 
@@ -138,7 +138,7 @@ class RuntimeBuilderTest {
                                 "&&",
                                 Bool.class,
                                 Bool.class,
-                                (lhs, rhs) -> PeelValue.bool(true)
+                                (_, _) -> PeelValue.bool(true)
                         ))
                         .build()
         );

@@ -16,6 +16,7 @@ import de.flogehring.peel.run.exceptions.AmbiguousOperatorException;
 import de.flogehring.peel.run.exceptions.DuplicateRequestBindingException;
 import de.flogehring.peel.run.exceptions.NoFunctionFoundException;
 import de.flogehring.peel.run.exceptions.UndefinedVarException;
+import de.flogehring.peel.run.trace.FunctionCallRecorder;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 
@@ -97,6 +98,11 @@ public class SimpleRuntimeTest {
                     }
 
                     @Override
+                    public List<String> argNames() {
+                        return List.of("lhs", "rhs");
+                    }
+
+                    @Override
                     public int arity() {
                         return 2;
                     }
@@ -106,6 +112,11 @@ public class SimpleRuntimeTest {
                         String lhs = ((Text) arguments[0]).value();
                         int rhs = ((Number.Integer) arguments[1]).value();
                         return new Text(lhs.repeat(rhs));
+                    }
+
+                    @Override
+                    public PeelValue runWithTrace(FunctionCallRecorder functionCallRecorder, PeelValue... arguments) {
+                        return run(arguments);
                     }
                 })
                 .withVariable(getVariable("x", "Echo!"))
@@ -147,10 +158,20 @@ public class SimpleRuntimeTest {
                     }
 
                     @Override
+                    public List<String> argNames() {
+                        return List.of("lhs", "rhs");
+                    }
+
+                    @Override
                     public PeelValue run(PeelValue... arguments) {
                         Number.Integer lhs = (Number.Integer) arguments[0];
                         Number.Integer rhs = (Number.Integer) arguments[1];
                         return new Number.Integer(lhs.numberValue().add(rhs.numberValue()).intValue());
+                    }
+
+                    @Override
+                    public PeelValue runWithTrace(FunctionCallRecorder functionCallRecorder, PeelValue... arguments) {
+                        return run(arguments);
                     }
                 })
                 .withVariable(integerVariable("y", 2))
@@ -170,13 +191,13 @@ public class SimpleRuntimeTest {
                         "~",
                         PeelValue.class,
                         PeelValue.class,
-                        (lhs, rhs) -> text("a")
+                        (_, _) -> text("a")
                 ))
                 .withOperator(OperatorDef.typed(
                         "~",
                         PeelValue.class,
                         PeelValue.class,
-                        (lhs, rhs) -> text("b")
+                        (_, _) -> text("b")
                 ))
                 .withVariable(integerVariable("x", 1))
                 .withVariable(integerVariable("y", 2))

@@ -1,11 +1,11 @@
 package de.flogehring.peel.run;
 
 import de.flogehring.peel.core.eval.Function;
-import de.flogehring.peel.core.trace.TraceExpression;
 import de.flogehring.peel.core.values.PeelValue;
-import de.flogehring.peel.run.trace.SingleTraceExpressionRecorder;
+import de.flogehring.peel.run.trace.FunctionCallRecorder;
 
 import java.util.List;
+import java.util.stream.IntStream;
 
 public class SimpleFunction implements Function {
 
@@ -34,14 +34,21 @@ public class SimpleFunction implements Function {
     }
 
     @Override
+    public List<String> argNames() {
+        return IntStream.rangeClosed(0, arity)
+                .mapToObj(String::valueOf)
+                .map(n -> "arg" + n)
+                .toList();
+    }
+
+    @Override
     public PeelValue run(PeelValue... arguments) {
         return function.apply(arguments);
     }
 
     @Override
-    public PeelValue runWithTrace(SingleTraceExpressionRecorder functionCallRecorder, PeelValue... arguments) {
+    public PeelValue runWithTrace(FunctionCallRecorder functionCallRecorder, PeelValue... arguments) {
         // TODO Function call seems wonky here
-        functionCallRecorder.append(new TraceExpression.Block(List.of()));
         return run(arguments);
     }
 }
