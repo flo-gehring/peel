@@ -12,6 +12,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 
+// TODO i need to check how to name functions in the output.
 public class FunctionCallRecorder implements TraceRecorder {
 
     @Setter

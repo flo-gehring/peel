@@ -7,6 +7,8 @@ import java.util.List;
 
 public class ForEachRecorder implements TraceRecorder {
 
+    // TODO Think about how to represent the list and loop in the output
+    //  Probably there should be some binding for the current loop value
     private ExpressionRecorder listValueRecorder;
     private final List<ExpressionRecorder> loopBodyRecorder = new ArrayList<>();
 

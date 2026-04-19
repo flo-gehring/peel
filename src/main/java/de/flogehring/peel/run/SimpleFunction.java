@@ -4,9 +4,6 @@ import de.flogehring.peel.core.eval.Function;
 import de.flogehring.peel.core.values.PeelValue;
 import de.flogehring.peel.run.trace.FunctionCallRecorder;
 
-import java.util.List;
-import java.util.stream.IntStream;
-
 public class SimpleFunction implements Function {
 
     private final String name;
@@ -31,14 +28,6 @@ public class SimpleFunction implements Function {
     @Override
     public int arity() {
         return arity;
-    }
-
-    @Override
-    public List<String> argNames() {
-        return IntStream.rangeClosed(0, arity)
-                .mapToObj(String::valueOf)
-                .map(n -> "arg" + n)
-                .toList();
     }
 
     @Override

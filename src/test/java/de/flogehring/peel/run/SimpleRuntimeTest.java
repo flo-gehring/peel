@@ -98,11 +98,6 @@ public class SimpleRuntimeTest {
                     }
 
                     @Override
-                    public List<String> argNames() {
-                        return List.of("lhs", "rhs");
-                    }
-
-                    @Override
                     public int arity() {
                         return 2;
                     }
@@ -155,11 +150,6 @@ public class SimpleRuntimeTest {
                     @Override
                     public int arity() {
                         return 2;
-                    }
-
-                    @Override
-                    public List<String> argNames() {
-                        return List.of("lhs", "rhs");
                     }
 
                     @Override

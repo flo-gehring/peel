@@ -7,8 +7,6 @@ import de.flogehring.peel.core.values.PeelValue;
 import de.flogehring.peel.run.trace.BlockTraceRecorder;
 import de.flogehring.peel.run.trace.FunctionCallRecorder;
 
-import java.util.List;
-
 public class PeelCodeFunction implements Function {
 
     private final PeelFunctionDefinition callable;
@@ -27,11 +25,6 @@ public class PeelCodeFunction implements Function {
     @Override
     public int arity() {
         return callable.getParameters().size();
-    }
-
-    @Override
-    public List<String> argNames() {
-        return callable.getParameters();
     }
 
     @Override
