@@ -19,6 +19,18 @@ public sealed interface TraceValue permits
         return TraceValue.NONE_VALUE;
     }
 
+    static IntegerValue integer(int i) {
+        return new IntegerValue(i);
+    }
+
+    static BoolValue bool(boolean b) {
+        return new BoolValue(b);
+    }
+
+    static TextValue text(String x) {
+        return new TextValue(x);
+    }
+
     record IntegerValue(int value) implements TraceValue {
     }
 

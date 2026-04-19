@@ -8,8 +8,6 @@ import lombok.Setter;
 
 public class BinaryOpRecorder implements TraceRecorder {
 
-    // TODO Add test case for when you have something like `&& return`; if this is possible
-    // TODO Add test case for short circuiting
     @Setter
     private String operator;
     private ExpressionRecorder lhsRecorder;

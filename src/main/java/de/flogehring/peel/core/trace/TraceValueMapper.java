@@ -2,7 +2,6 @@ package de.flogehring.peel.core.trace;
 
 import de.flogehring.peel.core.values.*;
 
-import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -43,34 +42,6 @@ public final class TraceValueMapper {
                     functionDefinition.getName(),
                     functionDefinition.getParameters()
             );
-        };
-    }
-
-    public static PeelValue toPeelValue(TraceValue traceValue) {
-        return switch (traceValue) {
-            case TraceValue.IntegerValue(var value) -> PeelValue.integer(value);
-            case TraceValue.FloatValue(var value) -> new de.flogehring.peel.core.values.Number.Float(value);
-            case TraceValue.DecimalValue(var value) ->
-                    new de.flogehring.peel.core.values.Number.Decimal(new java.math.BigDecimal(value));
-            case TraceValue.TextValue(var value) -> PeelValue.text(value);
-            case TraceValue.BoolValue(var value) -> PeelValue.bool(value);
-            case TraceValue.NoneValue _ -> None.NONE;
-            case TraceValue.ListValue(var items) ->
-                    PeelValue.list(items.stream().map(TraceValueMapper::toPeelValue).toList());
-            case TraceValue.MapValue(var entries) -> {
-                LinkedHashMap<Primitives, PeelValue> map = new LinkedHashMap<>();
-                for (TraceValue.MapValue.MapEntry entry : entries) {
-                    PeelValue key = toPeelValue(entry.key());
-                    if (key instanceof Primitives primitive) {
-                        map.put(primitive, toPeelValue(entry.value()));
-                    } else {
-                        throw new IllegalArgumentException("Map key is not primitive trace value");
-                    }
-                }
-                yield PeelValue.Collection.peelMap(Map.copyOf(map));
-            }
-            case TraceValue.CallableRef _ ->
-                    throw new IllegalArgumentException("CallableRef cannot be mapped to runtime PeelValue");
         };
     }
 

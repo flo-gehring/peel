@@ -2,6 +2,7 @@ package de.flogehring.peel.run.trace;
 
 import de.flogehring.peel.core.lang.Expression;
 import de.flogehring.peel.core.trace.TraceExpression;
+import de.flogehring.peel.core.trace.TraceExpression.FunctionExecutionTrace;
 import de.flogehring.peel.core.trace.TraceValue;
 import de.flogehring.peel.core.trace.TraceValueMapper;
 import de.flogehring.peel.core.values.PeelValue;
@@ -18,21 +19,26 @@ public class FunctionCallRecorder implements TraceRecorder {
     private final List<ExpressionRecorder> argumentRecorder = new ArrayList<>();
     private final List<TraceExpression.ParameterBinding> parameterBindings = new ArrayList<>();
     private BlockTraceRecorder blockTraceRecorder;
-    private ExpressionRecorder functionResolverRecorder;
+    // TODO you could get functions from any complex expression. How to represent that?
+    private ExpressionRecorder functionSourceRecorder;
     private TraceValue value;
 
     @Override
-    public TraceExpression traceExpression() { // TODO
+    public TraceExpression traceExpression() {
         return new TraceExpression.FunctionCall(
                 name,
                 value,
                 argumentRecorder.stream().map(ExpressionRecorder::traceExpression).toList(),
                 blockTraceRecorder != null ?
-                        Optional.of(new TraceExpression.FunctionCall.FunctionExecutionTrace(
-                                parameterBindings,
-                                (TraceExpression.Block) blockTraceRecorder.traceExpression()
-                        ))
+                        Optional.of(getFunctionExecutionTrace())
                         : Optional.empty()
+        );
+    }
+
+    private FunctionExecutionTrace getFunctionExecutionTrace() {
+        return new FunctionExecutionTrace(
+                parameterBindings,
+                (TraceExpression.Block) blockTraceRecorder.traceExpression()
         );
     }
 
@@ -55,11 +61,12 @@ public class FunctionCallRecorder implements TraceRecorder {
     }
 
     public void functionFromVar(Expression.VariableName variableName) {
+        name = variableName.name();
     }
 
     public ExpressionRecorder functionFromExpr() {
-        functionResolverRecorder = new ExpressionRecorder();
-        return functionResolverRecorder;
+        functionSourceRecorder = new ExpressionRecorder();
+        return functionSourceRecorder;
     }
 
     public void recordResult(PeelValue result) {

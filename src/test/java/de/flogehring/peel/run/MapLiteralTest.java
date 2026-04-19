@@ -1,10 +1,10 @@
 package de.flogehring.peel.run;
 
+import de.flogehring.peel.core.trace.TraceValue;
 import de.flogehring.peel.core.values.PeelValue;
-import de.flogehring.peel.core.values.Primitives;
 import org.junit.jupiter.api.Test;
 
-import java.util.Map;
+import java.util.List;
 
 import static de.flogehring.peel.run.TestHelpers.runProgrammAndExpect;
 
@@ -50,10 +50,11 @@ class MapLiteralTest {
                         var m = {1: 10, True: 20, "x": 30};
                         m;
                         """,
-                PeelValue.Collection.peelMap(Map.of(
-                        PeelValue.integer(1), PeelValue.integer(10),
-                        (Primitives) PeelValue.bool(true), PeelValue.integer(20),
-                        PeelValue.text("x"), PeelValue.integer(30)
+                new TraceValue.MapValue(List.of(
+                        new TraceValue.MapValue.MapEntry(TraceValue.integer(1), TraceValue.integer(10)),
+                        new TraceValue.MapValue.MapEntry(TraceValue.bool(true), TraceValue.integer(20)),
+                        new TraceValue.MapValue.MapEntry(TraceValue.text("x"), TraceValue.integer(30))
+
                 ))
         );
     }
