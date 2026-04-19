@@ -86,49 +86,82 @@ class TraceProgramE2ETest {
                     """
             ));
             assertThat(trace.expressions()).hasSize(2);
-            // FunctionCall[name=fib, value=IntegerValue[value=2], arguments=[Literal[value=IntegerValue[value=3]]], subEvaluation=Optional[FunctionExecutionTrace[parameterBindings=[ParameterBinding[name=n, argument=Literal[value=IntegerValue[value=3]]]], bodyEvaluation=Block[content=[IfStatement[conditions=[BinaryOperator[operator===, value=BoolValue[value=false], lhs=VariableName[name=n, value=IntegerValue[value=3]], rhs=Literal[value=IntegerValue[value=1]], didShortCircuit=false], BinaryOperator[operator===, value=BoolValue[value=false], lhs=VariableName[name=n, value=IntegerValue[value=3]], rhs=Literal[value=IntegerValue[value=2]], didShortCircuit=false]], executedBlock=Block[content=[ReturnExpr[value=IntegerValue[value=2], expression=BinaryOperator[operator=+, value=IntegerValue[value=2], lhs=FunctionCall[name=fib, value=IntegerValue[value=1], arguments=[BinaryOperator[operator=-, value=IntegerValue[value=2], lhs=VariableName[name=n, value=IntegerValue[value=3]], rhs=Literal[value=IntegerValue[value=1]], didShortCircuit=false]], subEvaluation=Optional[FunctionExecutionTrace[parameterBindings=[ParameterBinding[name=n, argument=BinaryOperator[operator=-, value=IntegerValue[value=2], lhs=VariableName[name=n, value=IntegerValue[value=3]], rhs=Literal[value=IntegerValue[value=1]], didShortCircuit=false]]], bodyEvaluation=Block[content=[IfStatement[conditions=[BinaryOperator[operator===, value=BoolValue[value=false], lhs=VariableName[name=n, value=IntegerValue[value=2]], rhs=Literal[value=IntegerValue[value=1]], didShortCircuit=false], BinaryOperator[operator===, value=BoolValue[value=true], lhs=VariableName[name=n, value=IntegerValue[value=2]], rhs=Literal[value=IntegerValue[value=2]], didShortCircuit=false]], executedBlock=Block[content=[ReturnExpr[value=IntegerValue[value=1], expression=Literal[value=IntegerValue[value=1]]]]]]]]]]], rhs=FunctionCall[name=fib, value=IntegerValue[value=1], arguments=[BinaryOperator[operator=-, value=IntegerValue[value=1], lhs=VariableName[name=n, value=IntegerValue[value=3]], rhs=Literal[value=IntegerValue[value=2]], didShortCircuit=false]], subEvaluation=Optional[FunctionExecutionTrace[parameterBindings=[ParameterBinding[name=n, argument=BinaryOperator[operator=-, value=IntegerValue[value=1], lhs=VariableName[name=n, value=IntegerValue[value=3]], rhs=Literal[value=IntegerValue[value=2]], didShortCircuit=false]]], bodyEvaluation=Block[content=[IfStatement[conditions=[BinaryOperator[operator===, value=BoolValue[value=true], lhs=VariableName[name=n, value=IntegerValue[value=1]], rhs=Literal[value=IntegerValue[value=1]], didShortCircuit=false]], executedBlock=Block[content=[ReturnExpr[value=IntegerValue[value=1], expression=Literal[value=IntegerValue[value=1]]]]]]]]]]], didShortCircuit=false]]]]]]]]]]
-            assertThat(trace.expressions().get(1)).isEqualTo(
-                    new TraceExpression.FunctionCall(
-                            "fib",
-                            new TraceValue.IntegerValue(2),
-                            List.of(new TraceExpression.Literal(new TraceValue.IntegerValue(3))),
-                            Optional.of(new TraceExpression.FunctionExecutionTrace(
-                                    List.of(
-                                            new TraceExpression.ParameterBinding(
-                                                    "n",
-                                                    new TraceExpression.Literal(new TraceValue.IntegerValue(3))
-                                            )
-                                    ),
-                                    new TraceExpression.Block(
-                                            List.of(
-                                                    new TraceExpression.IfStatement(
-                                                            List.of(
-                                                                    fibEqualityComparison(3, 1),
-                                                                    fibEqualityComparison(3, 2)
-                                                            ),
-                                                            new TraceExpression.Block(
-                                                                    List.of(
-                                                                            new TraceExpression.ReturnExpr(
-                                                                                    new TraceValue.IntegerValue(3),
-                                                                                    null
-                                                                            )
-                                                                    )
-                                                            )
-                                                    )
-                                            )
-                                    )
-                            ))
-                    ));
+            assertThat(trace.expressions().get(1)).isEqualTo(fibFunctionCall(3, fibLiteral(3)));
+        }
+
+        private static TraceExpression.FunctionCall fibFunctionCall(int n, TraceExpression argument) {
+            return new TraceExpression.FunctionCall(
+                    "fib",
+                    fibIntegerValue(fibValue(n)),
+                    List.of(argument),
+                    Optional.of(new TraceExpression.FunctionExecutionTrace(
+                            List.of(new TraceExpression.ParameterBinding("n", argument)),
+                            new TraceExpression.Block(List.of(fibIfStatement(n)))
+                    ))
+            );
+        }
+
+        private static TraceExpression.IfStatement fibIfStatement(int n) {
+            return new TraceExpression.IfStatement(
+                    n == 1
+                            ? List.of(fibEqualityComparison(n, 1))
+                            : List.of(fibEqualityComparison(n, 1), fibEqualityComparison(n, 2)),
+                    new TraceExpression.Block(List.of(fibReturnExpr(n)))
+            );
+        }
+
+        private static TraceExpression.ReturnExpr fibReturnExpr(int n) {
+            if (n <= 2) {
+                return new TraceExpression.ReturnExpr(fibIntegerValue(1), fibLiteral(1));
+            }
+
+            TraceExpression leftArgument = fibSubtractionArgument(n, 1);
+            TraceExpression rightArgument = fibSubtractionArgument(n, 2);
+
+            TraceExpression sum = new TraceExpression.BinaryOperator(
+                    "+",
+                    fibIntegerValue(fibValue(n)),
+                    fibFunctionCall(n - 1, leftArgument),
+                    fibFunctionCall(n - 2, rightArgument),
+                    false
+            );
+
+            return new TraceExpression.ReturnExpr(fibIntegerValue(fibValue(n)), sum);
+        }
+
+        private static TraceExpression.BinaryOperator fibSubtractionArgument(int n, int decrement) {
+            return new TraceExpression.BinaryOperator(
+                    "-",
+                    fibIntegerValue(n - decrement),
+                    new TraceExpression.VariableName("n", fibIntegerValue(n)),
+                    fibLiteral(decrement),
+                    false
+            );
         }
 
         private static TraceExpression.BinaryOperator fibEqualityComparison(int nValue, int comparisonValue) {
             return new TraceExpression.BinaryOperator(
                     "==",
-                    new TraceValue.BoolValue(false),
-                    new TraceExpression.VariableName("n", new TraceValue.IntegerValue(nValue)),
-                    new TraceExpression.Literal(new TraceValue.IntegerValue(comparisonValue)),
+                    new TraceValue.BoolValue(nValue == comparisonValue),
+                    new TraceExpression.VariableName("n", fibIntegerValue(nValue)),
+                    fibLiteral(comparisonValue),
                     false
             );
+        }
+
+        private static TraceExpression.Literal fibLiteral(int value) {
+            return new TraceExpression.Literal(fibIntegerValue(value));
+        }
+
+        private static TraceValue.IntegerValue fibIntegerValue(int value) {
+            return new TraceValue.IntegerValue(value);
+        }
+
+        private static int fibValue(int n) {
+            if (n <= 2) {
+                return 1;
+            }
+            return fibValue(n - 1) + fibValue(n - 2);
         }
 
         @Test
