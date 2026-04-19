@@ -34,7 +34,7 @@ to documents for customers or regulators.
 - ✅ Lexical scoping
 - ✅ First-class functions
 - ✅ Extensible runtime architecture
-- 🚧 JSON output format
+- ✅ JSON output format
 
 See [`docs/product/`](docs/product/) for detailed epic planning.
 
