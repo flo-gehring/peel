@@ -2,11 +2,12 @@ package de.flogehring.peel.run.trace;
 
 import de.flogehring.peel.core.trace.TraceExpression;
 
+import java.util.ArrayList;
 import java.util.List;
 
 public class MapLiteralRecorder implements TraceRecorder {
 
-    private List<KeyValueRecorder> keyValueRecorderList;
+    private final List<KeyValueRecorder> keyValueRecorderList = new ArrayList<>();
 
     @Override
     public TraceExpression traceExpression() {

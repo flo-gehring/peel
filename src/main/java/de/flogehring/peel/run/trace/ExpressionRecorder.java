@@ -20,12 +20,6 @@ public class ExpressionRecorder implements TraceRecorder {
         return createAndAssign(AssignmentRecorder::new);
     }
 
-    private <T extends TraceRecorder> T createAndAssign(Supplier<T> creator) {
-        T recorder = creator.get();
-        traceRecorder = recorder;
-        return recorder;
-    }
-
     @Override
     public TraceExpression traceExpression() {
         return traceRecorder.traceExpression();
@@ -33,7 +27,6 @@ public class ExpressionRecorder implements TraceRecorder {
 
     public BinaryOpRecorder recordBinary() {
         return createAndAssign(BinaryOpRecorder::new);
-
     }
 
     public LiteralRecorder literalRecorder() {
@@ -78,5 +71,11 @@ public class ExpressionRecorder implements TraceRecorder {
 
     public WhileLoopRecorder recordWhileLoop() {
         return createAndAssign(WhileLoopRecorder::new);
+    }
+
+    private <T extends TraceRecorder> T createAndAssign(Supplier<T> creator) {
+        T recorder = creator.get();
+        traceRecorder = recorder;
+        return recorder;
     }
 }

@@ -1,6 +1,5 @@
 package de.flogehring.peel.core.trace;
 
-import de.flogehring.peel.core.eval.Function;
 import de.flogehring.peel.core.values.*;
 
 import java.util.LinkedHashMap;
@@ -31,18 +30,18 @@ public final class TraceValueMapper {
                 String name = functionReference.getFunctions().isEmpty()
                         ? "<function_reference>"
                         : functionReference.getFunctions().getFirst().name();
-                List<Integer> arities = functionReference.getFunctions().stream().map(Function::arity).toList();
-                yield new TraceValue.CallableRef("function_reference", name, arities);
+                // TODO The Callable Ref Trace Value is weird.
+                yield new TraceValue.CallableRef("function_reference", name, List.of());
             }
             case PeelClosure closure -> new TraceValue.CallableRef(
                     "closure",
                     closure.getName(),
-                    List.of(closure.getParameters().size())
+                    closure.getParameters()
             );
             case PeelFunctionDefinition functionDefinition -> new TraceValue.CallableRef(
                     "peel_function",
                     functionDefinition.getName(),
-                    List.of(functionDefinition.getParameters().size())
+                    functionDefinition.getParameters()
             );
         };
     }

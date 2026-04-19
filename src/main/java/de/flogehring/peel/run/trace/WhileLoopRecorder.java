@@ -8,6 +8,7 @@ import java.util.List;
 
 public class WhileLoopRecorder implements TraceRecorder {
 
+    public static final TraceExpression.Block EMPTY_BLOCK = new TraceExpression.Block(List.of());
     private List<ExpressionRecorder> conditions = new ArrayList<>();
     private List<ExpressionRecorder> bodies = new ArrayList<>();
 
@@ -23,9 +24,21 @@ public class WhileLoopRecorder implements TraceRecorder {
 
     @Override
     public TraceExpression traceExpression() {
-        return new TraceExpression.WhileLoop(
-                List.of(), // TODO
-                new TraceValue.NoneValue() // TODO
-        );
+        List<TraceExpression.WhileLoop.Iteration> iteration = new ArrayList<>();
+        TraceValue lastValue = TraceValue.NONE_VALUE;
+        for (int i = 0; i < conditions.size(); ++i) {
+            TraceExpression.Block body = EMPTY_BLOCK;
+            if (bodies.size() > i) {
+                body = (TraceExpression.Block) bodies.get(i).traceExpression();
+                lastValue = body.value();
+            }
+            iteration.add(
+                    new TraceExpression.WhileLoop.Iteration(
+                            conditions.get(i).traceExpression(),
+                            body
+                    )
+            );
+        }
+        return new TraceExpression.WhileLoop(iteration, lastValue);
     }
 }

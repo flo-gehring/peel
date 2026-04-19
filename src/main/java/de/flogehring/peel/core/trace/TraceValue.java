@@ -13,8 +13,10 @@ public sealed interface TraceValue permits
         TraceValue.MapValue,
         TraceValue.CallableRef {
 
+    TraceValue.NoneValue NONE_VALUE = new NoneValue();
+
     static NoneValue none() {
-        return new NoneValue();
+        return TraceValue.NONE_VALUE;
     }
 
     record IntegerValue(int value) implements TraceValue {
@@ -43,6 +45,6 @@ public sealed interface TraceValue permits
         }
     }
 
-    record CallableRef(String callableKind, String name, List<Integer> arities) implements TraceValue {
+    record CallableRef(String callableKind, String name, List<String> arities) implements TraceValue {
     }
 }

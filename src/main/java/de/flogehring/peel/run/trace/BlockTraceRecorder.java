@@ -17,6 +17,8 @@ public class BlockTraceRecorder implements TraceRecorder {
 
     @Override
     public TraceExpression traceExpression() {
-        return new TraceExpression.Block(traceContents.stream().map(TraceRecorder::traceExpression).toList());
+        return new TraceExpression.Block(
+                traceContents.stream().map(TraceRecorder::traceExpression).toList()
+        );
     }
 }

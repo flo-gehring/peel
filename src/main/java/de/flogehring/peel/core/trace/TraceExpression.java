@@ -1,5 +1,7 @@
 package de.flogehring.peel.core.trace;
 
+import de.flogehring.peel.core.Nullable;
+
 import java.util.List;
 import java.util.Optional;
 
@@ -17,10 +19,11 @@ public sealed interface TraceExpression permits
         TraceExpression.ListLiteral,
         TraceExpression.MapLiteral,
         TraceExpression.Selector,
-        TraceExpression.LogicalBinaryOperator,
         TraceExpression.Block {
 
     TraceValue value();
+
+    TraceExpression.Block EMPTY_BLOCK = new TraceExpression.Block(List.of());
 
     record Literal(TraceValue value) implements TraceExpression {
     }
@@ -29,7 +32,8 @@ public sealed interface TraceExpression permits
             String operator,
             TraceValue value,
             TraceExpression lhs,
-            TraceExpression rhs
+            @Nullable TraceExpression rhs,
+            boolean didShortCircuit
     ) implements TraceExpression {
     }
 
@@ -55,7 +59,6 @@ public sealed interface TraceExpression permits
     }
 
     record FunctionExecutionTrace(
-            String calleeKind,
             List<ParameterBinding> parameterBindings,
             Block bodyEvaluation
     ) {
@@ -76,7 +79,7 @@ public sealed interface TraceExpression permits
     ) implements TraceExpression {
         @Override
         public TraceValue value() {
-            return executedBlock != null ? executedBlock.value() : new TraceValue.NoneValue();
+            return executedBlock != null ? executedBlock.value() : TraceValue.NONE_VALUE;
         }
     }
 
@@ -94,7 +97,7 @@ public sealed interface TraceExpression permits
 
         @Override
         public TraceValue value() {
-            return iterations.isEmpty() ? new TraceValue.NoneValue() : iterations.getLast().body().value();
+            return iterations.isEmpty() ? TraceValue.NONE_VALUE : iterations.getLast().body().value();
         }
     }
 
@@ -127,15 +130,6 @@ public sealed interface TraceExpression permits
             TraceValue value,
             TraceExpression target,
             TraceExpression selector
-    ) implements TraceExpression {
-    }
-
-    record LogicalBinaryOperator(
-            String operator,
-            TraceValue value,
-            TraceExpression lhs,
-            Optional<TraceExpression> rhs,
-            boolean shortCircuited
     ) implements TraceExpression {
     }
 

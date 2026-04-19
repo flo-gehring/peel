@@ -3,8 +3,6 @@ package de.flogehring.peel.run;
 import de.flogehring.peel.core.eval.Function;
 import de.flogehring.peel.core.eval.OperatorDef;
 import de.flogehring.peel.core.lang.Expression;
-import de.flogehring.peel.core.trace.TraceValue;
-import de.flogehring.peel.core.trace.TraceValueMapper;
 import de.flogehring.peel.core.values.*;
 import de.flogehring.peel.run.exceptions.MultipleFunctionsFoundException;
 import de.flogehring.peel.run.exceptions.NoFunctionFoundException;
@@ -56,8 +54,7 @@ public class Evaluator {
                     evaluateSelector(target, selector, recorder.recordSelector());
             case Expression.Return(var expr) -> evaluateReturn(expr, recorder.recordReturn());
             case Expression.FunctionDeclaration(var callable, var offset) ->
-                    declareFunction(callable, offset, recorder.recordFunctionDeclaration()
-                    );
+                    declareFunction(callable, offset, recorder.recordFunctionDeclaration());
         };
     }
 
@@ -92,7 +89,8 @@ public class Evaluator {
         return value;
     }
 
-    private PeelValue declareFunction(PeelFunctionDefinition callable, int offset, TraceRecorder recorder) {
+    private PeelValue declareFunction(PeelFunctionDefinition callable, int offset, FunctionDeclarationRecorder functionDeclarationRecorder) {
+        functionDeclarationRecorder.recordCallable(callable.getName(), callable.getParameters());
         environment.putFunction(new Expression.VariableName(callable.getName(), offset), getFunctionFrom(callable));
         return callable;
     }
@@ -283,6 +281,7 @@ public class Evaluator {
             result = returnValueFlow.getValue();
         }
         environment = currentEnv;
+        recorder.recordResult(result);
         return result;
     }
 
@@ -319,7 +318,6 @@ public class Evaluator {
                  Expression.Selector _,
                  Expression.UnaryPrefixOperator _,
                  Expression.WhileLoop _ -> {
-                SingleTraceExpressionRecorder calleeRecorder = new SingleTraceExpressionRecorder();
                 PeelValue value = evaluateExpr(callee, recorder.functionFromExpr());
                 yield getFunctionFromPeelValue(value);
             }
@@ -419,9 +417,5 @@ public class Evaluator {
         } else {
             return list.getFirst();
         }
-    }
-
-    private TraceValue toTraceValue(PeelValue value) {
-        return TraceValueMapper.fromPeelValue(value);
     }
 }

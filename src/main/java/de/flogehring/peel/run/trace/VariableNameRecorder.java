@@ -18,7 +18,6 @@ public class VariableNameRecorder implements TraceRecorder {
         this.name = name;
     }
 
-
     public void recordValue(PeelValue value) {
         this.traceValue = TraceValueMapper.fromPeelValue(value);
     }

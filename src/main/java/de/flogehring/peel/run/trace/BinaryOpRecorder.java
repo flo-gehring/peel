@@ -4,15 +4,18 @@ import de.flogehring.peel.core.trace.TraceExpression;
 import de.flogehring.peel.core.trace.TraceValue;
 import de.flogehring.peel.core.trace.TraceValueMapper;
 import de.flogehring.peel.core.values.PeelValue;
+import lombok.Setter;
 
 public class BinaryOpRecorder implements TraceRecorder {
 
+    // TODO Add test case for when you have something like `&& return`; if this is possible
+    // TODO Add test case for short circuiting
+    @Setter
     private String operator;
     private ExpressionRecorder lhsRecorder;
     private ExpressionRecorder rhsRecorder;
     private boolean shortCircuit = false;
     private TraceValue traceValue;
-
 
     @Override
     public TraceExpression traceExpression() {
@@ -20,7 +23,8 @@ public class BinaryOpRecorder implements TraceRecorder {
                 operator,
                 traceValue,
                 lhsRecorder.traceExpression(),
-                shortCircuit ? null : rhsRecorder.traceExpression()
+                shortCircuit ? null : rhsRecorder.traceExpression(),
+                shortCircuit
         );
     }
 
@@ -40,9 +44,5 @@ public class BinaryOpRecorder implements TraceRecorder {
 
     public void recordValue(PeelValue value) {
         traceValue = TraceValueMapper.fromPeelValue(value);
-    }
-
-    public void setOperator(String operator) {
-        this.operator = operator;
     }
 }

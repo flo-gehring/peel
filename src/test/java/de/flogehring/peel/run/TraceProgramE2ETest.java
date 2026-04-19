@@ -38,11 +38,11 @@ class TraceProgramE2ETest {
 
         assertThat(trace.expressions()).hasSize(1);
         assertThat(trace.result()).isEqualTo(new TraceValue.BoolValue(true));
-        assertThat(trace.expressions().getFirst()).isInstanceOf(TraceExpression.LogicalBinaryOperator.class);
+        assertThat(trace.expressions().getFirst()).isInstanceOf(TraceExpression.BinaryOperator.class);
 
-        TraceExpression.LogicalBinaryOperator logical = (TraceExpression.LogicalBinaryOperator) trace.expressions().getFirst();
-        assertThat(logical.shortCircuited()).isTrue();
-        assertThat(logical.rhs()).isEmpty();
+        TraceExpression.BinaryOperator logical = (TraceExpression.BinaryOperator) trace.expressions().getFirst();
+        assertThat(logical.didShortCircuit()).isTrue();
+        assertThat(logical.rhs()).isNull();
     }
 
     @Test
@@ -60,7 +60,7 @@ class TraceProgramE2ETest {
 
         TraceExpression.WhileLoop loop = (TraceExpression.WhileLoop) trace.expressions().get(1);
         assertThat(loop.iterations()).hasSize(3);
-        assertThat(loop.iterations().getLast().body()).isNull();
+        assertThat(loop.iterations().getLast().body()).isEqualTo(TraceExpression.EMPTY_BLOCK);
         assertThat(loop.value()).isEqualTo(new TraceValue.IntegerValue(2));
     }
 
@@ -86,13 +86,13 @@ class TraceProgramE2ETest {
                     """
             ));
             assertThat(trace.expressions()).hasSize(2);
+            // FunctionCall[name=fib, value=IntegerValue[value=2], arguments=[Literal[value=IntegerValue[value=3]]], subEvaluation=Optional[FunctionExecutionTrace[parameterBindings=[ParameterBinding[name=n, argument=Literal[value=IntegerValue[value=3]]]], bodyEvaluation=Block[content=[IfStatement[conditions=[BinaryOperator[operator===, value=BoolValue[value=false], lhs=VariableName[name=n, value=IntegerValue[value=3]], rhs=Literal[value=IntegerValue[value=1]], didShortCircuit=false], BinaryOperator[operator===, value=BoolValue[value=false], lhs=VariableName[name=n, value=IntegerValue[value=3]], rhs=Literal[value=IntegerValue[value=2]], didShortCircuit=false]], executedBlock=Block[content=[ReturnExpr[value=IntegerValue[value=2], expression=BinaryOperator[operator=+, value=IntegerValue[value=2], lhs=FunctionCall[name=fib, value=IntegerValue[value=1], arguments=[BinaryOperator[operator=-, value=IntegerValue[value=2], lhs=VariableName[name=n, value=IntegerValue[value=3]], rhs=Literal[value=IntegerValue[value=1]], didShortCircuit=false]], subEvaluation=Optional[FunctionExecutionTrace[parameterBindings=[ParameterBinding[name=n, argument=BinaryOperator[operator=-, value=IntegerValue[value=2], lhs=VariableName[name=n, value=IntegerValue[value=3]], rhs=Literal[value=IntegerValue[value=1]], didShortCircuit=false]]], bodyEvaluation=Block[content=[IfStatement[conditions=[BinaryOperator[operator===, value=BoolValue[value=false], lhs=VariableName[name=n, value=IntegerValue[value=2]], rhs=Literal[value=IntegerValue[value=1]], didShortCircuit=false], BinaryOperator[operator===, value=BoolValue[value=true], lhs=VariableName[name=n, value=IntegerValue[value=2]], rhs=Literal[value=IntegerValue[value=2]], didShortCircuit=false]], executedBlock=Block[content=[ReturnExpr[value=IntegerValue[value=1], expression=Literal[value=IntegerValue[value=1]]]]]]]]]]], rhs=FunctionCall[name=fib, value=IntegerValue[value=1], arguments=[BinaryOperator[operator=-, value=IntegerValue[value=1], lhs=VariableName[name=n, value=IntegerValue[value=3]], rhs=Literal[value=IntegerValue[value=2]], didShortCircuit=false]], subEvaluation=Optional[FunctionExecutionTrace[parameterBindings=[ParameterBinding[name=n, argument=BinaryOperator[operator=-, value=IntegerValue[value=1], lhs=VariableName[name=n, value=IntegerValue[value=3]], rhs=Literal[value=IntegerValue[value=2]], didShortCircuit=false]]], bodyEvaluation=Block[content=[IfStatement[conditions=[BinaryOperator[operator===, value=BoolValue[value=true], lhs=VariableName[name=n, value=IntegerValue[value=1]], rhs=Literal[value=IntegerValue[value=1]], didShortCircuit=false]], executedBlock=Block[content=[ReturnExpr[value=IntegerValue[value=1], expression=Literal[value=IntegerValue[value=1]]]]]]]]]]], didShortCircuit=false]]]]]]]]]]
             assertThat(trace.expressions().get(1)).isEqualTo(
                     new TraceExpression.FunctionCall(
                             "fib",
                             new TraceValue.IntegerValue(2),
                             List.of(new TraceExpression.Literal(new TraceValue.IntegerValue(3))),
                             Optional.of(new TraceExpression.FunctionExecutionTrace(
-                                    "fib",
                                     List.of(
                                             new TraceExpression.ParameterBinding(
                                                     "n",
@@ -126,7 +126,8 @@ class TraceProgramE2ETest {
                     "==",
                     new TraceValue.BoolValue(false),
                     new TraceExpression.VariableName("n", new TraceValue.IntegerValue(nValue)),
-                    new TraceExpression.Literal(new TraceValue.IntegerValue(comparisonValue))
+                    new TraceExpression.Literal(new TraceValue.IntegerValue(comparisonValue)),
+                    false
             );
         }
 

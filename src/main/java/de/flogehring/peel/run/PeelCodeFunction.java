@@ -2,14 +2,11 @@ package de.flogehring.peel.run;
 
 import de.flogehring.peel.core.eval.Function;
 import de.flogehring.peel.core.lang.Expression;
-import de.flogehring.peel.core.trace.TraceExpression;
-import de.flogehring.peel.core.trace.TraceValueMapper;
 import de.flogehring.peel.core.values.PeelFunctionDefinition;
 import de.flogehring.peel.core.values.PeelValue;
 import de.flogehring.peel.run.trace.BlockTraceRecorder;
 import de.flogehring.peel.run.trace.FunctionCallRecorder;
 
-import java.util.ArrayList;
 import java.util.List;
 
 public class PeelCodeFunction implements Function {
@@ -49,17 +46,13 @@ public class PeelCodeFunction implements Function {
 
     @Override
     public PeelValue runWithTrace(FunctionCallRecorder functionCallRecorder, PeelValue... arguments) {
+        functionCallRecorder.setName(callable.getName());
         EvaluationEnvironment e = environment.spawnChild();
         e.enterScope();
-        // TODO add parameter bindings
-        List<TraceExpression.ParameterBinding> parameterBindings = new ArrayList<>();
         for (int i = 0; i < callable.getParameters().size(); ++i) {
             String parameterName = callable.getParameters().get(i);
+            functionCallRecorder.recordBinding(parameterName);
             e.put(new Expression.VariableName(parameterName, 0), arguments[i]);
-            parameterBindings.add(new TraceExpression.ParameterBinding(
-                    parameterName,
-                    new TraceExpression.Literal(TraceValueMapper.fromPeelValue(arguments[i]))
-            ));
         }
         return new Evaluator(e).evaluateBlock(callable.getBody().codeElements(), functionCallRecorder.functionBody());
     }
