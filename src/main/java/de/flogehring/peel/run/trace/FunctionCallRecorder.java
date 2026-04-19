@@ -27,10 +27,12 @@ public class FunctionCallRecorder implements TraceRecorder {
                 name,
                 value,
                 argumentRecorder.stream().map(ExpressionRecorder::traceExpression).toList(),
-                Optional.of(new TraceExpression.FunctionCall.FunctionExecutionTrace(
-                        parameterBindings,
-                        (TraceExpression.Block) blockTraceRecorder.traceExpression()
-                ))
+                blockTraceRecorder != null ?
+                        Optional.of(new TraceExpression.FunctionCall.FunctionExecutionTrace(
+                                parameterBindings,
+                                (TraceExpression.Block) blockTraceRecorder.traceExpression()
+                        ))
+                        : Optional.empty()
         );
     }
 
