@@ -1,10 +1,11 @@
 package de.flogehring.peel.core.eval;
 
 import de.flogehring.peel.core.lang.Program;
+import de.flogehring.peel.core.trace.TraceProgram;
 
 public interface PeelRuntime {
 
-    EvaluatedProgram run(Program program);
+    TraceProgram run(Program program);
 
-    EvaluatedProgram run(Program program, RequestBindings requestBindings);
+    TraceProgram run(Program program, RequestBindings requestBindings);
 }

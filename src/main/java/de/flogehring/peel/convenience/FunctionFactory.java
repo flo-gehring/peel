@@ -15,7 +15,7 @@ public class FunctionFactory {
         return new SimpleFunction(
                 name,
                 2,
-                arguments -> function.apply(arguments[0].value(), arguments[1].value())
+                arguments -> function.apply(arguments[0], arguments[1])
         );
     }
 }

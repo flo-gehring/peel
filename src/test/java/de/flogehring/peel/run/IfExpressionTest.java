@@ -1,9 +1,10 @@
 package de.flogehring.peel.run;
 
 import de.flogehring.peel.convenience.RuntimeFactory;
-import de.flogehring.peel.core.eval.EvaluatedProgram;
 import de.flogehring.peel.core.eval.PeelRuntime;
 import de.flogehring.peel.core.lang.Program;
+import de.flogehring.peel.core.trace.TraceProgram;
+import de.flogehring.peel.core.trace.TraceValueMapper;
 import de.flogehring.peel.core.values.None;
 import de.flogehring.peel.core.values.Number;
 import de.flogehring.peel.core.values.PeelValue;
@@ -34,8 +35,8 @@ public class IfExpressionTest {
                             }
                             """
             );
-            EvaluatedProgram run = simpleRuntime.run(parse);
-            assertThat(run.getLastExpression().value()).isEqualTo(PeelValue.integer(2));
+            TraceProgram run = simpleRuntime.run(parse);
+            assertThat(run.result()).isEqualTo(TraceValueMapper.fromPeelValue(PeelValue.integer(2)));
         }
 
         @Test
@@ -51,8 +52,8 @@ public class IfExpressionTest {
                             }
                             """
             );
-            EvaluatedProgram run = simpleRuntime.run(parse);
-            assertThat(run.getLastExpression().value()).isEqualTo(PeelValue.integer(1));
+            TraceProgram run = simpleRuntime.run(parse);
+            assertThat(run.result()).isEqualTo(TraceValueMapper.fromPeelValue(PeelValue.integer(1)));
         }
 
         @Test

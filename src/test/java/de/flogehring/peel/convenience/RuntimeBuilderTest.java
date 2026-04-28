@@ -6,6 +6,7 @@ import de.flogehring.peel.core.eval.RuntimeModule;
 import de.flogehring.peel.core.eval.Variable;
 import de.flogehring.peel.core.lang.ExpressionFactoryMethods;
 import de.flogehring.peel.core.lang.Program;
+import de.flogehring.peel.core.trace.TraceValueMapper;
 import de.flogehring.peel.core.values.Bool;
 import de.flogehring.peel.core.values.Number;
 import de.flogehring.peel.core.values.PeelValue;
@@ -42,7 +43,7 @@ class RuntimeBuilderTest {
                 ExpressionFactoryMethods.expr(ExpressionFactoryMethods.var("x"), "~", ExpressionFactoryMethods.var("y"))
         ));
 
-        assertThat(runtime.run(p).getLastExpression().value()).isEqualTo(PeelValue.text("ab"));
+        assertThat(runtime.run(p).result()).isEqualTo(TraceValueMapper.fromPeelValue(PeelValue.text("ab")));
     }
 
     @Test
@@ -53,7 +54,7 @@ class RuntimeBuilderTest {
                                 "~",
                                 Number.class,
                                 Number.class,
-                                (lhs, rhs) -> PeelValue.integer(0)
+                                (_, _) -> PeelValue.integer(0)
                         ))
                         .build()
         );
@@ -67,7 +68,7 @@ class RuntimeBuilderTest {
                         "~",
                         Number.class,
                         Number.class,
-                        (lhs, rhs) -> PeelValue.integer(999)
+                        (_, _) -> PeelValue.integer(999)
                 ))
                 .withVariable(Variable.of("x", PeelValue.integer(1)))
                 .withVariable(Variable.of("y", PeelValue.integer(2)))
@@ -77,7 +78,7 @@ class RuntimeBuilderTest {
                 ExpressionFactoryMethods.expr(ExpressionFactoryMethods.var("x"), "~", ExpressionFactoryMethods.var("y"))
         ));
 
-        assertThat(runtime.run(p).getLastExpression().value()).isEqualTo(PeelValue.integer(999));
+        assertThat(runtime.run(p).result()).isEqualTo(TraceValueMapper.fromPeelValue(PeelValue.integer(999)));
     }
 
     @Test
@@ -88,7 +89,7 @@ class RuntimeBuilderTest {
                                 "&&",
                                 Bool.class,
                                 Bool.class,
-                                (lhs, rhs) -> PeelValue.bool(true)
+                                (_, _) -> PeelValue.bool(true)
                         ))
                         .build()
         );
@@ -102,7 +103,7 @@ class RuntimeBuilderTest {
                                 "||",
                                 Bool.class,
                                 Bool.class,
-                                (lhs, rhs) -> PeelValue.bool(true)
+                                (_, _) -> PeelValue.bool(true)
                         ))
                         .build()
         );
@@ -117,7 +118,7 @@ class RuntimeBuilderTest {
                         "&&",
                         Bool.class,
                         Bool.class,
-                        (lhs, rhs) -> PeelValue.bool(true)
+                        (_, _) -> PeelValue.bool(true)
                 ))
         );
 
@@ -137,7 +138,7 @@ class RuntimeBuilderTest {
                                 "&&",
                                 Bool.class,
                                 Bool.class,
-                                (lhs, rhs) -> PeelValue.bool(true)
+                                (_, _) -> PeelValue.bool(true)
                         ))
                         .build()
         );
