@@ -1,36 +1,49 @@
 package de.flogehring.peel.run.trace;
 
 import de.flogehring.peel.core.trace.TraceExpression;
+import de.flogehring.peel.core.trace.TraceValue;
+import de.flogehring.peel.core.trace.TraceValueMapper;
+import de.flogehring.peel.core.values.PeelValue;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 
 public class ForEachRecorder implements TraceRecorder {
 
-    // TODO Think about how to represent the list and loop in the output
-    //  Probably there should be some binding for the current loop value
-    private ExpressionRecorder listValueRecorder;
-    private final List<ExpressionRecorder> loopBodyRecorder = new ArrayList<>();
+    private String variableName;
+    private ExpressionRecorder iterableExpressionRecorder;
+    private final List<IterationRecorder> iterations = new ArrayList<>();
 
     @Override
     public TraceExpression traceExpression() {
         return new TraceExpression.ForEachLoop(
-                loopBodyRecorder.stream().map(
-                        body -> new TraceExpression.ForEachLoop.Iteration(
-                                (TraceExpression.Block) body.traceExpression()
+                Objects.requireNonNull(variableName, "variableName"),
+                Objects.requireNonNull(iterableExpressionRecorder, "iterableExpressionRecorder").traceExpression(),
+                iterations.stream().map(
+                        iteration -> new TraceExpression.ForEachLoop.Iteration(
+                                new TraceExpression.ForEachLoop.VariableBinding(variableName, iteration.value()),
+                                (TraceExpression.Block) iteration.bodyRecorder().traceExpression()
                         )
                 ).toList()
         );
     }
 
-    public ExpressionRecorder listRecorder() {
-        listValueRecorder = new ExpressionRecorder();
-        return listValueRecorder;
+    public void recordVariableName(String variableName) {
+        this.variableName = variableName;
     }
 
-    public ExpressionRecorder nextLoop() {
+    public ExpressionRecorder listRecorder() {
+        iterableExpressionRecorder = new ExpressionRecorder();
+        return iterableExpressionRecorder;
+    }
+
+    public ExpressionRecorder nextLoop(PeelValue currentValue) {
         ExpressionRecorder bodyRecorder = new ExpressionRecorder();
-        loopBodyRecorder.add(bodyRecorder);
+        iterations.add(new IterationRecorder(TraceValueMapper.fromPeelValue(currentValue), bodyRecorder));
         return bodyRecorder;
+    }
+
+    private record IterationRecorder(TraceValue value, ExpressionRecorder bodyRecorder) {
     }
 }

@@ -82,7 +82,7 @@ public class Evaluator {
 
     private PeelValue resolveVariable(Expression.VariableName varName, VariableNameRecorder recorder) {
         PeelValue value = environment.isFunction(varName)
-                ? FunctionReference.of(environment.getFunction(varName))
+                ? FunctionReference.of(varName.name(), environment.getFunction(varName))
                 : environment.getVar(varName);
         recorder.recordVarName(varName.name());
         recorder.recordValue(value);
@@ -208,12 +208,13 @@ public class Evaluator {
             Expression.Block block,
             ForEachRecorder recorder
     ) {
+        recorder.recordVariableName(varName);
         PeelValue.Collection.List list = requireList(evaluateExpr(listExpr, recorder.listRecorder()));
         PeelValue lastBodyValue = None.NONE;
         for (PeelValue value : list.list()) {
             beginnScope();
             environment.put(new Expression.VariableName(varName, 0), value);
-            lastBodyValue = evaluateExpr(block, recorder.nextLoop());
+            lastBodyValue = evaluateExpr(block, recorder.nextLoop(value));
             endScope();
         }
         return lastBodyValue;

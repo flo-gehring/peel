@@ -8,13 +8,15 @@ import java.util.List;
 @Getter
 public final class FunctionReference implements PeelCallable {
 
+    private final String name;
     private final List<Function> functions;
 
-    private FunctionReference(List<Function> functions) {
+    private FunctionReference(String name, List<Function> functions) {
+        this.name = name;
         this.functions = functions;
     }
 
-    public static FunctionReference of(List<Function> functions) {
-        return new FunctionReference(functions);
+    public static FunctionReference of(String name, List<Function> functions) {
+        return new FunctionReference(name, functions);
     }
 }

@@ -121,8 +121,18 @@ public sealed interface TraceExpression permits
         }
     }
 
-    record ForEachLoop(List<Iteration> iterations) implements TraceExpression {
-        public record Iteration(Block body) {
+    record ForEachLoop(
+            String variableName,
+            TraceExpression iterableExpression,
+            List<Iteration> iterations
+    ) implements TraceExpression {
+        public record Iteration(
+                VariableBinding binding,
+                Block body
+        ) {
+        }
+
+        public record VariableBinding(String name, TraceValue value) {
         }
 
         @Override

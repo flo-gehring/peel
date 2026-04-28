@@ -98,8 +98,14 @@ public final class TraceMapOutput {
                 node.put("type", "while_loop");
                 node.put("iterations", iterations.stream().map(TraceMapOutput::mapWhileIteration).toList());
             }
-            case TraceExpression.ForEachLoop(List<TraceExpression.ForEachLoop.Iteration> iterations) -> {
+            case TraceExpression.ForEachLoop(
+                    String variableName,
+                    TraceExpression iterableExpression,
+                    List<TraceExpression.ForEachLoop.Iteration> iterations
+            ) -> {
                 node.put("type", "for_each_loop");
+                node.put("variableName", variableName);
+                node.put("iterableExpression", mapExpression(iterableExpression));
                 node.put("iterations", iterations.stream().map(TraceMapOutput::mapForEachIteration).toList());
             }
             case TraceExpression.ListLiteral(List<TraceExpression> elements, _) -> {
@@ -172,7 +178,15 @@ public final class TraceMapOutput {
 
     private static Map<String, Object> mapForEachIteration(TraceExpression.ForEachLoop.Iteration iteration) {
         LinkedHashMap<String, Object> node = new LinkedHashMap<>();
+        node.put("binding", mapForEachBinding(iteration.binding()));
         node.put("body", mapExpression(iteration.body()));
+        return node;
+    }
+
+    private static Map<String, Object> mapForEachBinding(TraceExpression.ForEachLoop.VariableBinding binding) {
+        LinkedHashMap<String, Object> node = new LinkedHashMap<>();
+        node.put("name", binding.name());
+        node.put("value", mapValue(binding.value()));
         return node;
     }
 

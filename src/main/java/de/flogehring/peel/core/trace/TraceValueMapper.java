@@ -25,13 +25,8 @@ public final class TraceValueMapper {
             case PeelValue.Collection.Map(var map) -> new TraceValue.MapValue(
                     map.entrySet().stream().map(TraceValueMapper::fromMapEntry).toList()
             );
-            case FunctionReference functionReference -> {
-                String name = functionReference.getFunctions().isEmpty()
-                        ? "<function_reference>"
-                        : functionReference.getFunctions().getFirst().name();
-                // TODO The Callable Ref Trace Value is weird.
-                yield new TraceValue.CallableRef(CallableKind.FUNCTION_REFERENCE, name, List.of());
-            }
+            case FunctionReference functionReference ->
+                    new TraceValue.CallableRef(CallableKind.FUNCTION_REFERENCE, functionReference.getName(), List.of());
             case PeelClosure closure -> new TraceValue.CallableRef(
                     CallableKind.CLOSURE,
                     closure.getName(),

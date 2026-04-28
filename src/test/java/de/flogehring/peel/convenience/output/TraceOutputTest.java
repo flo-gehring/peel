@@ -80,4 +80,34 @@ class TraceOutputTest {
         assertThat(whileValue.get("type")).isEqualTo("integer");
         assertThat(whileValue.get("value")).isEqualTo(10);
     }
+
+    @Test
+    void forEachMapOutputContainsLoopVariableBinding() {
+        PeelRuntime runtime = RuntimeFactory.defaultLanguage();
+        TraceProgram traceProgram = runtime.run(PeelGrammar.parse("""
+                for (x in [1, 2, 3]) {
+                    x * 2;
+                }
+                """));
+
+        Map<String, Object> output = TraceOutput.asMap(traceProgram);
+        List<?> expressions = (List<?>) output.get("expressions");
+        Map<?, ?> forEach = (Map<?, ?>) expressions.getFirst();
+
+        assertThat(forEach.get("type")).isEqualTo("for_each_loop");
+        assertThat(forEach.get("variableName")).isEqualTo("x");
+
+        Map<?, ?> iterableExpression = (Map<?, ?>) forEach.get("iterableExpression");
+        assertThat(iterableExpression.get("type")).isEqualTo("list_literal");
+
+        List<?> iterations = (List<?>) forEach.get("iterations");
+        assertThat(iterations).hasSize(3);
+        Map<?, ?> firstIteration = (Map<?, ?>) iterations.getFirst();
+        Map<?, ?> binding = (Map<?, ?>) firstIteration.get("binding");
+        assertThat(binding.get("name")).isEqualTo("x");
+
+        Map<?, ?> bindingValue = (Map<?, ?>) binding.get("value");
+        assertThat(bindingValue.get("type")).isEqualTo("integer");
+        assertThat(bindingValue.get("value")).isEqualTo(1);
+    }
 }
