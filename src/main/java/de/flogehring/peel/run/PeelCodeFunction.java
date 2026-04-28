@@ -2,6 +2,7 @@ package de.flogehring.peel.run;
 
 import de.flogehring.peel.core.eval.Function;
 import de.flogehring.peel.core.lang.Expression;
+import de.flogehring.peel.core.trace.CallableKind;
 import de.flogehring.peel.core.values.PeelFunctionDefinition;
 import de.flogehring.peel.core.values.PeelValue;
 import de.flogehring.peel.run.trace.BlockTraceRecorder;
@@ -28,6 +29,13 @@ public class PeelCodeFunction implements Function {
     }
 
     @Override
+    public CallableKind callableKind() {
+        return callable instanceof de.flogehring.peel.core.values.PeelClosure
+                ? CallableKind.CLOSURE
+                : CallableKind.PEEL_FUNCTION;
+    }
+
+    @Override
     public PeelValue run(PeelValue... arguments) {
         EvaluationEnvironment e = environment.spawnChild();
         e.enterScope();
@@ -39,7 +47,6 @@ public class PeelCodeFunction implements Function {
 
     @Override
     public PeelValue runWithTrace(FunctionCallRecorder functionCallRecorder, PeelValue... arguments) {
-        functionCallRecorder.setName(callable.getName());
         EvaluationEnvironment e = environment.spawnChild();
         e.enterScope();
         for (int i = 0; i < callable.getParameters().size(); ++i) {

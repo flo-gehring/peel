@@ -38,10 +38,10 @@ public final class TraceMapOutput {
         node.put("value", mapValue(traceExpression.value()));
 
         switch (traceExpression) {
-            case TraceExpression.Literal literal -> node.put("type", "literal");
+            case TraceExpression.Literal _ -> node.put("type", "literal");
             case TraceExpression.BinaryOperator(
                     String operator,
-                    TraceValue value,
+                    _,
                     TraceExpression lhs,
                     TraceExpression rhs,
                     boolean didShortCircuit
@@ -54,33 +54,37 @@ public final class TraceMapOutput {
             }
             case TraceExpression.UnaryPrefixOperator(
                     String operator,
-                    TraceValue value,
+                    _,
                     TraceExpression argument
             ) -> {
                 node.put("type", "unary_prefix_operator");
                 node.put("operator", operator);
                 node.put("argument", mapExpression(argument));
             }
-            case TraceExpression.VariableName(String name, TraceValue value) -> {
+            case TraceExpression.VariableName(String name, _) -> {
                 node.put("type", "variable_name");
                 node.put("name", name);
             }
             case TraceExpression.FunctionCall(
                     String name,
-                    TraceValue value,
+                    _,
                     List<TraceExpression> arguments,
-                    java.util.Optional<TraceExpression.FunctionExecutionTrace> subEvaluation
+                    java.util.Optional<TraceExpression.FunctionExecutionTrace> subEvaluation,
+                    TraceExpression.CalleeSource calleeSource,
+                    TraceExpression.ResolvedCallable resolvedCallable
             ) -> {
                 node.put("type", "function_call");
                 node.put("name", name);
                 node.put("arguments", arguments.stream().map(TraceMapOutput::mapExpression).toList());
                 node.put("subEvaluation", subEvaluation.map(TraceMapOutput::mapFunctionExecutionTrace).orElse(null));
+                node.put("calleeSource", mapCalleeSource(calleeSource));
+                node.put("resolvedCallable", mapResolvedCallable(resolvedCallable));
             }
-            case TraceExpression.ReturnExpr(TraceValue value, TraceExpression expression) -> {
+            case TraceExpression.ReturnExpr(_, TraceExpression expression) -> {
                 node.put("type", "return_expression");
                 node.put("expression", mapExpression(expression));
             }
-            case TraceExpression.Assignment(String variableName, TraceExpression expression, TraceValue value) -> {
+            case TraceExpression.Assignment(String variableName, TraceExpression expression, _) -> {
                 node.put("type", "assignment");
                 node.put("variableName", variableName);
                 node.put("expression", mapExpression(expression));
@@ -90,7 +94,7 @@ public final class TraceMapOutput {
                 node.put("conditions", conditions.stream().map(TraceMapOutput::mapExpression).toList());
                 node.put("executedBlock", executedBlock == null ? null : mapExpression(executedBlock));
             }
-            case TraceExpression.WhileLoop(List<TraceExpression.WhileLoop.Iteration> iterations, TraceValue value) -> {
+            case TraceExpression.WhileLoop(List<TraceExpression.WhileLoop.Iteration> iterations, _) -> {
                 node.put("type", "while_loop");
                 node.put("iterations", iterations.stream().map(TraceMapOutput::mapWhileIteration).toList());
             }
@@ -98,7 +102,7 @@ public final class TraceMapOutput {
                 node.put("type", "for_each_loop");
                 node.put("iterations", iterations.stream().map(TraceMapOutput::mapForEachIteration).toList());
             }
-            case TraceExpression.ListLiteral(List<TraceExpression> elements, TraceValue value) -> {
+            case TraceExpression.ListLiteral(List<TraceExpression> elements, _) -> {
                 node.put("type", "list_literal");
                 node.put("elements", elements.stream().map(TraceMapOutput::mapExpression).toList());
             }
@@ -106,7 +110,7 @@ public final class TraceMapOutput {
                 node.put("type", "map_literal");
                 node.put("entries", entries.stream().map(TraceMapOutput::mapMapLiteralEntry).toList());
             }
-            case TraceExpression.Selector(TraceValue value, TraceExpression target, TraceExpression selector) -> {
+            case TraceExpression.Selector(_, TraceExpression target, TraceExpression selector) -> {
                 node.put("type", "selector");
                 node.put("target", mapExpression(target));
                 node.put("selector", mapExpression(selector));
@@ -126,6 +130,29 @@ public final class TraceMapOutput {
                 functionExecutionTrace.parameterBindings().stream().map(TraceMapOutput::mapParameterBinding).toList()
         );
         node.put("bodyEvaluation", mapExpression(functionExecutionTrace.bodyEvaluation()));
+        return node;
+    }
+
+    private static Map<String, Object> mapCalleeSource(TraceExpression.CalleeSource calleeSource) {
+        LinkedHashMap<String, Object> node = new LinkedHashMap<>();
+        switch (calleeSource) {
+            case TraceExpression.CalleeSource.VariableName(String varName) -> {
+                node.put("kind", "variable");
+                node.put("variableName", varName);
+            }
+            case TraceExpression.CalleeSource.Expression(TraceExpression expression) -> {
+                node.put("kind", "expression");
+                node.put("expression", mapExpression(expression));
+            }
+        }
+        return node;
+    }
+
+    private static Map<String, Object> mapResolvedCallable(TraceExpression.ResolvedCallable resolvedCallable) {
+        LinkedHashMap<String, Object> node = new LinkedHashMap<>();
+        node.put("kind", resolvedCallable.kind().wireValue());
+        node.put("name", resolvedCallable.name());
+        node.put("arity", resolvedCallable.arity());
         return node;
     }
 
@@ -179,7 +206,7 @@ public final class TraceMapOutput {
                 node.put("type", "bool");
                 node.put("value", value);
             }
-            case TraceValue.NoneValue noneValue -> {
+            case TraceValue.NoneValue _ -> {
                 node.put("type", "none");
                 node.put("value", null);
             }
@@ -191,9 +218,11 @@ public final class TraceMapOutput {
                 node.put("type", "map");
                 node.put("entries", entries.stream().map(TraceMapOutput::mapMapValueEntry).toList());
             }
-            case TraceValue.CallableRef(String callableKind, String name, List<String> arities) -> {
+            case TraceValue.CallableRef(
+                    de.flogehring.peel.core.trace.CallableKind callableKind, String name, List<String> arities
+            ) -> {
                 node.put("type", "callable_ref");
-                node.put("callableKind", callableKind);
+                node.put("callableKind", callableKind.wireValue());
                 node.put("name", name);
                 node.put("arities", arities);
             }

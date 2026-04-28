@@ -1,5 +1,6 @@
 package de.flogehring.peel.run.trace;
 
+import de.flogehring.peel.core.trace.CallableKind;
 import de.flogehring.peel.core.trace.TraceExpression;
 import de.flogehring.peel.core.trace.TraceValue;
 
@@ -13,7 +14,7 @@ public class FunctionDeclarationRecorder implements TraceRecorder {
     @Override
     public TraceExpression traceExpression() {
         return new TraceExpression.Literal(new TraceValue.CallableRef(
-                "function", name, parameters
+                CallableKind.PEEL_FUNCTION, name, parameters
         ));
     }
 

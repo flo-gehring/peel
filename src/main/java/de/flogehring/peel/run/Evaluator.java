@@ -272,6 +272,7 @@ public class Evaluator {
             arguments.add(evaluateExpr(argument, recorder.recordArgument()));
         }
         Function function = resolveFunctions(functionCall, arguments, recorder);
+        recorder.recordResolvedCallable(function.callableKind(), function.name(), function.arity());
         PeelValue result;
         EvaluationEnvironment currentEnv = environment;
         environment = currentEnv.spawnChild();

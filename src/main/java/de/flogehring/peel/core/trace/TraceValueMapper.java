@@ -30,15 +30,15 @@ public final class TraceValueMapper {
                         ? "<function_reference>"
                         : functionReference.getFunctions().getFirst().name();
                 // TODO The Callable Ref Trace Value is weird.
-                yield new TraceValue.CallableRef("function_reference", name, List.of());
+                yield new TraceValue.CallableRef(CallableKind.FUNCTION_REFERENCE, name, List.of());
             }
             case PeelClosure closure -> new TraceValue.CallableRef(
-                    "closure",
+                    CallableKind.CLOSURE,
                     closure.getName(),
                     closure.getParameters()
             );
             case PeelFunctionDefinition functionDefinition -> new TraceValue.CallableRef(
-                    "peel_function",
+                    CallableKind.PEEL_FUNCTION,
                     functionDefinition.getName(),
                     functionDefinition.getParameters()
             );

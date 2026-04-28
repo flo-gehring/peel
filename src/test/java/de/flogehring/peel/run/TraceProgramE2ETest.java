@@ -2,6 +2,7 @@ package de.flogehring.peel.run;
 
 import de.flogehring.peel.convenience.RuntimeFactory;
 import de.flogehring.peel.core.eval.PeelRuntime;
+import de.flogehring.peel.core.trace.CallableKind;
 import de.flogehring.peel.core.trace.TraceExpression;
 import de.flogehring.peel.core.trace.TraceProgram;
 import de.flogehring.peel.core.trace.TraceValue;
@@ -310,23 +311,23 @@ class TraceProgramE2ETest {
                     List.of(
                             new TraceExpression.Assignment(
                                     "f1",
-                                    callableLiteral("closure", ANON_EMPTY_1, List.of()),
-                                    new TraceValue.CallableRef("closure", ANON_EMPTY_1, List.of())
+                                    callableLiteral(CallableKind.CLOSURE, ANON_EMPTY_1, List.of()),
+                                    new TraceValue.CallableRef(CallableKind.CLOSURE, ANON_EMPTY_1, List.of())
                             ),
                             new TraceExpression.Assignment(
                                     "f2",
-                                    callableLiteral("closure", ANON_EMPTY_2, List.of()),
-                                    new TraceValue.CallableRef("closure", ANON_EMPTY_2, List.of())
+                                    callableLiteral(CallableKind.CLOSURE, ANON_EMPTY_2, List.of()),
+                                    new TraceValue.CallableRef(CallableKind.CLOSURE, ANON_EMPTY_2, List.of())
                             ),
                             new TraceExpression.Assignment(
                                     "f1",
-                                    callableLiteral("closure", ANON_F1, List.of("x")),
-                                    new TraceValue.CallableRef("closure", ANON_F1, List.of("x"))
+                                    callableLiteral(CallableKind.CLOSURE, ANON_F1, List.of("x")),
+                                    new TraceValue.CallableRef(CallableKind.CLOSURE, ANON_F1, List.of("x"))
                             ),
                             new TraceExpression.Assignment(
                                     "f2",
-                                    callableLiteral("closure", ANON_F2, List.of("x")),
-                                    new TraceValue.CallableRef("closure", ANON_F2, List.of("x"))
+                                    callableLiteral(CallableKind.CLOSURE, ANON_F2, List.of("x")),
+                                    new TraceValue.CallableRef(CallableKind.CLOSURE, ANON_F2, List.of("x"))
                             ),
                             new TraceExpression.Assignment("x", intLiteral(5), intValue(5)),
                             mutualFactorialCall(5, intLiteral(5), true)
@@ -345,7 +346,9 @@ class TraceProgramE2ETest {
                     Optional.of(new TraceExpression.FunctionExecutionTrace(
                             List.of(new TraceExpression.ParameterBinding("n", argument)),
                             new TraceExpression.Block(List.of(fibIfStatement(n)))
-                    ))
+                    )),
+                    calleeFromVariable("fib"),
+                    resolvedCallable(CallableKind.PEEL_FUNCTION, "fib", 1)
             );
         }
 
@@ -405,7 +408,9 @@ class TraceProgramE2ETest {
                     Optional.of(new TraceExpression.FunctionExecutionTrace(
                             List.of(new TraceExpression.ParameterBinding("n", argument)),
                             new TraceExpression.Block(List.of(fibWithOuterScopeIfStatement(n)))
-                    ))
+                    )),
+                    calleeFromVariable("fib"),
+                    resolvedCallable(CallableKind.PEEL_FUNCTION, "fib", 1)
             );
         }
 
@@ -455,7 +460,9 @@ class TraceProgramE2ETest {
                     Optional.of(new TraceExpression.FunctionExecutionTrace(
                             List.of(new TraceExpression.ParameterBinding("a", argument)),
                             factorialBody(aValue)
-                    ))
+                    )),
+                    calleeFromVariable("factorial"),
+                    resolvedCallable(CallableKind.PEEL_FUNCTION, "factorial", 1)
             );
         }
 
@@ -524,22 +531,35 @@ class TraceProgramE2ETest {
                                             false
                                     )
                             ))
-                    ))
+                    )),
+                    calleeFromVariable("minus1"),
+                    resolvedCallable(CallableKind.PEEL_FUNCTION, "minus1", 1)
             );
         }
 
         private static TraceExpression.FunctionCall mutualFactorialCall(int xValue, TraceExpression argument, boolean isF1) {
-            String currentName = isF1 ? ANON_F1 : ANON_F2;
+            String variableName = isF1 ? "f1" : "f2";
+            String resolvedName = isF1 ? ANON_F1 : ANON_F2;
 
             return new TraceExpression.FunctionCall(
-                    currentName,
+                    variableName,
                     intValue(factorialValue(xValue)),
                     List.of(argument),
                     Optional.of(new TraceExpression.FunctionExecutionTrace(
                             List.of(new TraceExpression.ParameterBinding("x", argument)),
                             mutualFactorialBody(xValue, isF1)
-                    ))
+                    )),
+                    calleeFromVariable(variableName),
+                    resolvedCallable(CallableKind.CLOSURE, resolvedName, 1)
             );
+        }
+
+        private static TraceExpression.CalleeSource calleeFromVariable(String variableName) {
+            return TraceExpression.CalleeSource.variable(variableName);
+        }
+
+        private static TraceExpression.ResolvedCallable resolvedCallable(CallableKind kind, String name, int arity) {
+            return new TraceExpression.ResolvedCallable(kind, name, arity);
         }
 
         private static TraceExpression.Block mutualFactorialBody(int xValue, boolean isF1) {
@@ -596,10 +616,10 @@ class TraceProgramE2ETest {
         }
 
         private static TraceExpression.Literal functionDeclaration(String name, List<String> arities) {
-            return callableLiteral("function", name, arities);
+            return callableLiteral(CallableKind.PEEL_FUNCTION, name, arities);
         }
 
-        private static TraceExpression.Literal callableLiteral(String kind, String name, List<String> arities) {
+        private static TraceExpression.Literal callableLiteral(CallableKind kind, String name, List<String> arities) {
             return new TraceExpression.Literal(new TraceValue.CallableRef(kind, name, arities));
         }
 

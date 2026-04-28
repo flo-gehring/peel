@@ -3,6 +3,7 @@ package de.flogehring.peel.core.trace;
 import de.flogehring.peel.core.Nullable;
 
 import java.util.List;
+import java.util.Objects;
 import java.util.Optional;
 
 public sealed interface TraceExpression permits
@@ -54,8 +55,37 @@ public sealed interface TraceExpression permits
             String name,
             TraceValue value,
             List<TraceExpression> arguments,
-            Optional<FunctionExecutionTrace> subEvaluation
+            Optional<FunctionExecutionTrace> subEvaluation,
+            CalleeSource calleeSource,
+            ResolvedCallable resolvedCallable
     ) implements TraceExpression {
+        public FunctionCall {
+            Objects.requireNonNull(calleeSource, "calleeSource");
+            Objects.requireNonNull(resolvedCallable, "resolvedCallable");
+        }
+    }
+
+    sealed interface CalleeSource permits CalleeSource.VariableName, CalleeSource.Expression {
+        record VariableName(String varName) implements CalleeSource {
+        }
+
+        record Expression(TraceExpression expression) implements CalleeSource {
+        }
+
+        static CalleeSource variable(String variableName) {
+            return new VariableName(variableName);
+        }
+
+        static CalleeSource expression(TraceExpression expression) {
+            return new Expression(expression);
+        }
+    }
+
+    record ResolvedCallable(
+            CallableKind kind,
+            String name,
+            int arity
+    ) {
     }
 
     record FunctionExecutionTrace(

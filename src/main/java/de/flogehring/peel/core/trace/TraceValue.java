@@ -57,6 +57,6 @@ public sealed interface TraceValue permits
         }
     }
 
-    record CallableRef(String callableKind, String name, List<String> arities) implements TraceValue {
+    record CallableRef(CallableKind callableKind, String name, List<String> arities) implements TraceValue {
     }
 }
