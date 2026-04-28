@@ -5,7 +5,6 @@ import de.flogehring.peel.core.lang.Expression;
 import de.flogehring.peel.core.trace.CallableKind;
 import de.flogehring.peel.core.values.PeelFunctionDefinition;
 import de.flogehring.peel.core.values.PeelValue;
-import de.flogehring.peel.run.trace.BlockTraceRecorder;
 import de.flogehring.peel.run.trace.FunctionCallRecorder;
 
 public class PeelCodeFunction implements Function {
@@ -33,16 +32,6 @@ public class PeelCodeFunction implements Function {
         return callable instanceof de.flogehring.peel.core.values.PeelClosure
                 ? CallableKind.CLOSURE
                 : CallableKind.PEEL_FUNCTION;
-    }
-
-    @Override
-    public PeelValue run(PeelValue... arguments) {
-        EvaluationEnvironment e = environment.spawnChild();
-        e.enterScope();
-        for (int i = 0; i < callable.getParameters().size(); ++i) {
-            e.put(new Expression.VariableName(callable.getParameters().get(i), 0), arguments[i]);
-        }
-        return new Evaluator(e).evaluateBlock(callable.getBody().codeElements(), new BlockTraceRecorder());
     }
 
     @Override

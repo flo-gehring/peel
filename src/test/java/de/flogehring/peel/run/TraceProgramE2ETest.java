@@ -137,6 +137,21 @@ class TraceProgramE2ETest {
         assertThat(trace).isEqualTo(expected);
     }
 
+    @Test
+    void whileLoopIncrementToTenHasFinalValueTen() {
+        PeelRuntime runtime = RuntimeFactory.defaultLanguage();
+        TraceProgram trace = runtime.run(PeelGrammar.parse("""
+                var i = 0;
+                while (!(i == 10)) {
+                    i = i + 1;
+                }
+                """));
+
+        assertThat(trace.result()).isEqualTo(intValue(10));
+        assertThat(trace.expressions().getLast()).isInstanceOf(TraceExpression.WhileLoop.class);
+        assertThat(trace.expressions().getLast().value()).isEqualTo(intValue(10));
+    }
+
     private static TraceExpression.BinaryOperator nEquals(int nValue, int comparisonValue) {
         return new TraceExpression.BinaryOperator(
                 "==",

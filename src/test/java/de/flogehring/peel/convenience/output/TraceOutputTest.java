@@ -1,8 +1,11 @@
 package de.flogehring.peel.convenience.output;
 
+import de.flogehring.peel.convenience.RuntimeFactory;
+import de.flogehring.peel.core.eval.PeelRuntime;
 import de.flogehring.peel.core.trace.TraceExpression;
 import de.flogehring.peel.core.trace.TraceProgram;
 import de.flogehring.peel.core.trace.TraceValue;
+import de.flogehring.peel.parse.PeelGrammar;
 import org.junit.jupiter.api.Test;
 
 import java.util.List;
@@ -51,5 +54,30 @@ class TraceOutputTest {
 
         assertThat(json).contains("\"type\":\"program\"");
         assertThat(json).contains("a\\\"b\\nc");
+    }
+
+    @Test
+    void mapOutputForWhileLoopIncrementToTenHasFinalValueTen() {
+        PeelRuntime runtime = RuntimeFactory.defaultLanguage();
+        TraceProgram traceProgram = runtime.run(PeelGrammar.parse("""
+                var i = 0;
+                while (!(i == 10)) {
+                    i = i + 1;
+                }
+                """));
+
+        Map<String, Object> output = TraceOutput.asMap(traceProgram);
+
+        Map<?, ?> result = (Map<?, ?>) output.get("result");
+        assertThat(result.get("type")).isEqualTo("integer");
+        assertThat(result.get("value")).isEqualTo(10);
+
+        List<?> expressions = (List<?>) output.get("expressions");
+        Map<?, ?> whileLoop = (Map<?, ?>) expressions.getLast();
+        assertThat(whileLoop.get("type")).isEqualTo("while_loop");
+
+        Map<?, ?> whileValue = (Map<?, ?>) whileLoop.get("value");
+        assertThat(whileValue.get("type")).isEqualTo("integer");
+        assertThat(whileValue.get("value")).isEqualTo(10);
     }
 }

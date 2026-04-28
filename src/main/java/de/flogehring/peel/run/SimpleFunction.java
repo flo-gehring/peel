@@ -31,13 +31,7 @@ public class SimpleFunction implements Function {
     }
 
     @Override
-    public PeelValue run(PeelValue... arguments) {
-        return function.apply(arguments);
-    }
-
-    @Override
     public PeelValue runWithTrace(FunctionCallRecorder functionCallRecorder, PeelValue... arguments) {
-        // TODO Function call seems wonky here
-        return run(arguments);
+        return function.apply(arguments);
     }
 }

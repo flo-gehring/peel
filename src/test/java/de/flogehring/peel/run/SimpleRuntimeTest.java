@@ -103,15 +103,10 @@ public class SimpleRuntimeTest {
                     }
 
                     @Override
-                    public PeelValue run(PeelValue... arguments) {
+                    public PeelValue runWithTrace(FunctionCallRecorder functionCallRecorder, PeelValue... arguments) {
                         String lhs = ((Text) arguments[0]).value();
                         int rhs = ((Number.Integer) arguments[1]).value();
                         return new Text(lhs.repeat(rhs));
-                    }
-
-                    @Override
-                    public PeelValue runWithTrace(FunctionCallRecorder functionCallRecorder, PeelValue... arguments) {
-                        return run(arguments);
                     }
                 })
                 .withVariable(getVariable("x", "Echo!"))
@@ -153,15 +148,10 @@ public class SimpleRuntimeTest {
                     }
 
                     @Override
-                    public PeelValue run(PeelValue... arguments) {
+                    public PeelValue runWithTrace(FunctionCallRecorder functionCallRecorder, PeelValue... arguments) {
                         Number.Integer lhs = (Number.Integer) arguments[0];
                         Number.Integer rhs = (Number.Integer) arguments[1];
                         return new Number.Integer(lhs.numberValue().add(rhs.numberValue()).intValue());
-                    }
-
-                    @Override
-                    public PeelValue runWithTrace(FunctionCallRecorder functionCallRecorder, PeelValue... arguments) {
-                        return run(arguments);
                     }
                 })
                 .withVariable(integerVariable("y", 2))

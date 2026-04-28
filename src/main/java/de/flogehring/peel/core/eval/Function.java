@@ -15,7 +15,5 @@ public interface Function {
         return CallableKind.HOST_FUNCTION;
     }
 
-    PeelValue run(PeelValue... arguments);
-
     PeelValue runWithTrace(FunctionCallRecorder functionCallRecorder, PeelValue... arguments);
 }
