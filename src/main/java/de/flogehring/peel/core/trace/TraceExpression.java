@@ -23,10 +23,15 @@ public sealed interface TraceExpression permits
         TraceExpression.Block {
 
     TraceValue value();
+    TraceExpressionKind kind();
 
     TraceExpression.Block EMPTY_BLOCK = new TraceExpression.Block(List.of());
 
     record Literal(TraceValue value) implements TraceExpression {
+        @Override
+        public TraceExpressionKind kind() {
+            return TraceExpressionKind.LITERAL;
+        }
     }
 
     record BinaryOperator(
@@ -36,6 +41,10 @@ public sealed interface TraceExpression permits
             @Nullable TraceExpression rhs,
             boolean didShortCircuit
     ) implements TraceExpression {
+        @Override
+        public TraceExpressionKind kind() {
+            return TraceExpressionKind.BINARY_OPERATOR;
+        }
     }
 
     record UnaryPrefixOperator(
@@ -43,12 +52,20 @@ public sealed interface TraceExpression permits
             TraceValue value,
             TraceExpression argument
     ) implements TraceExpression {
+        @Override
+        public TraceExpressionKind kind() {
+            return TraceExpressionKind.UNARY_PREFIX_OPERATOR;
+        }
     }
 
     record VariableName(
             String name,
             TraceValue value
     ) implements TraceExpression {
+        @Override
+        public TraceExpressionKind kind() {
+            return TraceExpressionKind.VARIABLE_NAME;
+        }
     }
 
     record FunctionCall(
@@ -62,6 +79,11 @@ public sealed interface TraceExpression permits
         public FunctionCall {
             Objects.requireNonNull(calleeSource, "calleeSource");
             Objects.requireNonNull(resolvedCallable, "resolvedCallable");
+        }
+
+        @Override
+        public TraceExpressionKind kind() {
+            return TraceExpressionKind.FUNCTION_CALL;
         }
     }
 
@@ -98,9 +120,17 @@ public sealed interface TraceExpression permits
     }
 
     record ReturnExpr(TraceValue value, TraceExpression expression) implements TraceExpression {
+        @Override
+        public TraceExpressionKind kind() {
+            return TraceExpressionKind.RETURN_EXPR;
+        }
     }
 
     record Assignment(String variableName, TraceExpression expression, TraceValue value) implements TraceExpression {
+        @Override
+        public TraceExpressionKind kind() {
+            return TraceExpressionKind.ASSIGNMENT;
+        }
     }
 
     record IfStatement(
@@ -108,12 +138,22 @@ public sealed interface TraceExpression permits
             TraceExpression executedBlock
     ) implements TraceExpression {
         @Override
+        public TraceExpressionKind kind() {
+            return TraceExpressionKind.IF_STATEMENT;
+        }
+
+        @Override
         public TraceValue value() {
             return executedBlock != null ? executedBlock.value() : TraceValue.NONE_VALUE;
         }
     }
 
     record WhileLoop(List<Iteration> iterations, TraceValue value) implements TraceExpression {
+        @Override
+        public TraceExpressionKind kind() {
+            return TraceExpressionKind.WHILE_LOOP;
+        }
+
         public record Iteration(
                 TraceExpression condition,
                 Block body
@@ -126,6 +166,11 @@ public sealed interface TraceExpression permits
             TraceExpression iterableExpression,
             List<Iteration> iterations
     ) implements TraceExpression {
+        @Override
+        public TraceExpressionKind kind() {
+            return TraceExpressionKind.FOR_EACH_LOOP;
+        }
+
         public record Iteration(
                 VariableBinding binding,
                 Block body
@@ -145,11 +190,20 @@ public sealed interface TraceExpression permits
             List<TraceExpression> elements,
             TraceValue value
     ) implements TraceExpression {
+        @Override
+        public TraceExpressionKind kind() {
+            return TraceExpressionKind.LIST_LITERAL;
+        }
     }
 
     record MapLiteral(
             List<MapEntry> entries
     ) implements TraceExpression {
+        @Override
+        public TraceExpressionKind kind() {
+            return TraceExpressionKind.MAP_LITERAL;
+        }
+
         public record MapEntry(TraceExpression key, TraceExpression value) {
         }
 
@@ -171,9 +225,18 @@ public sealed interface TraceExpression permits
             TraceExpression target,
             TraceExpression selector
     ) implements TraceExpression {
+        @Override
+        public TraceExpressionKind kind() {
+            return TraceExpressionKind.SELECTOR;
+        }
     }
 
     record Block(List<TraceExpression> content) implements TraceExpression {
+        @Override
+        public TraceExpressionKind kind() {
+            return TraceExpressionKind.BLOCK;
+        }
+
         @Override
         public TraceValue value() {
             return content.isEmpty() ? TraceValue.none() : content.getLast().value();

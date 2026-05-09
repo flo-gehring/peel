@@ -23,6 +23,10 @@ public final class TraceMapOutput {
         return node;
     }
 
+    public static List<Map<String, Object>> programmStatements(TraceProgram traceProgram) {
+        return traceProgram.expressions().stream().map(TraceMapOutput::mapExpression).toList();
+    }
+
     public static Map<String, Object> fromExpression(TraceExpression traceExpression) {
         Objects.requireNonNull(traceExpression, "traceExpression");
         return mapExpression(traceExpression);
