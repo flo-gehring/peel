@@ -3,6 +3,7 @@ package de.flogehring.peel.core.trace;
 import de.flogehring.peel.core.Nullable;
 
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 
@@ -231,9 +232,17 @@ public sealed interface TraceExpression permits
         }
     }
 
-    record Block(List<TraceExpression> content, String name) implements TraceExpression {
+    record Block(List<TraceExpression> content, String name, Map<String, TraceValue> variablesAtExit) implements TraceExpression {
+        public Block {
+            variablesAtExit = Map.copyOf(variablesAtExit);
+        }
+
+        public Block(List<TraceExpression> content, String name) {
+            this(content, name, Map.of());
+        }
+
         public Block(List<TraceExpression> content) {
-            this(content, null);
+            this(content, null, Map.of());
         }
         @Override
         public TraceExpressionKind kind() {

@@ -40,7 +40,7 @@ class TraceProgramE2ETest {
                 intValue(3)
         );
 
-        assertThat(trace).isEqualTo(expected);
+        assertThat(trace).usingRecursiveComparison().ignoringFieldsMatchingRegexes(".*variablesAtExit").isEqualTo(expected);
     }
 
     @Test
@@ -61,7 +61,7 @@ class TraceProgramE2ETest {
                 boolValue(true)
         );
 
-        assertThat(trace).isEqualTo(expected);
+        assertThat(trace).usingRecursiveComparison().ignoringFieldsMatchingRegexes(".*variablesAtExit").isEqualTo(expected);
     }
 
     @Test
@@ -125,7 +125,7 @@ class TraceProgramE2ETest {
                                                         boolValue(false),
                                                         nEquals(2, 2)
                                                 ),
-                                                TraceExpression.EMPTY_BLOCK
+                                                null
                                         )
                                 ),
                                 intValue(2)
@@ -134,7 +134,7 @@ class TraceProgramE2ETest {
                 intValue(2)
         );
 
-        assertThat(trace).isEqualTo(expected);
+        assertThat(trace).usingRecursiveComparison().ignoringFieldsMatchingRegexes(".*variablesAtExit").isEqualTo(expected);
     }
 
     @Test
@@ -216,7 +216,7 @@ class TraceProgramE2ETest {
                     intValue(2)
             );
 
-            assertThat(trace).isEqualTo(expected);
+            assertThat(trace).usingRecursiveComparison().ignoringFieldsMatchingRegexes(".*variablesAtExit").isEqualTo(expected);
         }
 
         @Test
@@ -250,7 +250,7 @@ class TraceProgramE2ETest {
                     intValue(5)
             );
 
-            assertThat(trace).isEqualTo(expected);
+            assertThat(trace).usingRecursiveComparison().ignoringFieldsMatchingRegexes(".*variablesAtExit").isEqualTo(expected);
         }
 
         @Test
@@ -292,7 +292,7 @@ class TraceProgramE2ETest {
                     intValue(9)
             );
 
-            assertThat(trace).isEqualTo(expected);
+            assertThat(trace).usingRecursiveComparison().ignoringFieldsMatchingRegexes(".*variablesAtExit").isEqualTo(expected);
         }
 
         @Test
@@ -350,7 +350,7 @@ class TraceProgramE2ETest {
                     intValue(120)
             );
 
-            assertThat(trace).isEqualTo(expected);
+            assertThat(trace).usingRecursiveComparison().ignoringFieldsMatchingRegexes(".*variablesAtExit").isEqualTo(expected);
         }
 
         private static TraceExpression.FunctionCall fibFunctionCall(int n, TraceExpression argument) {

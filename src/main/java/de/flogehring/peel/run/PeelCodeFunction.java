@@ -43,6 +43,7 @@ public class PeelCodeFunction implements Function {
             functionCallRecorder.recordBinding(parameterName);
             e.put(new Expression.VariableName(parameterName, 0), arguments[i]);
         }
-        return new Evaluator(e).evaluateBlock(callable.getBody(), functionCallRecorder.functionBody());
+        try { return new Evaluator(e).evaluateBlock(callable.getBody(), functionCallRecorder.functionBody()); }
+        finally { e.exitScope(); }
     }
 }

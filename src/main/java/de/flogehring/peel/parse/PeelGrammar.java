@@ -3,6 +3,7 @@ package de.flogehring.peel.parse;
 import de.flogehring.peel.antlr.PeelLexer;
 import de.flogehring.peel.antlr.PeelParser;
 import de.flogehring.peel.core.lang.Program;
+import de.flogehring.peel.core.lang.BlockCatalog;
 import org.antlr.v4.runtime.CharStreams;
 import org.antlr.v4.runtime.CommonTokenStream;
 import java.util.List;
@@ -16,7 +17,9 @@ public class PeelGrammar {
         return parseWithBlocks(program).program();
     }
 
-    public record ParsedProgram(Program program, List<String> blockNames) {}
+    public record ParsedProgram(Program program, BlockCatalog blockCatalog) {
+        public List<String> blockNames() { return blockCatalog.names(); }
+    }
 
     public static ParsedProgram parseWithBlocks(String program) {
         PeelLexer peelLexer = new PeelLexer(CharStreams.fromString(program));
@@ -26,7 +29,12 @@ public class PeelGrammar {
         ProgrammVisitor visitor = new ProgrammVisitor();
         ParsableProgramm visit = visitor.visit(tree);
         if (visit instanceof ParsableProgramm.Programm programm) {
-            return new ParsedProgram(programm.toProgramm(), visitor.blockNames());
+            Program ast = programm.toProgramm();
+            try {
+                return new ParsedProgram(ast, BlockCatalog.analyze(ast));
+            } catch (IllegalArgumentException error) {
+                throw new PeelParsingException(error.getMessage());
+            }
         } else {
             throw new PeelParsingException("Parsing gone wrong");
         }

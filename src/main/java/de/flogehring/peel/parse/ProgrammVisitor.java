@@ -22,11 +22,6 @@ class ProgrammVisitor implements de.flogehring.peel.antlr.PeelVisitor<ParsablePr
 
     private final List<Scope> scopes;
     private int functionDepth = 0;
-    private final Set<String> blockNames = new LinkedHashSet<>();
-
-    List<String> blockNames() {
-        return List.copyOf(blockNames);
-    }
 
     ProgrammVisitor() {
         this.scopes = new ArrayList<>();
@@ -454,9 +449,6 @@ class ProgrammVisitor implements de.flogehring.peel.antlr.PeelVisitor<ParsablePr
     @Override
     public ParsableProgramm visitBracedBlock(PeelParser.BracedBlockContext ctx) {
         String name = ctx.IDENT() == null ? null : ctx.IDENT().getText();
-        if (name != null && !blockNames.add(name)) {
-            throw new PeelParsingException("Block name '" + name + "' is already declared in this script");
-        }
         beginScope();
         List<Expression> expressions = ctx.statement().stream()
                 .map(statement -> statement.accept(this).toExpr()).toList();

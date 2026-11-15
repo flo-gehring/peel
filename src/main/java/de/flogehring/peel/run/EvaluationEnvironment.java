@@ -3,12 +3,18 @@ package de.flogehring.peel.run;
 import de.flogehring.peel.core.eval.Function;
 import de.flogehring.peel.core.eval.OperatorDef;
 import de.flogehring.peel.core.lang.Expression;
+import de.flogehring.peel.core.trace.TraceValue;
+import de.flogehring.peel.core.trace.TraceValueMapper;
 import de.flogehring.peel.core.values.PeelValue;
 import de.flogehring.peel.run.exceptions.PeelException;
 
 import java.util.ArrayList;
+import java.util.IdentityHashMap;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 
 // TODO Should Peel Closure Values hold the Reference to the evaluation environment?
 public class EvaluationEnvironment {
@@ -16,11 +22,29 @@ public class EvaluationEnvironment {
     private final Scope global;
     private final Optional<EvaluationEnvironment> parent;
     private final List<Scope> scopes;
+    private Map<Scope, Set<String>> capturedNames;
 
     public EvaluationEnvironment(Scope global, Optional<EvaluationEnvironment> parent, List<Scope> scopes) {
         this.global = global;
         this.parent = parent;
         this.scopes = scopes;
+    }
+
+    Map<String, TraceValue> capture() {
+        var values = new LinkedHashMap<String, TraceValue>();
+        if (parent.isPresent()) {
+            values.putAll(parent.get().capture());
+        } else {
+            global.variablesView().forEach((name, value) -> values.put(name, TraceValueMapper.fromPeelValue(value)));
+        }
+        for (Scope scope : scopes) {
+            scope.variablesView().forEach((name, value) -> {
+                if (capturedNames == null || capturedNames.getOrDefault(scope, Set.of()).contains(name)) {
+                    values.put(name, TraceValueMapper.fromPeelValue(value));
+                }
+            });
+        }
+        return Map.copyOf(values);
     }
 
     void enterScope() {
@@ -56,11 +80,14 @@ public class EvaluationEnvironment {
     }
 
     EvaluationEnvironment copy() {
-        return new EvaluationEnvironment(
-                global,
-                parent,
-                new ArrayList<>(scopes)
-        );
+        var copy = new EvaluationEnvironment(global, parent.map(EvaluationEnvironment::copy), new ArrayList<>(scopes));
+        // Shared scopes may gain names after a function or closure was defined.
+        copy.capturedNames = new IdentityHashMap<>();
+        for (Scope scope : scopes) {
+            copy.capturedNames.put(scope, Set.copyOf(capturedNames == null
+                    ? scope.variablesView().keySet() : capturedNames.getOrDefault(scope, Set.of())));
+        }
+        return copy;
     }
 
     private int getScopeIndexBy(int scopeOffset) {

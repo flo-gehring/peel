@@ -20,6 +20,7 @@ public final class TraceMapOutput {
         node.put("type", "program");
         node.put("expressions", traceProgram.expressions().stream().map(TraceMapOutput::mapExpression).toList());
         node.put("result", mapValue(traceProgram.result()));
+        node.put("variablesAtExit", mapVariables(traceProgram.variablesAtExit()));
         return node;
     }
 
@@ -125,9 +126,10 @@ public final class TraceMapOutput {
                 node.put("target", mapExpression(target));
                 node.put("selector", mapExpression(selector));
             }
-            case TraceExpression.Block(List<TraceExpression> content, String name) -> {
+            case TraceExpression.Block(List<TraceExpression> content, String name, Map<String, TraceValue> variablesAtExit) -> {
                 node.put("type", "block");
                 node.put("name", name);
+                node.put("variablesAtExit", mapVariables(variablesAtExit));
                 node.put("content", content.stream().map(TraceMapOutput::mapExpression).toList());
             }
         }
@@ -177,14 +179,14 @@ public final class TraceMapOutput {
     private static Map<String, Object> mapWhileIteration(TraceExpression.WhileLoop.Iteration iteration) {
         LinkedHashMap<String, Object> node = new LinkedHashMap<>();
         node.put("condition", mapExpression(iteration.condition()));
-        node.put("body", mapExpression(iteration.body()));
+        node.put("body", iteration.body() == null ? null : mapExpression(iteration.body()));
         return node;
     }
 
     private static Map<String, Object> mapForEachIteration(TraceExpression.ForEachLoop.Iteration iteration) {
         LinkedHashMap<String, Object> node = new LinkedHashMap<>();
         node.put("binding", mapForEachBinding(iteration.binding()));
-        node.put("body", mapExpression(iteration.body()));
+        node.put("body", iteration.body() == null ? null : mapExpression(iteration.body()));
         return node;
     }
 
@@ -200,6 +202,12 @@ public final class TraceMapOutput {
         node.put("key", mapExpression(mapEntry.key()));
         node.put("value", mapExpression(mapEntry.value()));
         return node;
+    }
+
+    private static Map<String, Object> mapVariables(Map<String, TraceValue> variables) {
+        Map<String, Object> result = new LinkedHashMap<>();
+        variables.forEach((name, value) -> result.put(name, mapValue(value)));
+        return result;
     }
 
     private static Map<String, Object> mapValue(TraceValue traceValue) {

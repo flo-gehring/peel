@@ -25,9 +25,8 @@ public class Evaluator {
 
     PeelValue evaluate(Expression expression, ExpressionRecorder expressionRecorder) {
         beginnScope();
-        PeelValue result = evaluateExpr(expression, expressionRecorder);
-        endScope();
-        return result;
+        try { return evaluateExpr(expression, expressionRecorder); }
+        finally { endScope(); }
     }
 
     private PeelValue evaluateExpr(Expression expression, ExpressionRecorder recorder) {
@@ -115,8 +114,9 @@ public class Evaluator {
     ) {
         for (Expression.IfElseStatement.ConditionalExecution cond : elseIfs) {
             beginnScope();
-            PeelValue conditionValue = evaluateExpr(cond.condition(), recorder.nextCondition());
-            endScope();
+            PeelValue conditionValue;
+            try { conditionValue = evaluateExpr(cond.condition(), recorder.nextCondition()); }
+            finally { endScope(); }
             if (requireBool(conditionValue)) {
                 return evaluateExpr(cond.then(), recorder.recordBlock());
             }
@@ -131,11 +131,18 @@ public class Evaluator {
         recorder.recordName(block.name());
         beginnScope();
         PeelValue lastValue = None.NONE;
-        for (Expression expression : block.codeElements()) {
-            lastValue = evaluateExpr(expression, recorder.nextRecorder());
-        }
-        endScope();
-        return lastValue;
+        try {
+            try {
+                for (Expression expression : block.codeElements()) {
+                    lastValue = evaluateExpr(expression, recorder.nextRecorder());
+                }
+            } catch (ReturnValueFlow flow) {
+                recorder.recordVariables(environment.capture());
+                throw flow;
+            }
+            recorder.recordVariables(environment.capture());
+            return lastValue;
+        } finally { endScope(); }
     }
 
     private PeelValue evaluateListLiteral(List<Expression> list, ListLiteralRecorder recorder) {
@@ -215,8 +222,8 @@ public class Evaluator {
         for (PeelValue value : list.list()) {
             beginnScope();
             environment.put(new Expression.VariableName(varName, 0), value);
-            lastBodyValue = evaluateExpr(block, recorder.nextLoop(value));
-            endScope();
+            try { lastBodyValue = evaluateExpr(block, recorder.nextLoop(value)); }
+            finally { endScope(); }
         }
         return lastBodyValue;
     }
@@ -247,14 +254,15 @@ public class Evaluator {
 
     private PeelValue runLoop(Expression condition, Expression.Block block, WhileLoopRecorder recorder) {
         beginnScope();
-        PeelValue conditionValue = evaluateExpr(condition, recorder.nextCondition());
-        PeelValue lastBodyValue = None.NONE;
-        while (requireBool(conditionValue)) {
-            lastBodyValue = evaluateExpr(block, recorder.nextBody());
-            conditionValue = evaluateExpr(condition, recorder.nextCondition());
-        }
-        endScope();
-        return lastBodyValue;
+        try {
+            PeelValue conditionValue = evaluateExpr(condition, recorder.nextCondition());
+            PeelValue lastBodyValue = None.NONE;
+            while (requireBool(conditionValue)) {
+                lastBodyValue = evaluateExpr(block, recorder.nextBody());
+                conditionValue = evaluateExpr(condition, recorder.nextCondition());
+            }
+            return lastBodyValue;
+        } finally { endScope(); }
     }
 
     private boolean requireBool(PeelValue value) {
@@ -283,7 +291,7 @@ public class Evaluator {
         } catch (ReturnValueFlow returnValueFlow) {
             result = returnValueFlow.getValue();
         }
-        environment = currentEnv;
+        finally { environment = currentEnv; }
         recorder.recordResult(result);
         return result;
     }

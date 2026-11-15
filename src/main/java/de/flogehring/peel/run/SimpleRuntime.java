@@ -46,7 +46,8 @@ public class SimpleRuntime implements PeelRuntime {
         return new TraceProgram(
                 // TODO hier das doppelt geschatelte raus
                 ((TraceExpression.Block) expressionRecorder.traceExpression()).content(),
-                TraceValueMapper.fromPeelValue(result)
+                TraceValueMapper.fromPeelValue(result),
+                ((TraceExpression.Block) expressionRecorder.traceExpression()).variablesAtExit()
         );
     }
 
