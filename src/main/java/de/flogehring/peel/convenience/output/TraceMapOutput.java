@@ -125,8 +125,9 @@ public final class TraceMapOutput {
                 node.put("target", mapExpression(target));
                 node.put("selector", mapExpression(selector));
             }
-            case TraceExpression.Block(List<TraceExpression> content) -> {
+            case TraceExpression.Block(List<TraceExpression> content, String name) -> {
                 node.put("type", "block");
+                node.put("name", name);
                 node.put("content", content.stream().map(TraceMapOutput::mapExpression).toList());
             }
         }

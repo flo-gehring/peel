@@ -38,7 +38,7 @@ public class Evaluator {
             case Expression.FunctionCall functionCall -> evaluateFunction(functionCall, recorder.recordFunctionCall());
             case Expression.Assignment(var name, var assignedExpr, int scopeOffset) ->
                     evaluateAssignment(name, assignedExpr, scopeOffset, recorder.recordAssignment());
-            case Expression.Block(var expressions) -> evaluateBlock(expressions, recorder.recordBlock());
+            case Expression.Block block -> evaluateBlock(block, recorder.recordBlock());
             case Expression.IfElseStatement(var elseIfs, var elseBlock) ->
                     evaluateIfStatement(elseIfs, elseBlock, recorder.recordElseIf());
             case Expression.WhileLoop(var condition, var block) ->
@@ -127,10 +127,11 @@ public class Evaluator {
         return None.NONE;
     }
 
-    PeelValue evaluateBlock(List<Expression> expressions, BlockTraceRecorder recorder) {
+    PeelValue evaluateBlock(Expression.Block block, BlockTraceRecorder recorder) {
+        recorder.recordName(block.name());
         beginnScope();
         PeelValue lastValue = None.NONE;
-        for (Expression expression : expressions) {
+        for (Expression expression : block.codeElements()) {
             lastValue = evaluateExpr(expression, recorder.nextRecorder());
         }
         endScope();

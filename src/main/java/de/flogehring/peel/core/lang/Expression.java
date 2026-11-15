@@ -8,7 +8,10 @@ import java.util.Optional;
 
 public sealed interface Expression {
 
-    record Block(List<Expression> codeElements) implements Expression {
+    record Block(List<Expression> codeElements, String name) implements Expression {
+        public Block(List<Expression> codeElements) {
+            this(codeElements, null);
+        }
     }
 
     record Assignment(String variableName, Expression assignment, int scopeOffset) implements Expression {

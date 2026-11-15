@@ -231,7 +231,10 @@ public sealed interface TraceExpression permits
         }
     }
 
-    record Block(List<TraceExpression> content) implements TraceExpression {
+    record Block(List<TraceExpression> content, String name) implements TraceExpression {
+        public Block(List<TraceExpression> content) {
+            this(content, null);
+        }
         @Override
         public TraceExpressionKind kind() {
             return TraceExpressionKind.BLOCK;

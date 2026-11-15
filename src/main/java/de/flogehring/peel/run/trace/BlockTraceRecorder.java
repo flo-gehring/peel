@@ -8,6 +8,11 @@ import java.util.List;
 public class BlockTraceRecorder implements TraceRecorder {
 
     private final List<ExpressionRecorder> traceContents = new ArrayList<>();
+    private String name;
+
+    public void recordName(String name) {
+        this.name = name;
+    }
 
     public ExpressionRecorder nextRecorder() {
         ExpressionRecorder expressionRecorder = new ExpressionRecorder();
@@ -18,7 +23,7 @@ public class BlockTraceRecorder implements TraceRecorder {
     @Override
     public TraceExpression traceExpression() {
         return new TraceExpression.Block(
-                traceContents.stream().map(TraceRecorder::traceExpression).toList()
+                traceContents.stream().map(TraceRecorder::traceExpression).toList(), name
         );
     }
 }
