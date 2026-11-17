@@ -12,10 +12,7 @@ public class PeelGrammar {
     }
 
     /**
-     * Parses source into an executable AST without running optional program analyses.
-     * Callers needing block definitions or reachability can explicitly invoke
-     * {@link de.flogehring.peel.core.lang.BlockCatalog#analyze(Program)} on the result.
-     *
+     * Parses source into an executable and analyzable AST.
      * @param program PEEL source text
      * @return parsed program without an attached analysis result
      * @throws PeelParsingException if the source cannot be converted to a program
