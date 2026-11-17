@@ -29,6 +29,12 @@ scope ancestry, ranges and visibleFrom positions to offer visible names.
 the program scope. Complete closed nested scopes exclude that end position.
 Inner declarations shadow outer definitions; future declarations are not hoisted.
 
+Named and anonymous standalone blocks, named function/loop bodies and single
+statement bodies use the interpreter's scopes. A block label is not a variable
+or a completion candidate. Duplicate labels are diagnosed across the entire
+script, including unexecuted branches and functions. Missing outer braces keep
+the unfinished scope open even when its last inner block is already closed.
+
 Empty and unfinished programs are accepted. Syntax errors are returned as
 diagnostics, safe subtrees are analyzed, and unknown reads are warnings. Existing
 illegal assignments, duplicate declarations and misplaced returns produce errors.

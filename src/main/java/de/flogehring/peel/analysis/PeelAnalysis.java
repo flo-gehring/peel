@@ -54,6 +54,7 @@ public final class PeelAnalysis {
         private final List<Diagnostic> diagnostics = new ArrayList<>();
         private final List<Map<String, Integer>> bindings = new ArrayList<>();
         private final Set<Integer> uninitialized = new HashSet<>();
+        private final Set<String> blockNames = new HashSet<>();
         private int scopeId;
         private int functionDepth;
 
@@ -86,8 +87,11 @@ public final class PeelAnalysis {
             int parent = scopeId;
             scopeId = scopes.size();
             int stop = context.getStop() == null ? source.length() : end(context.getStop());
+            ParseTree last = context;
+            while (last.getChildCount() > 0) last = last.getChild(last.getChildCount() - 1);
+            boolean missingClosingToken = last instanceof TerminalNode terminal && terminal.getSymbol().getTokenIndex() < 0;
             boolean openEnded = context instanceof PeelParser.ProgramContext ||
-                    (broken(context) && !"}".equals(context.getStop() == null ? "" : context.getStop().getText()));
+                    (broken(context) && (missingClosingToken || !"}".equals(context.getStop() == null ? "" : context.getStop().getText())));
             scopes.add(new LexicalScope(scopeId, parent, start(context.getStart()),
                     openEnded ? source.length() : stop, openEnded));
             bindings.add(new LinkedHashMap<>());
@@ -176,6 +180,14 @@ public final class PeelAnalysis {
             return null;
         }
         @Override public Void visitBlock(PeelParser.BlockContext context) {
+            if (context.bracedBlock() != null) return visit(context.bracedBlock());
+            if (context.statement() != null) inScope(context, () -> visit(context.statement()));
+            return null;
+        }
+        @Override public Void visitBracedBlock(PeelParser.BracedBlockContext context) {
+            if (real(context.IDENT()) && !blockNames.add(context.IDENT().getText()))
+                diagnostic("duplicate_block_name", "error",
+                        "Block name already declared in this script: " + context.IDENT().getText(), context.IDENT().getSymbol());
             inScope(context, () -> context.statement().forEach(this::visit));
             return null;
         }

@@ -208,7 +208,7 @@ public class FunctionTest {
                                 if (a == ONE) {
                                     return ONE;
                                 }
-                                a * factorial(minus1(a))
+                                a * factorial(minus1(a));
                             }
                             var a = 3;
                             factorial(a) + a;

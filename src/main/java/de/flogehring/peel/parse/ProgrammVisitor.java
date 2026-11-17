@@ -219,6 +219,8 @@ class ProgrammVisitor implements de.flogehring.peel.antlr.PeelVisitor<ParsablePr
             return ctx.forEachStatement().accept(this);
         } else if (ctx.functionDeclaration() != null) {
             return ctx.functionDeclaration().accept(this);
+        } else if (ctx.bracedBlock() != null) {
+            return ctx.bracedBlock().accept(this);
         } else if (ctx.returnStatement() != null) {
             return ctx.returnStatement().accept(this);
         } else {
@@ -435,15 +437,23 @@ class ProgrammVisitor implements de.flogehring.peel.antlr.PeelVisitor<ParsablePr
 
     @Override
     public ParsableProgramm visitBlock(de.flogehring.peel.antlr.PeelParser.BlockContext ctx) {
+        if (ctx.bracedBlock() != null) return visitBracedBlock(ctx.bracedBlock());
         beginScope();
-        List<Expression> expressions = ctx.statement()
-                .stream()
-                .map(stmt -> stmt.accept(this).toExpr())
-                .toList();
+        List<Expression> expressions = List.of(ctx.statement().accept(this).toExpr());
         endScope();
         return new ParsableProgramm.ParsableCodeElement(
                 new Expression.Block(expressions)
         );
+    }
+
+    @Override
+    public ParsableProgramm visitBracedBlock(PeelParser.BracedBlockContext ctx) {
+        String name = ctx.IDENT() == null ? null : ctx.IDENT().getText();
+        beginScope();
+        List<Expression> expressions = ctx.statement().stream()
+                .map(statement -> statement.accept(this).toExpr()).toList();
+        endScope();
+        return new ParsableProgramm.ParsableCodeElement(new Expression.Block(expressions, name));
     }
 
     @Override
