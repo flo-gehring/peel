@@ -90,6 +90,15 @@ public final class RuntimeBuilder {
         return SimpleRuntime.fromGlobalScope(globalScope);
     }
 
+    public List<de.flogehring.peel.analysis.ProvidedSymbol> symbols() {
+        var result = new ArrayList<de.flogehring.peel.analysis.ProvidedSymbol>();
+        java.util.stream.Stream.concat(modules.stream().flatMap(module -> module.variables().stream()), variables.stream())
+                .forEach(variable -> result.add(new de.flogehring.peel.analysis.ProvidedSymbol(variable.name(), "variable", "", -1)));
+        java.util.stream.Stream.concat(modules.stream().flatMap(module -> module.functions().stream()), functions.stream())
+                .forEach(function -> result.add(new de.flogehring.peel.analysis.ProvidedSymbol(function.name(), "function", "", function.arity())));
+        return List.copyOf(result);
+    }
+
     private void validateOperatorOverrides(List<OperatorDef> operatorDefs) {
         operatorDefs.stream()
                 .filter(def -> RESERVED_LANGUAGE_OPERATORS.contains(def.symbol()))

@@ -10,4 +10,8 @@ public final class RuntimeFactory {
     public static PeelRuntime defaultLanguage() {
         return RuntimeBuilder.standardLanguage().build();
     }
+
+    public static java.util.List<de.flogehring.peel.analysis.ProvidedSymbol> defaultSymbols() {
+        return RuntimeBuilder.standardLanguage().symbols();
+    }
 }
