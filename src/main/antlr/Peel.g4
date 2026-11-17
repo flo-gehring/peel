@@ -23,6 +23,7 @@ statement
     | expr ';'
     | whileStatement
     | forEachStatement
+    | bracedBlock
     ;
 
 declaration
@@ -68,8 +69,12 @@ returnStatement
     ;
 
 block
-    : '{' statement* '}'
+    : bracedBlock
     | statement
+    ;
+
+bracedBlock
+    : (IDENT ':')? '{' statement* '}'
     ;
 
 // ----------------------

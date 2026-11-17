@@ -11,6 +11,12 @@ public class PeelGrammar {
     private PeelGrammar() {
     }
 
+    /**
+     * Parses source into an executable and analyzable AST.
+     * @param program PEEL source text
+     * @return parsed program without an attached analysis result
+     * @throws PeelParsingException if the source cannot be converted to a program
+     */
     public static Program parse(String program) {
         PeelLexer peelLexer = new PeelLexer(CharStreams.fromString(program));
         CommonTokenStream tokens = new CommonTokenStream(peelLexer);

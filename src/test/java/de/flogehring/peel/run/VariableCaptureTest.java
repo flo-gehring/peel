@@ -1,0 +1,182 @@
+package de.flogehring.peel.run;
+
+import de.flogehring.peel.convenience.RuntimeFactory;
+import de.flogehring.peel.convenience.output.TraceMapOutput;
+import de.flogehring.peel.core.eval.RequestBindings;
+import de.flogehring.peel.core.trace.TraceExpression;
+import de.flogehring.peel.core.trace.TraceProgram;
+import de.flogehring.peel.core.trace.TraceValue;
+import de.flogehring.peel.core.values.PeelValue;
+import de.flogehring.peel.parse.PeelGrammar;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.MethodSource;
+
+import java.util.*;
+import java.util.function.Consumer;
+import java.util.stream.Stream;
+
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
+
+class VariableCaptureTest {
+    record Example(String name, String source, String block, String variable,
+                   List<String> expected, Consumer<CaptureResult> additionalAssertions) {
+        @Override public String toString() { return name; }
+    }
+
+    record CaptureResult(TraceProgram trace, Map<String, Object> mapped,
+                         List<Map<String, Object>> blocks) {
+    }
+
+    static Example e(String name, String source, String block, String variable,
+                     Consumer<CaptureResult> additionalAssertions, String... expected) {
+        return new Example(name, source, block, variable, List.of(expected), additionalAssertions);
+    }
+
+    static Stream<Example> examples() {
+        return Stream.of(
+                e("K01 last assignment", "var a=1; var b=9; teil:{a=2;a=3;}", "teil", "a", result -> {
+                    assertThat(value(result.blocks().getFirst(), "b")).isEqualTo("9");
+                    assertThat(value(result.mapped(), "a")).isEqualTo("3");
+                    assertThat(value(result.mapped(), "b")).isEqualTo("9");
+                }, "3"),
+                e("K02 shadow", "var wert=10; abschnitt:{var wert=20; detail:{var wert=30;wert=31;}}", "abschnitt", "wert", result -> {
+                    assertThat(value(result.mapped(), "wert")).isEqualTo("10");
+                    assertThat(value(blocks(result.mapped(), "detail").getFirst(), "wert")).isEqualTo("31");
+                    assertThat(((Map<?, ?>) result.blocks().getFirst().get("value")).get("value")).isEqualTo(31);
+                }, "20"),
+                e("K03 outer write", "var x=1; a:{b:{x=7;}}", "a", "x", result ->
+                        assertThat(value(result.mapped(), "x")).isEqualTo("7"), "7"),
+                e("K04 while snapshots", "var jahr=0; while (!(jahr==3)) runde:{var lokal=jahr+1;jahr=lokal;lokal=3;} jahr=99;", "runde", "jahr", result -> {
+                    assertThat(value(result.mapped(), "jahr")).isEqualTo("99");
+                    assertThat(value(result.mapped(), "lokal")).isEqualTo("missing");
+                    assertThat(result.blocks().stream().map(block -> value(block, "lokal"))).containsExactly("3", "3", "3");
+                }, "1", "2", "3"),
+                e("K05 conditional shadow", "var zins=2;for(jahr in [1,2]) runde:{if(jahr==1) sonderfall:{var zins=5;} zins=zins+1;}", "runde", "zins", result -> {
+                    assertThat(value(result.mapped(), "zins")).isEqualTo("4");
+                    assertThat(value(result.mapped(), "jahr")).isEqualTo("missing");
+                    assertThat(value(blocks(result.mapped(), "sonderfall").getFirst(), "zins")).isEqualTo("5");
+                }, "3", "4"),
+                e("K06 foreach assignment", "for(jahr in [1,2]) runde:{jahr=jahr+10;}", "runde", "jahr", result -> {
+                    assertThat(value(result.mapped(), "jahr")).isEqualTo("missing");
+                    var loop = (TraceExpression.ForEachLoop) result.trace().expressions().getFirst();
+                    assertThat(loop.iterations().stream().map(i -> i.binding().value()))
+                            .containsExactly(new TraceValue.IntegerValue(1), new TraceValue.IntegerValue(2));
+                }, "11", "12"),
+                e("K07 parameters", "fun f(x) funktion:{x=x+1;x;} var x=100;for(jahr in [1,2]){f(jahr);}", "funktion", "x", result -> {
+                    assertThat(value(result.mapped(), "x")).isEqualTo("100");
+                    assertThat(result.blocks()).allSatisfy(block -> assertThat(value(block, "jahr")).isEqualTo("missing"));
+                }, "2", "3"),
+                e("K08 return unwinding", "fun f(x) funktion:{inner:{var lokal=7;x=2;return x+lokal;}x=99;} f(1);", "funktion", "x", result -> {
+                    assertThat(value(result.blocks().getFirst(), "lokal")).isEqualTo("missing");
+                    assertThat(value(blocks(result.mapped(), "inner").getFirst(), "lokal")).isEqualTo("7");
+                    assertThat(result.trace().result()).isEqualTo(new TraceValue.IntegerValue(9));
+                }, "2"),
+                e("K09 recursion", "fun summe(n) funktion:{var lokal=n*10;if(n==1){return 1;}return n+summe(n-1);}summe(3);", "funktion", "lokal", result ->
+                                assertThat(result.blocks().stream().map(block -> value(block, "n"))).containsExactly("3", "2", "1"),
+                        "30", "20", "10"),
+                e("K10 closure", "var x=7;var f=fun() closure:{x;}; aufrufer:{var x=100;f();}", "closure", "x", result ->
+                        assertThat(value(blocks(result.mapped(), "aufrufer").getFirst(), "x")).isEqualTo("100"), "7"),
+                e("K11 program root", "var x=1;{var y=2;x=3;}", "", "x", result -> {
+                    assertThat(value(result.mapped(), "y")).isEqualTo("missing");
+                    assertThat(((TraceExpression.Block) result.trace().expressions().get(1)).variablesAtExit())
+                            .containsEntry("y", new TraceValue.IntegerValue(2));
+                }, "3"),
+                e("K12 skipped", "if(False) nie:{var x=99;}while(False) leer:{var y=99;}for(i in []) auchNie:{i;}", "nie", "x", result -> {
+                    assertThat(blocks(result.mapped(), "leer")).isEmpty();
+                    assertThat(blocks(result.mapped(), "auchNie")).isEmpty();
+                    assertThat(((TraceExpression.WhileLoop) result.trace().expressions().get(1)).iterations().getLast().body()).isNull();
+                }),
+                e("K13 empty", "var x=4;leer:{}for(i in [1]) wirklichLeer:{}", "leer", "x", result -> {
+                    assertThat(value(blocks(result.mapped(), "wirklichLeer").getFirst(), "i")).isEqualTo("1");
+                    assertThat(value(result.mapped(), "i")).isEqualTo("missing");
+                }, "4"),
+                e("K14 none", "fun f(){return;}teil:{var n=f();}", "teil", "n", result ->
+                        assertThat(value(result.blocks().getFirst(), "unbekannt")).isEqualTo("missing"), "none"),
+                e("K16 globals shadow", "teil:{var eingabe=20;}", "teil", "eingabe", result ->
+                        assertThat(value(result.mapped(), "eingabe")).isEqualTo("10"), "20"),
+                e("K18 unreached", "fun f(x) teil:{return x;var spaeter=99;} f(2);", "teil", "spaeter", result -> {
+                }, "missing"),
+                e("K20 later declaration", "fun f() funktion:{x;}var x=100;f();", "funktion", "x", result -> {
+                    assertThat(result.trace().result()).isEqualTo(new TraceValue.IntegerValue(7));
+                    assertThat(value(result.mapped(), "x")).isEqualTo("100");
+                }, "7")
+        );
+    }
+
+    @ParameterizedTest(name = "{0}")
+    @MethodSource("examples")
+    void documentsCaptureSemantics(Example example) {
+        var bindings = RequestBindings.builder().put("x", PeelValue.integer(7)).put("eingabe", PeelValue.integer(10)).build();
+        var trace = RuntimeFactory.defaultLanguage().run(PeelGrammar.parse(example.source()), bindings);
+        Map<String, Object> mapped = TraceMapOutput.fromProgram(trace);
+        List<Map<String, Object>> blocks = new ArrayList<>();
+        if (example.block().isEmpty()) blocks.add(mapped);
+        else collect(mapped, example.block(), blocks);
+        assertThat(blocks.stream().map(block -> value(block, example.variable())).toList())
+                .containsExactlyElementsOf(example.expected());
+        example.additionalAssertions().accept(new CaptureResult(trace, mapped, blocks));
+    }
+    static List<Map<String,Object>> blocks(Object trace,String name) {
+        List<Map<String,Object>> result=new ArrayList<>();collect(trace,name,result);return result;
+    }
+    @SuppressWarnings("unchecked")
+    static String value(Map<String,Object> block,String name) {
+        var variables=(Map<String,Object>)block.get("variablesAtExit");
+        if(!variables.containsKey(name))return "missing";
+        var value=(Map<String,Object>)variables.get(name);
+        return "none".equals(value.get("type"))?"none":String.valueOf(value.get("value"));
+    }
+    @SuppressWarnings("unchecked")
+    static void collect(Object object,String name,List<Map<String,Object>> result) {
+        if(object instanceof Map<?,?> map) {
+            if("block".equals(map.get("type")) && name.equals(map.get("name")))result.add((Map<String,Object>)map);
+            map.forEach((key,item)->{if(!key.equals("variablesAtExit"))collect(item,name,result);});
+        } else if(object instanceof List<?> list) list.forEach(item->collect(item,name,result));
+    }
+    @Test void K15_freezesCollectionsAndMaps() {
+        var list=new ArrayList<PeelValue>(); list.add(PeelValue.integer(1));
+        var trace=RuntimeFactory.defaultLanguage().run(PeelGrammar.parse("teil:{daten;}"),
+            RequestBindings.builder().put("daten",PeelValue.list(list)).build());
+        list.add(PeelValue.integer(2));
+        var value=(TraceValue.ListValue)trace.variablesAtExit().get("daten");
+        assertThat(value.items()).hasSize(1);
+        assertThatThrownBy(()->trace.variablesAtExit().clear()).isInstanceOf(UnsupportedOperationException.class);
+        assertThatThrownBy(()->value.items().clear()).isInstanceOf(UnsupportedOperationException.class);
+        var nested=new LinkedHashMap<de.flogehring.peel.core.values.Primitives,PeelValue>();
+        nested.put(PeelValue.text("items"),PeelValue.list(list));
+        var second=RuntimeFactory.defaultLanguage().run(PeelGrammar.parse("teil:{daten;}"),
+                RequestBindings.builder().put("daten",PeelValue.Collection.peelMap(nested)).build());
+        list.clear();nested.clear();
+        var captured=(TraceValue.MapValue)second.variablesAtExit().get("daten");
+        assertThat(((TraceValue.ListValue)captured.entries().getFirst().value()).items()).hasSize(2);
+        assertThatThrownBy(()->captured.entries().clear()).isInstanceOf(UnsupportedOperationException.class);
+    }
+    @Test void K17_serializesValuesAndCallableWithoutEnvironment() {
+        var trace=RuntimeFactory.defaultLanguage().run(PeelGrammar.parse("var f=fun(){1;};var m={\"a\":[1,2]};var b=True;var d=1.25;var t=\"text\";"),
+                RequestBindings.builder().put("floating",new de.flogehring.peel.core.values.Number.Float(1.5f)).build());
+        var json=de.flogehring.peel.convenience.output.TraceOutput.asJson(trace);
+        assertThat(json).contains("variablesAtExit","callable_ref","decimal","float","text","bool","map","list").doesNotContain("EvaluationEnvironment");
+        assertThat(trace.variablesAtExit().get("floating")).isEqualTo(new TraceValue.FloatValue(1.5f));
+    }
+    @Test void K19_independentRunsAfterErrors() {
+        var runtime=RuntimeFactory.defaultLanguage();
+        var program=PeelGrammar.parse("var x=eingabe;");
+        var first=runtime.run(program,RequestBindings.builder().put("eingabe",PeelValue.integer(1)).build());
+        assertThatThrownBy(()->runtime.run(PeelGrammar.parse("a:{var x=[][0];}"))).isInstanceOf(RuntimeException.class);
+        var second=runtime.run(program,RequestBindings.builder().put("eingabe",PeelValue.integer(2)).build());
+        assertThat(first.variablesAtExit().get("x")).isEqualTo(new TraceValue.IntegerValue(1));
+        assertThat(second.variablesAtExit().get("x")).isEqualTo(new TraceValue.IntegerValue(2));
+        var scopes=new ArrayList<Scope>();
+        var environment=new EvaluationEnvironment(Scope.empty(),Optional.empty(),scopes);
+        var evaluator=new Evaluator(environment);
+        assertThatThrownBy(()->evaluator.evaluate(PeelGrammar.parse("a:{var x=[][0];}").programm(),new de.flogehring.peel.run.trace.ExpressionRecorder())).isInstanceOf(RuntimeException.class);
+        assertThat(scopes).isEmpty();
+        assertThatThrownBy(()->evaluator.evaluate(PeelGrammar.parse("fun f(){var x=[][0];} f();").programm(),new de.flogehring.peel.run.trace.ExpressionRecorder())).isInstanceOf(RuntimeException.class);
+        assertThat(evaluator).extracting("environment").isSameAs(environment);
+        assertThat(scopes).isEmpty();
+        evaluator.evaluate(PeelGrammar.parse("fun f(){while(True){return 7;}}f();").programm(),new de.flogehring.peel.run.trace.ExpressionRecorder());
+        assertThat(scopes).isEmpty();
+    }
+}

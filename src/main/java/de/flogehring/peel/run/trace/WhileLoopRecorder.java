@@ -27,7 +27,7 @@ public class WhileLoopRecorder implements TraceRecorder {
         List<TraceExpression.WhileLoop.Iteration> iteration = new ArrayList<>();
         TraceValue lastValue = TraceValue.NONE_VALUE;
         for (int i = 0; i < conditions.size(); ++i) {
-            TraceExpression.Block body = EMPTY_BLOCK;
+            TraceExpression.Block body = null;
             if (bodies.size() > i) {
                 body = (TraceExpression.Block) bodies.get(i).traceExpression();
                 lastValue = body.value();

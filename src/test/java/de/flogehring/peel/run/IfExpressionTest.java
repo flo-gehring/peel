@@ -79,6 +79,15 @@ public class IfExpressionTest {
         }
 
         @Test
+        void ifRegression() {
+            runProgrammAndExpect("""
+                    var x = 0;
+                    if(x==0) x = 1;
+                    x;
+                    """, integer(1));
+        }
+
+        @Test
         void ifWithNestedConditions() {
             runProgrammAndExpect("""
                         var x = 0;
