@@ -3,16 +3,17 @@ package de.flogehring.peel.run;
 import de.flogehring.peel.convenience.RuntimeFactory;
 import de.flogehring.peel.convenience.output.TraceMapOutput;
 import de.flogehring.peel.core.eval.RequestBindings;
+import de.flogehring.peel.core.lang.BlockCatalog;
 import de.flogehring.peel.core.trace.TraceExpression;
 import de.flogehring.peel.parse.PeelGrammar;
-import de.flogehring.peel.parse.PeelParsingException;
 import org.junit.jupiter.api.Test;
+
 import static org.assertj.core.api.Assertions.*;
 
 class NamedBlockTest {
     @Test
     void namesAreOptionalAndPreserveLoopBindingsAndScope() {
-        var parsed = PeelGrammar.parseWithBlocks("""
+        var program = PeelGrammar.parse("""
                 calculation: {
                     var sum = 0;
                     for (x in [2, 3]) step: { sum = sum + x; }
@@ -21,8 +22,8 @@ class NamedBlockTest {
                     sum;
                 }
                 """);
-        assertThat(parsed.blockNames()).containsExactly("calculation", "step", "absent");
-        var trace = RuntimeFactory.defaultLanguage().run(parsed.program(), RequestBindings.empty());
+        assertThat(BlockCatalog.analyze(program).names()).containsExactly("calculation", "step", "absent");
+        var trace = RuntimeFactory.defaultLanguage().run(program, RequestBindings.empty());
         var outer = (TraceExpression.Block) trace.expressions().getFirst();
         assertThat(outer.name()).isEqualTo("calculation");
         var loop = (TraceExpression.ForEachLoop) outer.content().get(1);
@@ -42,9 +43,11 @@ class NamedBlockTest {
     }
 
     @Test
-    void rejectsDuplicateDefinitionsEvenInUnexecutedBranches() {
-        assertThatThrownBy(() -> PeelGrammar.parse("if (False) same: {} same: {}"))
-                .isInstanceOf(PeelParsingException.class).hasMessageContaining("same");
+    void parsesWithoutBlockAnalysisAndChecksDuplicatesOnlyWhenRequested() {
+        var program = PeelGrammar.parse("if (False) same: {} same: {}");
+        assertThat(program).isNotNull();
+        assertThatThrownBy(() -> BlockCatalog.analyze(program))
+                .isInstanceOf(IllegalArgumentException.class).hasMessageContaining("same");
     }
 
     @Test

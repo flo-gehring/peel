@@ -1,9 +1,13 @@
 package de.flogehring.peel.core.lang;
 
 import de.flogehring.peel.core.values.PeelFunctionDefinition;
+import de.flogehring.peel.core.values.PeelValue;
+
 import java.util.*;
 
-/** Static block selection hints. Reachability deliberately overestimates dynamic calls. */
+/**
+ * Static block selection hints. Reachability deliberately overestimates dynamic calls.
+ */
 public record BlockCatalog(List<Definition> blocks) {
     public BlockCatalog {
         blocks = List.copyOf(blocks);
@@ -66,11 +70,11 @@ public record BlockCatalog(List<Definition> blocks) {
                 Collection<Expression.Block> targets;
                 if (callable(call.callee()) != null) {
                     targets = List.of(callable(call.callee()).getBody());
-                } else if (call.callee() instanceof Expression.VariableName name
-                        && name.scopeOffset() != -1
-                        && functions.containsKey(name.name()) && !variableNames.contains(name.name())) {
+                } else if (call.callee() instanceof Expression.VariableName(String name1, int scopeOffset)
+                        && scopeOffset != -1
+                        && functions.containsKey(name1) && !variableNames.contains(name1)) {
                     // All declarations with this name are candidates, including overloads and shadows.
-                    targets = functions.get(name.name());
+                    targets = functions.get(name1);
                 } else {
                     // A parameter, selector, host function or returned callable may invoke any script body.
                     targets = callableBodies;
@@ -82,7 +86,9 @@ public record BlockCatalog(List<Definition> blocks) {
 
     private static PeelFunctionDefinition callable(Expression expression) {
         if (expression instanceof Expression.FunctionDeclaration declaration) return declaration.callable();
-        if (expression instanceof Expression.Literal literal && literal.value() instanceof PeelFunctionDefinition function)
+        if (expression instanceof Expression.Literal(
+                PeelValue value
+        ) && value instanceof PeelFunctionDefinition function)
             return function;
         return null;
     }
@@ -116,8 +122,7 @@ public record BlockCatalog(List<Definition> blocks) {
             case Expression.WhileLoop loop -> List.of(loop.condition(), loop.body());
             case Expression.ForEachLoop loop -> List.of(loop.list(), loop.body());
             case Expression.Return returned -> List.of(returned.value());
-            case Expression.Literal ignored -> List.of();
-            case Expression.VariableName ignored -> List.of();
+            case Expression.Literal _, Expression.VariableName _ -> List.of();
         };
     }
 }

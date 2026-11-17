@@ -1,14 +1,19 @@
 package de.flogehring.peel.run;
 
-import de.flogehring.peel.core.lang.*;
+import de.flogehring.peel.core.lang.BlockCatalog;
+import de.flogehring.peel.core.lang.Expression;
+import de.flogehring.peel.core.lang.Program;
 import de.flogehring.peel.parse.PeelGrammar;
 import org.junit.jupiter.api.Test;
+
 import java.util.List;
-import static org.assertj.core.api.Assertions.*;
+
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 class BlockCatalogTest {
     private BlockCatalog catalog(String source) {
-        return PeelGrammar.parseWithBlocks(source).blockCatalog();
+        return BlockCatalog.analyze(PeelGrammar.parse(source));
     }
 
     private List<String> reachable(BlockCatalog catalog, String block) {

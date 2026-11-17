@@ -1,5 +1,6 @@
 package de.flogehring.peel.convenience;
 
+import de.flogehring.peel.analysis.SymbolKind;
 import de.flogehring.peel.core.eval.*;
 import de.flogehring.peel.run.Scope;
 import de.flogehring.peel.run.SimpleRuntime;
@@ -90,12 +91,18 @@ public final class RuntimeBuilder {
         return SimpleRuntime.fromGlobalScope(globalScope);
     }
 
+    /**
+     * Describes variables and functions registered through this builder and its modules.
+     * Does not invoke registered functions; function overloads remain separate entries here.
+     *
+     * @return immutable symbol descriptions for use as the analyzer's runtime symbols
+     */
     public List<de.flogehring.peel.analysis.ProvidedSymbol> symbols() {
         var result = new ArrayList<de.flogehring.peel.analysis.ProvidedSymbol>();
         java.util.stream.Stream.concat(modules.stream().flatMap(module -> module.variables().stream()), variables.stream())
-                .forEach(variable -> result.add(new de.flogehring.peel.analysis.ProvidedSymbol(variable.name(), "variable", "", -1)));
+                .forEach(variable -> result.add(new de.flogehring.peel.analysis.ProvidedSymbol(variable.name(), SymbolKind.VARIABLE, "", -1)));
         java.util.stream.Stream.concat(modules.stream().flatMap(module -> module.functions().stream()), functions.stream())
-                .forEach(function -> result.add(new de.flogehring.peel.analysis.ProvidedSymbol(function.name(), "function", "", function.arity())));
+                .forEach(function -> result.add(new de.flogehring.peel.analysis.ProvidedSymbol(function.name(), SymbolKind.FUNCTION, "", function.arity())));
         return List.copyOf(result);
     }
 

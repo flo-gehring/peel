@@ -1,9 +1,15 @@
 # Language analysis for consumers
 
+Parsing and optional AST analyses are independent. Obtain an executable program
+with `PeelGrammar.parse(source)`. Only consumers needing block names, parent
+relationships or possible reachability call `BlockCatalog.analyze(program)`.
+Duplicate block names are rejected by that explicit analysis, not by parsing.
+The editor analyzer independently reports them as diagnostics.
+
 The core library offers an editor-independent analysis API:
 
 ```java
-var inputs = List.of(new ProvidedSymbol("amount", "variable", "Net amount", -1));
+var inputs = List.of(new ProvidedSymbol("amount", SymbolKind.VARIABLE, "Net amount", -1));
 var analysis = PeelAnalysis.analyze(
         "var gross = amount * 1.19;",
         inputs,
@@ -22,6 +28,12 @@ parameters and declared functions; origins distinguish local, external and
 runtime symbols. Roles distinguish declarations, references, assignments and calls.
 A variable holding a function remains a variable; there is no callable-value
 inference. Runtime overload names share a definition for presentation.
+
+The flat result uses enums: SymbolKind (VARIABLE, PARAMETER, FUNCTION),
+SymbolOrigin (LOCAL, EXTERNAL, RUNTIME), OccurrenceRole (DECLARATION, REFERENCE,
+ASSIGNMENT, CALL), DiagnosticCode and DiagnosticSeverity (WARNING, ERROR).
+These fields are typed Java values; default JSON serialization uses their uppercase
+enum names. Javadocs on the records describe every field, ID relationship and range.
 
 Ranges use zero-based UTF-16 offsets with exclusive ends. Consumers should use
 scope ancestry, ranges and visibleFrom positions to offer visible names.
@@ -43,6 +55,3 @@ No host callbacks are used to infer types or validate runtime values.
 `PeelAnalysis.isIdentifier(name)` validates a complete identifier using the
 generated lexer, including keyword exclusion. Application-specific input
 contracts, persistence, HTTP, themes and Monaco adapters belong to consumers.
-
-The tests include nested scopes, closures, foreach variables, function references,
-every typing prefix of a representative program, and CRLF/astral Unicode offsets.

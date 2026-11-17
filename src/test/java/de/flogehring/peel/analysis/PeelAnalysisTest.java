@@ -1,8 +1,11 @@
 package de.flogehring.peel.analysis;
 
 import org.junit.jupiter.api.Test;
+
 import java.util.List;
-import static org.assertj.core.api.Assertions.*;
+
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatCode;
 
 class PeelAnalysisTest {
     @Test void survivesEveryTypingPrefixAndKeepsRuntimeCallbacksUnevaluated() {
@@ -19,12 +22,12 @@ class PeelAnalysisTest {
         assertThat(result.diagnostics()).isEmpty();
         assertThat(result.symbols()).anyMatch(s -> s.name().equals("count") && s.arity() == 2);
         assertThat(PeelAnalysis.analyze("var x; x;", List.of(), List.of()).diagnostics())
-                .anyMatch(d -> d.code().equals("uninitialized_variable"));
+                .anyMatch(d -> d.code().equals(DiagnosticCode.UNINITIALIZED_VARIABLE));
     }
     @Test void resolvesExternalParametersClosuresAndShadowing() {
         var source = "var x = input; fun f(x) { return fun(y) { return x + y; }; } x;";
         var result = PeelAnalysis.analyze(source,
-                List.of(new ProvidedSymbol("input", "variable", "External input", -1)), List.of());
+                List.of(new ProvidedSymbol("input", SymbolKind.VARIABLE, "External input", -1)), List.of());
         assertThat(result.diagnostics()).isEmpty();
         var xSymbols = result.symbols().stream().filter(symbol -> symbol.name().equals("x")).toList();
         assertThat(xSymbols).hasSize(2);
@@ -36,13 +39,13 @@ class PeelAnalysisTest {
         var result = PeelAnalysis.analyze("fun f(x) { return x; } var g = f; g(1);", List.of(), List.of());
         assertThat(result.diagnostics()).isEmpty();
         assertThat(result.symbols().stream().filter(s -> s.name().equals("g")).findFirst().orElseThrow().kind())
-                .isEqualTo("variable");
-        assertThat(result.occurrences().stream().filter(o -> o.role().equals("call")).count()).isEqualTo(1);
+                .isEqualTo(SymbolKind.VARIABLE);
+        assertThat(result.occurrences().stream().filter(o -> o.role() == OccurrenceRole.CALL).count()).isEqualTo(1);
     }
     @Test void reportsUnknownReadsAndInvalidAssignmentsWithoutExecutingAnything() {
         var result = PeelAnalysis.analyze("missing; other = 1; return 2; var x = x;", List.of(), List.of());
         assertThat(result.diagnostics()).extracting(AnalysisResult.Diagnostic::code)
-                .contains("unknown_name", "undeclared_assignment", "return_outside_function", "uninitialized_variable");
+                .contains(DiagnosticCode.UNKNOWN_NAME, DiagnosticCode.UNDECLARED_ASSIGNMENT, DiagnosticCode.RETURN_OUTSIDE_FUNCTION, DiagnosticCode.UNINITIALIZED_VARIABLE);
     }
     @Test void handlesEmptyAndIncompleteProgramsAndKeepsCompletedStatements() {
         assertThat(PeelAnalysis.analyze("", List.of(), List.of()).diagnostics()).isEmpty();
@@ -58,7 +61,7 @@ class PeelAnalysisTest {
     }
     @Test void foreachNamesAreNotVisibleInTheirIterableOrAfterTheLoop() {
         var result = PeelAnalysis.analyze("for (x in x) { x; } x;", List.of(), List.of());
-        assertThat(result.diagnostics().stream().filter(d -> d.code().equals("unknown_name")).count()).isEqualTo(2);
+        assertThat(result.diagnostics().stream().filter(d -> d.code().equals(DiagnosticCode.UNKNOWN_NAME)).count()).isEqualTo(2);
     }
     @Test void identifierValidationUsesTheLexer() {
         assertThat(PeelAnalysis.isIdentifier("_input2")).isTrue();

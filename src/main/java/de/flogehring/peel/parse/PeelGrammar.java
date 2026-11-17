@@ -3,25 +3,24 @@ package de.flogehring.peel.parse;
 import de.flogehring.peel.antlr.PeelLexer;
 import de.flogehring.peel.antlr.PeelParser;
 import de.flogehring.peel.core.lang.Program;
-import de.flogehring.peel.core.lang.BlockCatalog;
 import org.antlr.v4.runtime.CharStreams;
 import org.antlr.v4.runtime.CommonTokenStream;
-import java.util.List;
 
 public class PeelGrammar {
 
     private PeelGrammar() {
     }
 
+    /**
+     * Parses source into an executable AST without running optional program analyses.
+     * Callers needing block definitions or reachability can explicitly invoke
+     * {@link de.flogehring.peel.core.lang.BlockCatalog#analyze(Program)} on the result.
+     *
+     * @param program PEEL source text
+     * @return parsed program without an attached analysis result
+     * @throws PeelParsingException if the source cannot be converted to a program
+     */
     public static Program parse(String program) {
-        return parseWithBlocks(program).program();
-    }
-
-    public record ParsedProgram(Program program, BlockCatalog blockCatalog) {
-        public List<String> blockNames() { return blockCatalog.names(); }
-    }
-
-    public static ParsedProgram parseWithBlocks(String program) {
         PeelLexer peelLexer = new PeelLexer(CharStreams.fromString(program));
         CommonTokenStream tokens = new CommonTokenStream(peelLexer);
         PeelParser parser = new PeelParser(tokens);
@@ -29,12 +28,7 @@ public class PeelGrammar {
         ProgrammVisitor visitor = new ProgrammVisitor();
         ParsableProgramm visit = visitor.visit(tree);
         if (visit instanceof ParsableProgramm.Programm programm) {
-            Program ast = programm.toProgramm();
-            try {
-                return new ParsedProgram(ast, BlockCatalog.analyze(ast));
-            } catch (IllegalArgumentException error) {
-                throw new PeelParsingException(error.getMessage());
-            }
+            return programm.toProgramm();
         } else {
             throw new PeelParsingException("Parsing gone wrong");
         }
