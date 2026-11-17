@@ -15,7 +15,7 @@ class PeelAnalysisTest {
             assertThatCode(() -> PeelAnalysis.analyze(prefix, List.of(), List.of())).doesNotThrowAnyException();
         }
         var symbols = de.flogehring.peel.convenience.RuntimeBuilder.standardLanguage().withFunction(
-                de.flogehring.peel.convenience.FunctionFactory.binary("injected", (a, b) -> {
+                de.flogehring.peel.convenience.FunctionFactory.binary("injected", (_, _) -> {
                     throw new AssertionError("Analysis must not execute functions");
                 })).symbols();
         var result = PeelAnalysis.analyze("injected(1, 2);", List.of(), symbols);
