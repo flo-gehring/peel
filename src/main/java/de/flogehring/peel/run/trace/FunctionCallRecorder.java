@@ -7,6 +7,7 @@ import de.flogehring.peel.core.trace.TraceExpression.FunctionExecutionTrace;
 import de.flogehring.peel.core.trace.TraceValue;
 import de.flogehring.peel.core.trace.TraceValueMapper;
 import de.flogehring.peel.core.values.PeelValue;
+import de.flogehring.peel.run.ExecutionBudget;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -14,6 +15,8 @@ import java.util.Objects;
 import java.util.Optional;
 
 public class FunctionCallRecorder implements TraceRecorder {
+
+    private final ExecutionBudget budget;
 
     private String name;
     private final List<ExpressionRecorder> argumentRecorder = new ArrayList<>();
@@ -23,6 +26,10 @@ public class FunctionCallRecorder implements TraceRecorder {
     private TraceExpression.CalleeSource calleeSource;
     private TraceExpression.ResolvedCallable resolvedCallable;
     private TraceValue value;
+
+    FunctionCallRecorder(ExecutionBudget budget) {
+        this.budget = budget;
+    }
 
     @Override
     public TraceExpression traceExpression() {
@@ -74,7 +81,7 @@ public class FunctionCallRecorder implements TraceRecorder {
     }
 
     public ExpressionRecorder recordArgument() {
-        argumentRecorder.add(new ExpressionRecorder());
+        argumentRecorder.add(new ExpressionRecorder(budget));
         return argumentRecorder.getLast();
     }
 
@@ -87,7 +94,7 @@ public class FunctionCallRecorder implements TraceRecorder {
     }
 
     public BlockTraceRecorder functionBody() {
-        blockTraceRecorder = new BlockTraceRecorder();
+        blockTraceRecorder = new BlockTraceRecorder(budget);
         return blockTraceRecorder;
     }
 
@@ -97,7 +104,7 @@ public class FunctionCallRecorder implements TraceRecorder {
     }
 
     public ExpressionRecorder functionFromExpr() {
-        functionSourceRecorder = new ExpressionRecorder();
+        functionSourceRecorder = new ExpressionRecorder(budget);
         return functionSourceRecorder;
     }
 
@@ -110,6 +117,6 @@ public class FunctionCallRecorder implements TraceRecorder {
     }
 
     public void recordResult(PeelValue result) {
-        this.value = TraceValueMapper.fromPeelValue(result);
+        this.value = TraceValueMapper.fromPeelValue(result, budget);
     }
 }

@@ -4,6 +4,7 @@ import de.flogehring.peel.core.trace.TraceExpression;
 import de.flogehring.peel.core.trace.TraceValue;
 import de.flogehring.peel.core.trace.TraceValueMapper;
 import de.flogehring.peel.core.values.PeelValue;
+import de.flogehring.peel.run.ExecutionBudget;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -11,9 +12,15 @@ import java.util.Objects;
 
 public class ForEachRecorder implements TraceRecorder {
 
+    private final ExecutionBudget budget;
+
     private String variableName;
     private ExpressionRecorder iterableExpressionRecorder;
     private final List<IterationRecorder> iterations = new ArrayList<>();
+
+    ForEachRecorder(ExecutionBudget budget) {
+        this.budget = budget;
+    }
 
     @Override
     public TraceExpression traceExpression() {
@@ -34,13 +41,13 @@ public class ForEachRecorder implements TraceRecorder {
     }
 
     public ExpressionRecorder listRecorder() {
-        iterableExpressionRecorder = new ExpressionRecorder();
+        iterableExpressionRecorder = new ExpressionRecorder(budget);
         return iterableExpressionRecorder;
     }
 
     public ExpressionRecorder nextLoop(PeelValue currentValue) {
-        ExpressionRecorder bodyRecorder = new ExpressionRecorder();
-        iterations.add(new IterationRecorder(TraceValueMapper.fromPeelValue(currentValue), bodyRecorder));
+        ExpressionRecorder bodyRecorder = new ExpressionRecorder(budget);
+        iterations.add(new IterationRecorder(TraceValueMapper.fromPeelValue(currentValue, budget), bodyRecorder));
         return bodyRecorder;
     }
 

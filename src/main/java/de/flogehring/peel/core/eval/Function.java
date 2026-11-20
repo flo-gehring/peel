@@ -1,8 +1,8 @@
 package de.flogehring.peel.core.eval;
 
-
 import de.flogehring.peel.core.trace.CallableKind;
 import de.flogehring.peel.core.values.PeelValue;
+import de.flogehring.peel.run.ExecutionBudget;
 import de.flogehring.peel.run.trace.FunctionCallRecorder;
 
 public interface Function {
@@ -16,4 +16,10 @@ public interface Function {
     }
 
     PeelValue runWithTrace(FunctionCallRecorder functionCallRecorder, PeelValue... arguments);
+
+    default PeelValue runWithTrace(
+            ExecutionBudget budget, FunctionCallRecorder functionCallRecorder, PeelValue... arguments
+    ) {
+        return runWithTrace(functionCallRecorder, arguments);
+    }
 }

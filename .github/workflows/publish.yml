@@ -1,0 +1,43 @@
+name: Publish Peel Core
+
+on:
+  push:
+    tags: [ 'v*' ]
+
+permissions:
+  contents: read
+  packages: write
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '22'
+          cache: gradle
+      - name: Read version from tag
+        id: release
+        shell: bash
+        run: |
+          version="${GITHUB_REF_NAME#v}"
+          if ! [[ "$version" =~ ^[0-9]+\.[0-9]+\.[0-9]+(-[A-Za-z0-9]+([.-][A-Za-z0-9]+)*)?$ ]] || [[ "${version^^}" == *-SNAPSHOT ]]; then
+            echo "Expected a release tag such as v0.1.0 or v0.1.0-beta.1." >&2
+            exit 1
+          fi
+          printf 'version=%s\n' "$version" >> "$GITHUB_OUTPUT"
+      - name: Test release
+        env:
+          RELEASE_VERSION: ${{ steps.release.outputs.version }}
+        run: bash ./gradlew --no-daemon "-PreleaseVersion=$RELEASE_VERSION" test
+      - name: Publish Maven package
+        env:
+          RELEASE_VERSION: ${{ steps.release.outputs.version }}
+          ORG_GRADLE_PROJECT_githubPackagesUsername: ${{ github.actor }}
+          ORG_GRADLE_PROJECT_githubPackagesPassword: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          bash ./gradlew --no-daemon "-PreleaseVersion=$RELEASE_VERSION" publishPeelPublicationToGithubPackagesRepository

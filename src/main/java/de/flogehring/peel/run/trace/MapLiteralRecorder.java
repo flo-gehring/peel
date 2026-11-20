@@ -1,13 +1,20 @@
 package de.flogehring.peel.run.trace;
 
 import de.flogehring.peel.core.trace.TraceExpression;
+import de.flogehring.peel.run.ExecutionBudget;
 
 import java.util.ArrayList;
 import java.util.List;
 
 public class MapLiteralRecorder implements TraceRecorder {
 
+    private final ExecutionBudget budget;
+
     private final List<KeyValueRecorder> keyValueRecorderList = new ArrayList<>();
+
+    MapLiteralRecorder(ExecutionBudget budget) {
+        this.budget = budget;
+    }
 
     @Override
     public TraceExpression traceExpression() {
@@ -21,8 +28,8 @@ public class MapLiteralRecorder implements TraceRecorder {
 
     public KeyValueRecorder nextKeyValueRecorder() {
         KeyValueRecorder keyValueRecorder = new KeyValueRecorder(
-                new ExpressionRecorder(),
-                new ExpressionRecorder()
+                new ExpressionRecorder(budget),
+                new ExpressionRecorder(budget)
         );
         keyValueRecorderList.add(keyValueRecorder);
         return keyValueRecorder;

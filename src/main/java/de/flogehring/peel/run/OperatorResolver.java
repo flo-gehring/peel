@@ -10,6 +10,16 @@ import java.util.List;
 
 final class OperatorResolver {
 
+    private final ExecutionBudget budget;
+
+    OperatorResolver() {
+        this(ExecutionBudget.unlimited());
+    }
+
+    OperatorResolver(ExecutionBudget budget) {
+        this.budget = budget;
+    }
+
     PeelValue resolveAndApply(String symbol, PeelValue argument, List<OperatorDef> candidates) {
         List<OperatorDef> matchingCandidates = candidates.stream()
                 .filter(candidate -> candidate.matches(argument))
@@ -38,9 +48,9 @@ final class OperatorResolver {
             if (bestMatches.size() > 1) {
                 throw new AmbiguousOperatorException(symbol, lhs, rhs, bestMatches);
             }
-            return bestMatches.getFirst().apply(lhs, rhs);
+            return bestMatches.getFirst().apply(lhs, rhs, budget);
         } else {
-            return matchingCandidates.getFirst().apply(lhs, rhs);
+            return matchingCandidates.getFirst().apply(lhs, rhs, budget);
         }
     }
 

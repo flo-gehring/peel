@@ -8,13 +8,7 @@ import de.flogehring.peel.core.trace.TraceValueMapper;
 import de.flogehring.peel.core.values.PeelValue;
 import de.flogehring.peel.run.exceptions.PeelException;
 
-import java.util.ArrayList;
-import java.util.IdentityHashMap;
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
-import java.util.Set;
+import java.util.*;
 
 // TODO Should Peel Closure Values hold the Reference to the evaluation environment?
 public class EvaluationEnvironment {
@@ -30,21 +24,26 @@ public class EvaluationEnvironment {
         this.scopes = scopes;
     }
 
-    Map<String, TraceValue> capture() {
+    Map<String, TraceValue> capture(ExecutionBudget budget) {
         var values = new LinkedHashMap<String, TraceValue>();
         if (parent.isPresent()) {
-            values.putAll(parent.get().capture());
+            values.putAll(parent.get().capture(budget));
         } else {
-            global.variablesView().forEach((name, value) -> values.put(name, TraceValueMapper.fromPeelValue(value)));
+            global.variablesView().forEach((name, value) -> captureVariable(values, name, value, budget));
         }
         for (Scope scope : scopes) {
             scope.variablesView().forEach((name, value) -> {
                 if (capturedNames == null || capturedNames.getOrDefault(scope, Set.of()).contains(name)) {
-                    values.put(name, TraceValueMapper.fromPeelValue(value));
+                    captureVariable(values, name, value, budget);
                 }
             });
         }
         return Map.copyOf(values);
+    }
+
+    private static void captureVariable(Map<String, TraceValue> values, String name, PeelValue value, ExecutionBudget budget) {
+        budget.trace(1L + name.length());
+        values.put(name, TraceValueMapper.fromPeelValue(value, budget));
     }
 
     void enterScope() {

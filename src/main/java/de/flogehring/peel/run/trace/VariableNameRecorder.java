@@ -4,10 +4,17 @@ import de.flogehring.peel.core.trace.TraceExpression;
 import de.flogehring.peel.core.trace.TraceValue;
 import de.flogehring.peel.core.trace.TraceValueMapper;
 import de.flogehring.peel.core.values.PeelValue;
+import de.flogehring.peel.run.ExecutionBudget;
 
 public class VariableNameRecorder implements TraceRecorder {
+
+    private final ExecutionBudget budget;
     private String name;
     private TraceValue traceValue;
+
+    VariableNameRecorder(ExecutionBudget budget) {
+        this.budget = budget;
+    }
 
     @Override
     public TraceExpression traceExpression() {
@@ -19,6 +26,6 @@ public class VariableNameRecorder implements TraceRecorder {
     }
 
     public void recordValue(PeelValue value) {
-        this.traceValue = TraceValueMapper.fromPeelValue(value);
+        this.traceValue = TraceValueMapper.fromPeelValue(value, budget);
     }
 }

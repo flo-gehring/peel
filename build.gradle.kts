@@ -1,11 +1,38 @@
+import java.util.*
+
 plugins {
     id("java")
     antlr
     jacoco
+    `maven-publish`
 }
 
 group = "de.flo-gehring"
-version = "1.0-SNAPSHOT"
+version = providers.gradleProperty("releaseVersion").getOrElse("1.0-SNAPSHOT")
+
+publishing {
+    publications {
+        create<MavenPublication>("peel") {
+            from(components["java"])
+        }
+    }
+    repositories {
+        maven {
+            name = "staging"
+            url = layout.buildDirectory.dir("maven-repository").get().asFile.toURI()
+        }
+        providers.environmentVariable("GITHUB_REPOSITORY").orNull?.let { repository ->
+            maven {
+                name = "githubPackages"
+                url = uri("https://maven.pkg.github.com/${repository.lowercase(Locale.ROOT)}")
+                credentials(org.gradle.api.credentials.PasswordCredentials::class)
+                authentication {
+                    create<org.gradle.authentication.http.BasicAuthentication>("basic")
+                }
+            }
+        }
+    }
+}
 
 val generatedAntlrSrcRoot = layout.buildDirectory.dir("generated-src/antlr/main")
 val generatedAntlrPackageDir = generatedAntlrSrcRoot.map { it.dir("de/flogehring/peel/antlr") }

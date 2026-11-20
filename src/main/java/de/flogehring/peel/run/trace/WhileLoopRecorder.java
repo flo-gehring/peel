@@ -2,23 +2,29 @@ package de.flogehring.peel.run.trace;
 
 import de.flogehring.peel.core.trace.TraceExpression;
 import de.flogehring.peel.core.trace.TraceValue;
+import de.flogehring.peel.run.ExecutionBudget;
 
 import java.util.ArrayList;
 import java.util.List;
 
 public class WhileLoopRecorder implements TraceRecorder {
 
-    public static final TraceExpression.Block EMPTY_BLOCK = new TraceExpression.Block(List.of());
-    private List<ExpressionRecorder> conditions = new ArrayList<>();
-    private List<ExpressionRecorder> bodies = new ArrayList<>();
+    private final ExecutionBudget budget;
+
+    private final List<ExpressionRecorder> conditions = new ArrayList<>();
+    private final List<ExpressionRecorder> bodies = new ArrayList<>();
+
+    WhileLoopRecorder(ExecutionBudget budget) {
+        this.budget = budget;
+    }
 
     public ExpressionRecorder nextCondition() {
-        conditions.add(new ExpressionRecorder());
+        conditions.add(new ExpressionRecorder(budget));
         return conditions.getLast();
     }
 
     public ExpressionRecorder nextBody() {
-        bodies.add(new ExpressionRecorder());
+        bodies.add(new ExpressionRecorder(budget));
         return bodies.getLast();
     }
 

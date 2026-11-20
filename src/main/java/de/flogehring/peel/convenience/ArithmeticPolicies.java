@@ -54,11 +54,11 @@ public final class ArithmeticPolicies {
                         Number.class,
                         (lhs, rhs) -> policy.mod((Number) lhs, (Number) rhs)
                 ),
-                OperatorDef.arithmeticManaged(
+                OperatorDef.arithmeticManagedWithBudget(
                         "**",
                         Number.class,
                         Number.class,
-                        (lhs, rhs) -> policy.pow((Number) lhs, (Number) rhs)
+                        (budget, lhs, rhs) -> policy.pow((Number) lhs, (Number) rhs, budget)
                 ),
                 OperatorDef.arithmeticManaged(
                         "/",

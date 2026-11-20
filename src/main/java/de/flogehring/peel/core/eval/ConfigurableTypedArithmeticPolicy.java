@@ -2,6 +2,7 @@ package de.flogehring.peel.core.eval;
 
 import de.flogehring.peel.core.values.Number;
 import de.flogehring.peel.core.values.PeelValue;
+import de.flogehring.peel.run.ExecutionBudget;
 
 import java.math.BigDecimal;
 import java.math.MathContext;
@@ -103,7 +104,7 @@ public final class ConfigurableTypedArithmeticPolicy extends TypedArithmeticPoli
             return modValue(lhs, rhs);
         }
         if (op == BinaryOp.POW) {
-            return powValue(lhs, rhs);
+            return pow(lhs, rhs, ExecutionBudget.unlimited());
         }
         NumericKind resultKind = resolveResultKind(lhs, rhs);
         return switch (resultKind) {
@@ -125,10 +126,12 @@ public final class ConfigurableTypedArithmeticPolicy extends TypedArithmeticPoli
         };
     }
 
-    private PeelValue powValue(Number lhs, Number rhs) {
+    @Override
+    public PeelValue pow(Number lhs, Number rhs, ExecutionBudget budget) {
         if (lhs instanceof Number.Integer(var base) && rhs instanceof Number.Integer(var exponent) && exponent >= 0) {
             int result = 1;
             for (int i = 0; i < exponent; i++) {
+                budget.step();
                 result *= base;
             }
             return new Number.Integer(result);
@@ -137,6 +140,8 @@ public final class ConfigurableTypedArithmeticPolicy extends TypedArithmeticPoli
                 && lhs instanceof Number.Decimal(var decimalBase)
                 && rhs instanceof Number.Integer(var integerExponent)
                 && integerExponent >= 0) {
+            budget.requireValueSize(ExecutionBudget.decimalSize(
+                    (long) decimalBase.precision() * integerExponent, (long) decimalBase.scale() * integerExponent));
             return new Number.Decimal(decimalBase.pow(integerExponent));
         }
         return new Number.Float((float) Math.pow(floatValue(lhs), floatValue(rhs)));

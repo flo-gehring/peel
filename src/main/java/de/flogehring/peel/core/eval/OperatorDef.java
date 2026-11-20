@@ -2,6 +2,7 @@ package de.flogehring.peel.core.eval;
 
 import de.flogehring.peel.core.values.Number;
 import de.flogehring.peel.core.values.PeelValue;
+import de.flogehring.peel.run.ExecutionBudget;
 import lombok.Getter;
 
 import java.util.Objects;
@@ -15,7 +16,12 @@ public final class OperatorDef {
     private final Class<? extends PeelValue> lhsType;
     private final Class<? extends PeelValue> rhsType;
     private final Function<PeelValue, PeelValue> unaryImplementation;
-    private final BiFunction<PeelValue, PeelValue, PeelValue> implementation;
+    private final BudgetedBinaryOperator implementation;
+
+    @FunctionalInterface
+    public interface BudgetedBinaryOperator {
+        PeelValue apply(ExecutionBudget budget, PeelValue lhs, PeelValue rhs);
+    }
     @Getter
     private final boolean arithmeticManaged;
 
@@ -25,7 +31,7 @@ public final class OperatorDef {
             Class<? extends PeelValue> lhsType,
             Class<? extends PeelValue> rhsType,
             Function<PeelValue, PeelValue> unaryImplementation,
-            BiFunction<PeelValue, PeelValue, PeelValue> implementation,
+            BudgetedBinaryOperator implementation,
             boolean arithmeticManaged
     ) {
         this.symbol = Objects.requireNonNull(symbol, "symbol");
@@ -48,7 +54,7 @@ public final class OperatorDef {
                 argType,
                 PeelValue.class,
                 implementation,
-                (_, _) -> {
+                (_, _, _) -> {
                     throw new IllegalStateException("Unary operator can't be called as binary");
                 },
                 false
@@ -60,6 +66,16 @@ public final class OperatorDef {
             Class<? extends PeelValue> lhsType,
             Class<? extends PeelValue> rhsType,
             BiFunction<PeelValue, PeelValue, PeelValue> implementation
+    ) {
+        Objects.requireNonNull(implementation, "implementation");
+        return typedWithBudget(symbol, lhsType, rhsType, (_, lhs, rhs) -> implementation.apply(lhs, rhs));
+    }
+
+    public static OperatorDef typedWithBudget(
+            String symbol,
+            Class<? extends PeelValue> lhsType,
+            Class<? extends PeelValue> rhsType,
+            BudgetedBinaryOperator implementation
     ) {
         return new OperatorDef(
                 symbol,
@@ -85,7 +101,7 @@ public final class OperatorDef {
                 argType,
                 PeelValue.class,
                 implementation,
-                (_, _) -> {
+                (_, _, _) -> {
                     throw new IllegalStateException("Unary operator can't be called as binary");
                 },
                 true
@@ -97,6 +113,16 @@ public final class OperatorDef {
             Class<? extends PeelValue> lhsType,
             Class<? extends PeelValue> rhsType,
             BiFunction<PeelValue, PeelValue, PeelValue> implementation
+    ) {
+        Objects.requireNonNull(implementation, "implementation");
+        return arithmeticManagedWithBudget(symbol, lhsType, rhsType, (budget, lhs, rhs) -> implementation.apply(lhs, rhs));
+    }
+
+    public static OperatorDef arithmeticManagedWithBudget(
+            String symbol,
+            Class<? extends PeelValue> lhsType,
+            Class<? extends PeelValue> rhsType,
+            BudgetedBinaryOperator implementation
     ) {
         return new OperatorDef(
                 symbol,
@@ -142,8 +168,8 @@ public final class OperatorDef {
         return unaryImplementation.apply(argument);
     }
 
-    public PeelValue apply(PeelValue lhs, PeelValue rhs) {
-        return implementation.apply(lhs, rhs);
+    public PeelValue apply(PeelValue lhs, PeelValue rhs, ExecutionBudget budget) {
+        return implementation.apply(budget, lhs, rhs);
     }
 
     public boolean acceptsNumericPair() {
