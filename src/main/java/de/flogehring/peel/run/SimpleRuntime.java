@@ -1,5 +1,7 @@
 package de.flogehring.peel.run;
 
+import de.flogehring.peel.core.eval.ExecutionInterrupt;
+import de.flogehring.peel.core.eval.ExecutionLimits;
 import de.flogehring.peel.core.eval.PeelRuntime;
 import de.flogehring.peel.core.eval.RequestBindings;
 import de.flogehring.peel.core.lang.Program;
@@ -22,7 +24,7 @@ public class SimpleRuntime implements PeelRuntime {
         this.global = global;
     }
 
-    public static PeelRuntime fromGlobalScope(Scope global) {
+    public static SimpleRuntime fromGlobalScope(Scope global) {
         return new SimpleRuntime(global.copy());
     }
 
@@ -31,28 +33,48 @@ public class SimpleRuntime implements PeelRuntime {
         return run(program, RequestBindings.empty());
     }
 
+    /**
+     * Evaluates with a budget enforced by this runtime and its built-ins.
+     */
+    public TraceProgram run(Program program, RequestBindings requestBindings, ExecutionLimits limits) {
+        return run(program, requestBindings, new ExecutionBudget(limits));
+    }
+
     @Override
     public TraceProgram run(Program program, RequestBindings requestBindings) {
+        return run(program, requestBindings, ExecutionBudget.unlimited());
+    }
+
+    private TraceProgram run(Program program, RequestBindings requestBindings, ExecutionBudget budget) {
+        budget.checkpoint();
+        budget.requireValueSize(requestBindings.values().size());
         Scope runGlobal = global.copy();
-        applyRequestBindings(runGlobal, requestBindings);
+        applyRequestBindings(runGlobal, requestBindings, budget);
         EvaluationEnvironment environment = new EvaluationEnvironment(
                 runGlobal,
                 Optional.empty(),
                 new ArrayList<>()
         );
-        Evaluator evaluator = new Evaluator(environment);
-        ExpressionRecorder expressionRecorder = new ExpressionRecorder();
+        Evaluator evaluator = new Evaluator(environment, budget);
+        ExpressionRecorder expressionRecorder = new ExpressionRecorder(budget);
         PeelValue result = evaluator.evaluate(program.programm(), expressionRecorder);
-        return new TraceProgram(
-                // TODO hier das doppelt geschatelte raus
-                ((TraceExpression.Block) expressionRecorder.traceExpression()).content(),
-                TraceValueMapper.fromPeelValue(result),
-                ((TraceExpression.Block) expressionRecorder.traceExpression()).variablesAtExit()
+        budget.checkpoint();
+        var block = (TraceExpression.Block) expressionRecorder.traceExpression();
+        var trace = new TraceProgram(
+                block.content(),
+                TraceValueMapper.fromPeelValue(result, budget),
+                block.variablesAtExit()
         );
+        budget.checkpoint();
+        return trace;
     }
 
-    private void applyRequestBindings(Scope runGlobal, RequestBindings requestBindings) {
+    private void applyRequestBindings(
+            Scope runGlobal, RequestBindings requestBindings, ExecutionBudget budget
+    ) {
         for (Map.Entry<String, PeelValue> entry : requestBindings.values().entrySet()) {
+            ExecutionInterrupt.check();
+            budget.checkBinding(entry.getValue());
             String name = entry.getKey();
             if (runGlobal.hasVar(name)) {
                 throw new DuplicateRequestBindingException(name);

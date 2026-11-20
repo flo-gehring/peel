@@ -68,7 +68,7 @@ public final class RuntimeBuilder {
         return this;
     }
 
-    public PeelRuntime build() {
+    public SimpleRuntime build() {
         ArithmeticPolicy resolvedPolicy = arithmeticPolicy == null ? ArithmeticPolicies.standard() : arithmeticPolicy;
         List<Variable> allVariables = new ArrayList<>();
         List<Function> allFunctions = new ArrayList<>();

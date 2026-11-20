@@ -1,13 +1,20 @@
 package de.flogehring.peel.run.trace;
 
 import de.flogehring.peel.core.trace.TraceExpression;
+import de.flogehring.peel.run.ExecutionBudget;
 import lombok.Setter;
 
 public class AssignmentRecorder implements TraceRecorder {
 
+    private final ExecutionBudget budget;
+
     private ExpressionRecorder assignmentRecorder;
     @Setter
     private String varName;
+
+    AssignmentRecorder(ExecutionBudget budget) {
+        this.budget = budget;
+    }
 
     @Override
     public TraceExpression traceExpression() {
@@ -18,7 +25,7 @@ public class AssignmentRecorder implements TraceRecorder {
     }
 
     public ExpressionRecorder recordAssignmentExpression() {
-        assignmentRecorder = new ExpressionRecorder();
+        assignmentRecorder = new ExpressionRecorder(budget);
         return assignmentRecorder;
     }
 }

@@ -36,6 +36,13 @@ public class PeelCodeFunction implements Function {
 
     @Override
     public PeelValue runWithTrace(FunctionCallRecorder functionCallRecorder, PeelValue... arguments) {
+        return runWithTrace(ExecutionBudget.unlimited(), functionCallRecorder, arguments);
+    }
+
+    @Override
+    public PeelValue runWithTrace(
+            ExecutionBudget budget, FunctionCallRecorder functionCallRecorder, PeelValue... arguments
+    ) {
         EvaluationEnvironment e = environment.spawnChild();
         e.enterScope();
         for (int i = 0; i < callable.getParameters().size(); ++i) {
@@ -43,7 +50,9 @@ public class PeelCodeFunction implements Function {
             functionCallRecorder.recordBinding(parameterName);
             e.put(new Expression.VariableName(parameterName, 0), arguments[i]);
         }
-        try { return new Evaluator(e).evaluateBlock(callable.getBody(), functionCallRecorder.functionBody()); }
+        try {
+            return new Evaluator(e, budget).evaluateBlock(callable.getBody(), functionCallRecorder.functionBody());
+        }
         finally { e.exitScope(); }
     }
 }

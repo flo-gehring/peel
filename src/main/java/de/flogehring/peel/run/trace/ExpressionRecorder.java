@@ -1,68 +1,80 @@
 package de.flogehring.peel.run.trace;
 
 import de.flogehring.peel.core.trace.TraceExpression;
+import de.flogehring.peel.run.ExecutionBudget;
 
 import java.util.function.Supplier;
 
 public class ExpressionRecorder implements TraceRecorder {
 
+    private final ExecutionBudget budget;
     private TraceRecorder traceRecorder;
 
+    public ExpressionRecorder() {
+        this(ExecutionBudget.unlimited());
+    }
+
+    public ExpressionRecorder(ExecutionBudget budget) {
+        this.budget = budget;
+        budget.trace(1);
+    }
+
     public BlockTraceRecorder recordBlock() {
-        return createAndAssign(BlockTraceRecorder::new);
+        return createAndAssign(() -> new BlockTraceRecorder(budget));
     }
 
     public ReturnExpressionRecorder recordReturn() {
-        return createAndAssign(ReturnExpressionRecorder::new);
+        return createAndAssign(() -> new ReturnExpressionRecorder(budget));
     }
 
     public AssignmentRecorder recordAssignment() {
-        return createAndAssign(AssignmentRecorder::new);
+        return createAndAssign(() -> new AssignmentRecorder(budget));
     }
 
     @Override
     public TraceExpression traceExpression() {
+        budget.checkpoint();
         return traceRecorder.traceExpression();
     }
 
     public BinaryOpRecorder recordBinary() {
-        return createAndAssign(BinaryOpRecorder::new);
+        return createAndAssign(() -> new BinaryOpRecorder(budget));
     }
 
     public LiteralRecorder literalRecorder() {
-        return createAndAssign(LiteralRecorder::new);
+        return createAndAssign(() -> new LiteralRecorder(budget));
     }
 
     public ListLiteralRecorder recordListLiteral() {
-        return createAndAssign(ListLiteralRecorder::new);
+        return createAndAssign(() -> new ListLiteralRecorder(budget));
     }
 
     public VariableNameRecorder recordVarName() {
-        return createAndAssign(VariableNameRecorder::new);
+        return createAndAssign(() -> new VariableNameRecorder(budget));
     }
 
     public FunctionCallRecorder recordFunctionCall() {
-        return createAndAssign(FunctionCallRecorder::new);
+        return createAndAssign(() -> new FunctionCallRecorder(budget));
     }
 
     public IfElseRecorder recordElseIf() {
-        return createAndAssign(IfElseRecorder::new);
+        return createAndAssign(() -> new IfElseRecorder(budget));
     }
 
     public UnaryRecorder recordUnary() {
-        return createAndAssign(UnaryRecorder::new);
+        return createAndAssign(() -> new UnaryRecorder(budget));
     }
 
     public ForEachRecorder recordForEachLoop() {
-        return createAndAssign(ForEachRecorder::new);
+        return createAndAssign(() -> new ForEachRecorder(budget));
     }
 
     public MapLiteralRecorder recordMapLiteral() {
-        return createAndAssign(MapLiteralRecorder::new);
+        return createAndAssign(() -> new MapLiteralRecorder(budget));
     }
 
     public SelectorRecorder recordSelector() {
-        return createAndAssign(SelectorRecorder::new);
+        return createAndAssign(() -> new SelectorRecorder(budget));
     }
 
     public FunctionDeclarationRecorder recordFunctionDeclaration() {
@@ -70,7 +82,7 @@ public class ExpressionRecorder implements TraceRecorder {
     }
 
     public WhileLoopRecorder recordWhileLoop() {
-        return createAndAssign(WhileLoopRecorder::new);
+        return createAndAssign(() -> new WhileLoopRecorder(budget));
     }
 
     private <T extends TraceRecorder> T createAndAssign(Supplier<T> creator) {

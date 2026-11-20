@@ -1,5 +1,6 @@
 package de.flogehring.peel.run;
 
+import de.flogehring.peel.core.eval.ExecutionInterrupt;
 import de.flogehring.peel.core.eval.Function;
 import de.flogehring.peel.core.eval.OperatorDef;
 import de.flogehring.peel.core.lang.Expression;
@@ -17,10 +18,16 @@ public class Evaluator {
 
     private EvaluationEnvironment environment;
     private final OperatorResolver operatorResolver;
+    private final ExecutionBudget budget;
 
     public Evaluator(EvaluationEnvironment environment) {
+        this(environment, ExecutionBudget.unlimited());
+    }
+
+    Evaluator(EvaluationEnvironment environment, ExecutionBudget budget) {
         this.environment = environment;
-        this.operatorResolver = new OperatorResolver();
+        this.budget = budget;
+        this.operatorResolver = new OperatorResolver(budget);
     }
 
     PeelValue evaluate(Expression expression, ExpressionRecorder expressionRecorder) {
@@ -30,6 +37,16 @@ public class Evaluator {
     }
 
     private PeelValue evaluateExpr(Expression expression, ExpressionRecorder recorder) {
+        budget.step();
+        budget.enter();
+        try {
+            return evaluateExpression(expression, recorder);
+        } finally {
+            budget.leave();
+        }
+    }
+
+    private PeelValue evaluateExpression(Expression expression, ExpressionRecorder recorder) {
         return switch (expression) {
             case Expression.BinaryOperator operator -> evaluateOperator(operator, recorder.recordBinary());
             case Expression.Literal(var value) -> getLiteral(value, recorder.literalRecorder());
@@ -137,15 +154,16 @@ public class Evaluator {
                     lastValue = evaluateExpr(expression, recorder.nextRecorder());
                 }
             } catch (ReturnValueFlow flow) {
-                recorder.recordVariables(environment.capture());
+                recorder.recordVariables(environment.capture(budget));
                 throw flow;
             }
-            recorder.recordVariables(environment.capture());
+            recorder.recordVariables(environment.capture(budget));
             return lastValue;
         } finally { endScope(); }
     }
 
     private PeelValue evaluateListLiteral(List<Expression> list, ListLiteralRecorder recorder) {
+        budget.requireValueSize(list.size());
         List<PeelValue> values = new ArrayList<>();
         for (Expression expression : list) {
             PeelValue value = evaluateExpr(expression, recorder.subElementRecorder());
@@ -158,6 +176,7 @@ public class Evaluator {
             List<Expression.MapLiteral.Entry> entries,
             MapLiteralRecorder mapLiteralRecorder
     ) {
+        budget.requireValueSize(entries.size());
         LinkedHashMap<Primitives, PeelValue> map = new LinkedHashMap<>();
         for (Expression.MapLiteral.Entry entry : entries) {
             MapLiteralRecorder.KeyValueRecorder recorder = mapLiteralRecorder.nextKeyValueRecorder();
@@ -287,11 +306,12 @@ public class Evaluator {
         EvaluationEnvironment currentEnv = environment;
         environment = currentEnv.spawnChild();
         try {
-            result = function.runWithTrace(recorder, arguments.toArray(new PeelValue[0]));
+            result = function.runWithTrace(budget, recorder, arguments.toArray(new PeelValue[0]));
         } catch (ReturnValueFlow returnValueFlow) {
             result = returnValueFlow.getValue();
         }
         finally { environment = currentEnv; }
+        ExecutionInterrupt.check();
         recorder.recordResult(result);
         return result;
     }
@@ -370,6 +390,7 @@ public class Evaluator {
         PeelValue rhs = evaluateExpr(operator.rhs(), recorder.recordRhs());
         List<OperatorDef> candidates = environment.getOperator(operator.operator());
         PeelValue value = operatorResolver.resolveAndApply(operator.operator(), lhs, rhs, candidates);
+        ExecutionInterrupt.check();
         recorder.recordValue(value);
         return value;
     }

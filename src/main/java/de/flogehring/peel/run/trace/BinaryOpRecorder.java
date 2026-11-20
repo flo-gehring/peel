@@ -4,9 +4,12 @@ import de.flogehring.peel.core.trace.TraceExpression;
 import de.flogehring.peel.core.trace.TraceValue;
 import de.flogehring.peel.core.trace.TraceValueMapper;
 import de.flogehring.peel.core.values.PeelValue;
+import de.flogehring.peel.run.ExecutionBudget;
 import lombok.Setter;
 
 public class BinaryOpRecorder implements TraceRecorder {
+
+    private final ExecutionBudget budget;
 
     @Setter
     private String operator;
@@ -14,6 +17,10 @@ public class BinaryOpRecorder implements TraceRecorder {
     private ExpressionRecorder rhsRecorder;
     private boolean shortCircuit = false;
     private TraceValue traceValue;
+
+    BinaryOpRecorder(ExecutionBudget budget) {
+        this.budget = budget;
+    }
 
     @Override
     public TraceExpression traceExpression() {
@@ -27,7 +34,7 @@ public class BinaryOpRecorder implements TraceRecorder {
     }
 
     public ExpressionRecorder recordLhs() {
-        lhsRecorder = new ExpressionRecorder();
+        lhsRecorder = new ExpressionRecorder(budget);
         return lhsRecorder;
     }
 
@@ -36,11 +43,11 @@ public class BinaryOpRecorder implements TraceRecorder {
     }
 
     public ExpressionRecorder recordRhs() {
-        rhsRecorder = new ExpressionRecorder();
+        rhsRecorder = new ExpressionRecorder(budget);
         return rhsRecorder;
     }
 
     public void recordValue(PeelValue value) {
-        traceValue = TraceValueMapper.fromPeelValue(value);
+        traceValue = TraceValueMapper.fromPeelValue(value, budget);
     }
 }
